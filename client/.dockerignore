@@ -1,0 +1,20 @@
+# Environment
+node_modules
+npm-debug.log
+.env
+.env.*
+
+# Build artifacts
+dist
+build
+
+# IDE
+.idea
+.vscode
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage
