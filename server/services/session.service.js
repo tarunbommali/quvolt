@@ -61,7 +61,7 @@ const acquireAnswerLock = async (roomCode, questionIndex, userId) => {
 
     if (memAnswerLocks.has(key)) return false;
     memAnswerLocks.set(key, true);
-    setTimeout(() => memAnswerLocks.delete(key), ANSWER_LOCK_TTL_MS);
+    setTimeout(() => memAnswerLocks.delete(key), ANSWER_LOCK_TTL_MS).unref();
     return true;
 };
 
