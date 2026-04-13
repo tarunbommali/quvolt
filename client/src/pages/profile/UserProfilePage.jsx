@@ -1,17 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../stores/useAuthStore';
-import { getMyProfile } from '../services/api';
-import Button from '../components/ui/Button';
-import ProfileDashboardTabs from '../components/profile/ProfileDashboardTabs';
-import ProfileTemplate from '../components/profile/ProfileTemplate';
-import Toast from '../components/common/Toast';
-import useToast from '../hooks/useToast';
-import { cx } from '../styles/theme';
-import { components } from '../styles/components';
-import { useQuizStore } from '../stores/useQuizStore';
+import { useAuthStore } from '../../stores/useAuthStore';
+import { getMyProfile } from '../../services/api';
+import Button from '../../components/ui/Button';
+import ProfileDashboardTabs from '../../components/profile/ProfileDashboardTabs';
+import ProfileTemplate from '../../components/profile/ProfileTemplate';
+import Toast from '../../components/common/Toast';
+import useToast from '../../hooks/useToast';
+import { cx } from '../../styles/theme';
+import { components } from '../../styles/components';
+import { useQuizStore } from '../../stores/useQuizStore';
 
-const Profile = ({ initialMode = 'view' }) => {
+const UserProfilePage = ({ initialMode = 'view' }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const user = useAuthStore((state) => state.user);
@@ -349,4 +349,5 @@ const Profile = ({ initialMode = 'view' }) => {
     );
 };
 
-export default Profile;
+export default UserProfilePage;
+

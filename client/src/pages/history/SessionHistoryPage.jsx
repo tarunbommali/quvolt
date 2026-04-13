@@ -2,18 +2,18 @@
 /* eslint-disable react-hooks/preserve-manual-memoization */
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getMyScheduledJoins, isTransientApiError } from '../services/api';
-import SearchBar from '../components/ui/SearchBar';
-import HistoryErrorState from '../components/history/HistoryErrorState';
-import HistoryEmptyState from '../components/history/HistoryEmptyState';
-import HistoryNoResultsState from '../components/history/HistoryNoResultsState';
-import HistoryLeaderboardModal from '../components/history/HistoryLeaderboardModal';
-import HistoryGrid from '../components/history/HistoryGrid';
-import ScheduledSessionsSection from '../components/history/ScheduledSessionsSection';
-import SubHeader from '../components/layout/SubHeader';
-import { prefetchHistoryDetailRoute } from '../utils/routePrefetch';
-import { useAuthStore } from '../stores/useAuthStore';
-import { useQuizStore } from '../stores/useQuizStore';
+import { getMyScheduledJoins, isTransientApiError } from '../../services/api';
+import SearchBar from '../../components/ui/SearchBar';
+import HistoryErrorState from '../../components/history/HistoryErrorState';
+import HistoryEmptyState from '../../components/history/HistoryEmptyState';
+import HistoryNoResultsState from '../../components/history/HistoryNoResultsState';
+import HistoryLeaderboardModal from '../../components/history/HistoryLeaderboardModal';
+import HistoryGrid from '../../components/history/HistoryGrid';
+import ScheduledSessionsSection from '../../components/history/ScheduledSessionsSection';
+import SubHeader from '../../components/layout/SubHeader';
+import { prefetchHistoryDetailRoute } from '../../utils/routePrefetch';
+import { useAuthStore } from '../../stores/useAuthStore';
+import { useQuizStore } from '../../stores/useQuizStore';
 
 const REQUEST_TIMEOUT_MS = 12000;
 
@@ -28,7 +28,7 @@ const withTimeout = (promise, ms = REQUEST_TIMEOUT_MS) =>
         }),
     ]);
 
-const History = () => {
+const SessionHistoryPage = () => {
     const [history, setHistory] = useState([]);
     const [error, setError] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
@@ -199,4 +199,5 @@ const History = () => {
     );
 };
 
-export default History;
+export default SessionHistoryPage;
+

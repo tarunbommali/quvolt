@@ -5,17 +5,17 @@ import api, {
     pauseQuizSession,
     resumeQuizSession,
     nextQuestion as apiNextQuestion,
-} from '../services/api';
-import Toast from '../components/common/Toast';
-import useToast from '../hooks/useToast';
-import LiveLoading from '../components/organizerLive/LiveLoading';
-import LiveView from '../components/organizerLive/LiveView';
-import LiveResult from '../components/organizerLive/LiveResult';
-import { useQuizStore } from '../stores/useQuizStore';
-import { useSocketStore } from '../stores/useSocketStore';
-import { resolveSessionRoute } from '../utils/sessionRouteResolver';
+} from '../../services/api';
+import Toast from '../../components/common/Toast';
+import useToast from '../../hooks/useToast';
+import LiveLoading from '../../components/organizerLive/LiveLoading';
+import LiveView from '../../components/organizerLive/LiveView';
+import LiveResult from '../../components/organizerLive/LiveResult';
+import { useQuizStore } from '../../stores/useQuizStore';
+import { useSocketStore } from '../../stores/useSocketStore';
+import { resolveSessionRoute } from '../../utils/sessionRouteResolver';
 
-const OrganizerLive = () => {
+const LiveSessionPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
@@ -213,5 +213,6 @@ const OrganizerLive = () => {
     return null;
 };
 
-export default OrganizerLive;
+export default LiveSessionPage;
+
 

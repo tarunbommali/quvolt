@@ -1,5 +1,9 @@
 import QuestionCanvas from './QuestionCanvas';
 
+/**
+ * Canvas wrapper that renders the active question editor.
+ * @param {{ activeQuestion: object | null, activeQuestionIndex: number, totalQuestions: number, onQuestionTextChange: Function, onOptionChange: Function }} props
+ */
 const CanvasView = ({
     activeQuestion,
     activeQuestionIndex,

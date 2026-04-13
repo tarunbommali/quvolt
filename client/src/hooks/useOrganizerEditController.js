@@ -1,23 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { AnimatePresence } from 'framer-motion';
-import { ChevronLeft, Play, Save, Sparkles } from 'lucide-react';
 import { generateAIQuiz, saveQuizFullState } from '../services/api';
-import ConfirmationDialog from '../components/common/ConfirmationDialog';
-import Toast from '../components/common/Toast';
-import ErrorState from '../components/common/ErrorState';
-import ImportSlidesModal from '../components/organizerEdit/ImportSlidesModal';
-import AIGeneratorModal from '../components/organizerEdit/AIGeneratorModal';
-import EditorLayout from '../components/organizerEdit/EditorLayout';
-import SlidePanel from '../components/organizerEdit/SlidePanel';
-import CanvasView from '../components/organizerEdit/CanvasView';
-import ConfigSidebar from '../components/organizerEdit/ConfigSidebar';
 import { useQuizStore } from '../stores/useQuizStore';
 import { useEditorState } from '../stores/useEditorState';
-import { buttonStyles } from '../styles/buttonStyles';
-import { textStyles as textTokens } from '../styles/commonStyles';
-import { components } from '../styles/components';
-import { cx } from '../styles/theme';
 
 const buildImportedQuestions = (payload) => {
     const source = Array.isArray(payload)
@@ -69,7 +54,11 @@ const categorizeSaveError = (error) => {
     return { type: 'sync', title: 'Realtime sync error', message: error?.response?.data?.message || 'Unable to synchronize full editor state.' };
 };
 
-const OrganizerEdit = () => {
+/**
+ * Controller for the organizer editor page.
+ * Returns state, derived data, and editor action handlers.
+ */
+const useOrganizerEditController = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
@@ -112,11 +101,11 @@ const OrganizerEdit = () => {
 
     const orderedSlides = useMemo(() => {
         const byId = new Map(slides.map((slide) => [slide.clientId, slide]));
-        return order.map((idKey) => byId.get(idKey)).filter(Boolean);
+        return order.map((slideId) => byId.get(slideId)).filter(Boolean);
     }, [slides, order]);
 
     const activeQuestionIndex = useMemo(() => (
-        Math.max(0, order.findIndex((idKey) => idKey === activeSlideId))
+        Math.max(0, order.findIndex((slideId) => slideId === activeSlideId))
     ), [order, activeSlideId]);
 
     const activeQuestion = orderedSlides[activeQuestionIndex] || null;
@@ -241,8 +230,8 @@ const OrganizerEdit = () => {
 
     const handleApplyToAllSlides = () => {
         if (!activeQuestion) return;
-        for (const idKey of order) {
-            updateSlideById(idKey, (slide) => ({
+        for (const slideId of order) {
+            updateSlideById(slideId, (slide) => ({
                 ...slide,
                 questionType: activeQuestion.questionType || 'multiple-choice',
                 timeLimit: Number(activeQuestion.timeLimit) || 15,
@@ -289,143 +278,47 @@ const OrganizerEdit = () => {
         return result;
     };
 
-    if (loading || !activeQuiz) {
-        return <div className={cx(components.organizer.loading, textTokens.bodyStrong)}>Loading editor...</div>;
-    }
-
-    const header = (
-        <header className={components.organizer.header}>
-            <div className={components.organizer.headerLeft}>
-                <button onClick={() => navigate('/studio')} className={cx(buttonStyles.icon, components.organizer.navBack)}>
-                    <ChevronLeft size={20} />
-                </button>
-                <h1 className={cx(textTokens.title, components.organizer.titleClamp)}>{activeQuiz.title}</h1>
-            </div>
-
-            <div className={components.organizer.headerActions}>
-                <div className={components.organizer.tabShell}>
-                    <button className={cx(buttonStyles.primary, components.organizer.tabActive)}>Edit</button>
-                    <button
-                        type="button"
-                        onClick={() => setImportDialogOpen(true)}
-                        className={components.organizer.tabBtn}
-                    >
-                        Insert JSON
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setAIDialogOpen(true)}
-                        className={components.organizer.tabBtnWithIcon}
-                    >
-                        <Sparkles size={12} /> AI Generate
-                    </button>
-                    <button
-                        onClick={() => navigate(`/results/${activeQuiz._id}`, { state: { quiz: activeQuiz } })}
-                        className={components.organizer.tabBtn}
-                    >
-                        Results
-                    </button>
-                </div>
-
-                <button onClick={() => persistFullState()} className={cx(buttonStyles.secondary, components.organizer.saveBtn)}>
-                    <Save size={14} /> {isSaving ? 'AUTO SAVING...' : 'SAVE'}
-                </button>
-
-                <button onClick={() => navigate(`/launch/${activeQuiz._id}`, { state: { quiz: activeQuiz } })} className={cx(buttonStyles.primary, components.organizer.launchBtn)}>
-                    <Play size={14} fill="currentColor" /> INVITE ROOM
-                </button>
-            </div>
-        </header>
-    );
-
-    return (
-        <>
-            <AnimatePresence>
-                {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-                {confirmDialog && (
-                    <ConfirmationDialog
-                        open={!!confirmDialog}
-                        message={confirmDialog.message}
-                        confirmLabel="Delete"
-                        onConfirm={confirmDialog.onConfirm}
-                        onCancel={() => setConfirmDialog(null)}
-                    />
-                )}
-            </AnimatePresence>
-
-            <ImportSlidesModal
-                open={importDialogOpen}
-                importJson={importJson}
-                importError={importError}
-                isImporting={isImporting}
-                onJsonChange={(value) => {
-                    setImportJson(value);
-                    if (importError) setImportError('');
-                }}
-                onClose={() => {
-                    setImportDialogOpen(false);
-                    setImportError('');
-                }}
-                onImport={handleImportSlides}
-            />
-
-            <AIGeneratorModal
-                open={aiDialogOpen}
-                quizId={activeQuiz?._id}
-                onClose={() => setAIDialogOpen(false)}
-                onGenerate={handleAIGenerate}
-                onSave={handleAISave}
-            />
-
-            <div className={components.organizer.errorWrap}>
-                {saveError ? (
-                    <ErrorState
-                        title={saveError.title || 'Failed to save'}
-                        message={saveError.message}
-                        onAction={() => persistFullState()}
-                    />
-                ) : null}
-            </div>
-
-            <EditorLayout
-                header={header}
-                slidePanel={(
-                    <SlidePanel
-                        questions={orderedSlides}
-                        activeQuestionIndex={activeQuestionIndex}
-                        onSelect={setActiveSlideByIndex}
-                        onAddSlide={addSlide}
-                        onDeleteSlide={handleDeleteQuestion}
-                        onMoveUp={handleMoveQuestionUp}
-                        onMoveDown={handleMoveQuestionDown}
-                    />
-                )}
-                canvasView={(
-                    <CanvasView
-                        activeQuestion={activeQuestion}
-                        activeQuestionIndex={activeQuestionIndex}
-                        totalQuestions={orderedSlides.length}
-                        onQuestionTextChange={handleQuestionTextChange}
-                        onOptionChange={handleOptionChange}
-                    />
-                )}
-                configSidebar={(
-                    <ConfigSidebar
-                        activeQuiz={{ ...activeQuiz, shuffleQuestions: config.shuffleQuestions }}
-                        activeQuestion={activeQuestion}
-                        questions={orderedSlides}
-                        onToggleShuffleOptions={handleToggleShuffleOptions}
-                        onToggleShuffleQuestions={handleToggleShuffleQuestions}
-                        onApplyToAllSlides={handleApplyToAllSlides}
-                        onTimeLimitChange={handleTimeLimitChange}
-                        onQuestionTypeChange={handleQuestionTypeChange}
-                        onCorrectOptionChange={handleCorrectOptionChange}
-                        onDeleteCurrentSlide={() => handleDeleteQuestion(activeQuestion?.clientId)}
-                    />
-                )}
-            />
-        </>
-    );
+    return {
+        navigate,
+        activeQuiz,
+        config,
+        loading,
+        isSaving,
+        toast,
+        setToast,
+        confirmDialog,
+        setConfirmDialog,
+        importDialogOpen,
+        setImportDialogOpen,
+        aiDialogOpen,
+        setAIDialogOpen,
+        importJson,
+        setImportJson,
+        importError,
+        setImportError,
+        isImporting,
+        saveError,
+        persistFullState,
+        orderedSlides,
+        activeQuestionIndex,
+        activeQuestion,
+        handleDeleteQuestion,
+        handleQuestionTextChange,
+        handleOptionChange,
+        handleTimeLimitChange,
+        handleQuestionTypeChange,
+        handleCorrectOptionChange,
+        handleToggleShuffleOptions,
+        handleToggleShuffleQuestions,
+        handleMoveQuestionUp,
+        handleMoveQuestionDown,
+        handleApplyToAllSlides,
+        handleImportSlides,
+        handleAIGenerate,
+        handleAISave,
+        setActiveSlideByIndex,
+        addSlide,
+    };
 };
 
-export default OrganizerEdit;
+export default useOrganizerEditController;

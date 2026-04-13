@@ -10,22 +10,22 @@ import { useQuizStore } from './stores/useQuizStore';
 import { useSocketStore } from './stores/useSocketStore';
 import { components } from './styles/components';
 
-const Login = lazy(() => import('./pages/Login'));
-const Register = lazy(() => import('./pages/Register'));
-const StudioDashboard = lazy(() => import('./pages/StudioDashboard'));
-const OrganizerEdit = lazy(() => import('./pages/OrganizerEdit'));
-const OrganizerLaunch = lazy(() => import('./pages/OrganizerLaunch'));
-const OrganizerLive = lazy(() => import('./pages/OrganizerLive'));
-const OrganizerInviteRoom = lazy(() => import('./pages/OrganizerInviteRoom'));
-const JoinRoom = lazy(() => import('./pages/JoinRoom'));
-const QuizRoom = lazy(() => import('./pages/QuizRoom'));
-const History = lazy(() => import('./pages/History'));
-const HistoryDetail = lazy(() => import('./pages/HistoryDetail'));
-const QuizResults = lazy(() => import('./pages/QuizResults'));
-const Profile = lazy(() => import('./pages/Profile'));
-const Billing = lazy(() => import('./pages/Billing'));
-const Analytics = lazy(() => import('./pages/Analytics'));
-const Home = lazy(() => import('./pages/Home'));
+const AuthLoginPage = lazy(() => import('./pages/auth/AuthLoginPage'));
+const AuthRegisterPage = lazy(() => import('./pages/auth/AuthRegisterPage'));
+const StudioDashboardPage = lazy(() => import('./pages/studio/StudioDashboardPage'));
+const QuizEditorPage = lazy(() => import('./pages/studio/QuizEditorPage'));
+const QuizLaunchPage = lazy(() => import('./pages/studio/QuizLaunchPage'));
+const LiveSessionPage = lazy(() => import('./pages/studio/LiveSessionPage'));
+const QuizLobbyPage = lazy(() => import('./pages/studio/QuizLobbyPage'));
+const JoinSessionPage = lazy(() => import('./pages/quiz/JoinSessionPage'));
+const QuizSessionPage = lazy(() => import('./pages/quiz/QuizSessionPage'));
+const SessionHistoryPage = lazy(() => import('./pages/history/SessionHistoryPage'));
+const SessionHistoryDetailPage = lazy(() => import('./pages/history/SessionHistoryDetailPage'));
+const QuizResultsPage = lazy(() => import('./pages/quiz/QuizResultsPage'));
+const UserProfilePage = lazy(() => import('./pages/profile/UserProfilePage'));
+const BillingOverviewPage = lazy(() => import('./pages/billing/BillingOverviewPage'));
+const AnalyticsDashboardPage = lazy(() => import('./pages/analytics/AnalyticsDashboardPage'));
+const PublicLandingPage = lazy(() => import('./pages/public/PublicLandingPage'));
 const NotFound = lazy(() => import('./components/errors/NotFound'));
 import LoadingScreen from './components/common/LoadingScreen';
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -91,27 +91,27 @@ function App() {
           <main className={components.appMain}>
             <Suspense fallback={<LoadingScreen />}>
               <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/login" element={<AuthRoute><Login /></AuthRoute>} />
-                <Route path="/register" element={<AuthRoute><Register /></AuthRoute>} />
-                <Route path="/join" element={<ProtectedRoute><JoinRoom /></ProtectedRoute>} />
-                <Route path="/quiz/:roomCode" element={<ProtectedRoute><QuizRoom /></ProtectedRoute>} />
-                <Route path="/studio" element={<ProtectedRoute role="organizer"><StudioDashboard /></ProtectedRoute>} />
-                <Route path="/studio/:folderId" element={<ProtectedRoute role="organizer"><StudioDashboard /></ProtectedRoute>} />
-                <Route path="/edit/:id" element={<ProtectedRoute role="organizer"><OrganizerEdit /></ProtectedRoute>} />
-                <Route path="/results/:quizId" element={<ProtectedRoute role="organizer"><QuizResults /></ProtectedRoute>} />
-                <Route path="/launch/:id" element={<ProtectedRoute role="organizer"><RouteGuard><OrganizerLaunch /></RouteGuard></ProtectedRoute>} />
-                <Route path="/invite/:id" element={<ProtectedRoute role="organizer"><RouteGuard><OrganizerInviteRoom /></RouteGuard></ProtectedRoute>} />
-                <Route path="/live/:id" element={<ProtectedRoute role="organizer"><RouteGuard><OrganizerLive /></RouteGuard></ProtectedRoute>} />
+                <Route path="/" element={<PublicLandingPage />} />
+                <Route path="/login" element={<AuthRoute><AuthLoginPage /></AuthRoute>} />
+                <Route path="/register" element={<AuthRoute><AuthRegisterPage /></AuthRoute>} />
+                <Route path="/join" element={<ProtectedRoute><JoinSessionPage /></ProtectedRoute>} />
+                <Route path="/quiz/:roomCode" element={<ProtectedRoute><QuizSessionPage /></ProtectedRoute>} />
+                <Route path="/studio" element={<ProtectedRoute role="organizer"><StudioDashboardPage /></ProtectedRoute>} />
+                <Route path="/studio/:folderId" element={<ProtectedRoute role="organizer"><StudioDashboardPage /></ProtectedRoute>} />
+                <Route path="/edit/:id" element={<ProtectedRoute role="organizer"><QuizEditorPage /></ProtectedRoute>} />
+                <Route path="/results/:quizId" element={<ProtectedRoute role="organizer"><QuizResultsPage /></ProtectedRoute>} />
+                <Route path="/launch/:id" element={<ProtectedRoute role="organizer"><RouteGuard><QuizLaunchPage /></RouteGuard></ProtectedRoute>} />
+                <Route path="/invite/:id" element={<ProtectedRoute role="organizer"><RouteGuard><QuizLobbyPage /></RouteGuard></ProtectedRoute>} />
+                <Route path="/live/:id" element={<ProtectedRoute role="organizer"><RouteGuard><LiveSessionPage /></RouteGuard></ProtectedRoute>} />
                 <Route path="/inviteroom/:id" element={<LegacyInviteRedirect />} />
-                <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
-                <Route path="/histroy/template_id/:quizid" element={<ProtectedRoute><HistoryDetail /></ProtectedRoute>} />
-                <Route path="/history/template_id/:quizid" element={<ProtectedRoute><HistoryDetail /></ProtectedRoute>} />
-                <Route path="/history/:id" element={<ProtectedRoute><HistoryDetail /></ProtectedRoute>} />
-                <Route path="/profile" element={<ProtectedRoute><Profile initialMode="view" /></ProtectedRoute>} />
-                <Route path="/profile/edit" element={<ProtectedRoute><Profile initialMode="edit" /></ProtectedRoute>} />
-                <Route path="/billing" element={<ProtectedRoute role="organizer"><Billing /></ProtectedRoute>} />
-                <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+                <Route path="/history" element={<ProtectedRoute><SessionHistoryPage /></ProtectedRoute>} />
+                <Route path="/histroy/template_id/:quizid" element={<ProtectedRoute><SessionHistoryDetailPage /></ProtectedRoute>} />
+                <Route path="/history/template_id/:quizid" element={<ProtectedRoute><SessionHistoryDetailPage /></ProtectedRoute>} />
+                <Route path="/history/:id" element={<ProtectedRoute><SessionHistoryDetailPage /></ProtectedRoute>} />
+                <Route path="/profile" element={<ProtectedRoute><UserProfilePage initialMode="view" /></ProtectedRoute>} />
+                <Route path="/profile/edit" element={<ProtectedRoute><UserProfilePage initialMode="edit" /></ProtectedRoute>} />
+                <Route path="/billing" element={<ProtectedRoute role="organizer"><BillingOverviewPage /></ProtectedRoute>} />
+                <Route path="/analytics" element={<ProtectedRoute><AnalyticsDashboardPage /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>

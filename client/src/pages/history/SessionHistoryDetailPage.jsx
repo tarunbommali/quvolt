@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Download, CheckCircle2, XCircle } from 'lucide-react';
-import { getQuizAnalytics, getSessionParticipants } from '../services/api';
-import { useAuthStore } from '../stores/useAuthStore';
-import { useQuizStore } from '../stores/useQuizStore';
-import SubHeader from '../components/layout/SubHeader';
+import { getQuizAnalytics, getSessionParticipants } from '../../services/api';
+import { useAuthStore } from '../../stores/useAuthStore';
+import { useQuizStore } from '../../stores/useQuizStore';
+import SubHeader from '../../components/layout/SubHeader';
 
-const HistoryDetail = () => {
+const SessionHistoryDetailPage = () => {
     const { id, quizid } = useParams();
     const routeId = quizid || id;
     const location = useLocation();
@@ -361,4 +361,5 @@ const HistoryDetail = () => {
     );
 };
 
-export default HistoryDetail;
+export default SessionHistoryDetailPage;
+

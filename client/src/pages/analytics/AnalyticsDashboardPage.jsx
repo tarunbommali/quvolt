@@ -1,16 +1,16 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getOrganizerAnalyticsSummary, getUserAnalytics } from '../services/api';
-import { useAuthStore } from '../stores/useAuthStore';
-import MetricsCards from '../components/analytics/MetricsCards';
-import ChartsSection from '../components/analytics/ChartsSection';
-import MetricsSection from '../components/analytics/MetricsSection';
-import TableSection from '../components/analytics/TableSection';
-import SubHeader from '../components/layout/SubHeader';
-import ErrorState from '../components/common/ErrorState';
-import { components } from '../styles/components';
+import { getOrganizerAnalyticsSummary, getUserAnalytics } from '../../services/api';
+import { useAuthStore } from '../../stores/useAuthStore';
+import MetricsCards from '../../components/analytics/MetricsCards';
+import ChartsSection from '../../components/analytics/ChartsSection';
+import MetricsSection from '../../components/analytics/MetricsSection';
+import TableSection from '../../components/analytics/TableSection';
+import SubHeader from '../../components/layout/SubHeader';
+import ErrorState from '../../components/common/ErrorState';
+import { components } from '../../styles/components';
 
-const Analytics = () => {
+const AnalyticsDashboardPage = () => {
     const user = useAuthStore((state) => state.user);
     const isOrganizer = user?.role === 'organizer' || user?.role === 'admin';
 
@@ -113,4 +113,5 @@ const Analytics = () => {
     );
 };
 
-export default Analytics;
+export default AnalyticsDashboardPage;
+

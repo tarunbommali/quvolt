@@ -74,9 +74,9 @@ jest.mock('../components/organizerEdit/CanvasView', () => () => null);
 jest.mock('../components/organizerEdit/ConfigSidebar', () => () => null);
 jest.mock('../components/organizerEdit/EditorLayout', () => ({ header }) => <div>{header}</div>);
 
-import OrganizerEdit from '../pages/OrganizerEdit';
+import QuizEditorPage from '../pages/studio/QuizEditorPage';
 
-describe('OrganizerEdit autosave behavior', () => {
+describe('QuizEditorPage autosave behavior', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockEditorState.dirty = true;
@@ -86,7 +86,7 @@ describe('OrganizerEdit autosave behavior', () => {
     jest.useFakeTimers();
     mockSaveQuizFullState.mockResolvedValue({ _id: 'quiz-1', title: 'Quiz Title', questions: [] });
 
-    render(<OrganizerEdit />);
+    render(<QuizEditorPage />);
 
     expect(mockSaveQuizFullState).not.toHaveBeenCalled();
 
@@ -117,7 +117,7 @@ describe('OrganizerEdit autosave behavior', () => {
       },
     });
 
-    render(<OrganizerEdit />);
+    render(<QuizEditorPage />);
 
     await act(async () => {
       jest.advanceTimersByTime(800);

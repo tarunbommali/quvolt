@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { useAuthStore } from '../stores/useAuthStore';
+import { useAuthStore } from '../../stores/useAuthStore';
 import {
     cancelSubscription,
     createSubscriptionOrder,
@@ -10,19 +10,19 @@ import {
     getPaymentHealth,
     getSubscriptionPlans,
     verifySubscriptionPayment,
-} from '../services/api';
-import useRazorpay from '../hooks/useRazorpay';
-import useToast from '../hooks/useToast';
-import Toast from '../components/common/Toast';
-import BillingLoadingState from '../components/billing/BillingLoadingState';
-import CurrentPlanCard from '../components/billing/CurrentPlanCard';
-import UsageCards from '../components/billing/UsageCards';
-import PaymentOverviewCards from '../components/billing/PaymentOverviewCards';
-import BillingSidebar from '../components/billing/BillingSidebar';
-import PlanGrid from '../components/billing/PlanGrid';
-import RecentPaymentsCard from '../components/billing/RecentPaymentsCard';
-import PaymentModal from '../components/billing/PaymentModal';
-import SubHeader from '../components/layout/SubHeader';
+} from '../../services/api';
+import useRazorpay from '../../hooks/useRazorpay';
+import useToast from '../../hooks/useToast';
+import Toast from '../../components/common/Toast';
+import BillingLoadingState from '../../components/billing/BillingLoadingState';
+import CurrentPlanCard from '../../components/billing/CurrentPlanCard';
+import UsageCards from '../../components/billing/UsageCards';
+import PaymentOverviewCards from '../../components/billing/PaymentOverviewCards';
+import BillingSidebar from '../../components/billing/BillingSidebar';
+import PlanGrid from '../../components/billing/PlanGrid';
+import RecentPaymentsCard from '../../components/billing/RecentPaymentsCard';
+import PaymentModal from '../../components/billing/PaymentModal';
+import SubHeader from '../../components/layout/SubHeader';
 
 const INR_SYMBOL = '\u20B9';
 const INITIAL_PAYMENT_MODAL = {
@@ -34,7 +34,7 @@ const INITIAL_PAYMENT_MODAL = {
     currentPlanId: null,
 };
 
-const Billing = () => {
+const BillingOverviewPage = () => {
     const { user, fetchSubscription } = useAuthStore();
     const { loadRazorpayScript } = useRazorpay();
     const { toast, showToast, clearToast } = useToast();
@@ -394,4 +394,5 @@ const Billing = () => {
     );
 };
 
-export default Billing;
+export default BillingOverviewPage;
+

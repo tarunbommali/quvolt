@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Calendar, Users, Trophy, Clock, ExternalLink, Search } from 'lucide-react';
-import { useQuizStore } from '../stores/useQuizStore';
-import { isTransientApiError } from '../services/api';
-import Skeleton from '../components/ui/Skeleton';
-import ViewportPrefetch from '../components/common/ViewportPrefetch';
-import { prefetchHistoryDetailRoute } from '../utils/routePrefetch';
-import { textStyles } from '../styles/commonStyles';
+import { useQuizStore } from '../../stores/useQuizStore';
+import { isTransientApiError } from '../../services/api';
+import Skeleton from '../../components/ui/Skeleton';
+import ViewportPrefetch from '../../components/common/ViewportPrefetch';
+import { prefetchHistoryDetailRoute } from '../../utils/routePrefetch';
+import { textStyles } from '../../styles/commonStyles';
 
-const QuizResults = () => {
+const QuizResultsPage = () => {
     const { quizId } = useParams();
     const location = useLocation();
     const navigate = useNavigate();
@@ -179,4 +179,4 @@ const QuizResults = () => {
     );
 };
 
-export default QuizResults;
+export default QuizResultsPage;

@@ -1,5 +1,4 @@
-/* eslint-disable no-unused-vars */
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     addQuestion,
     createQuiz as apiCreateQuiz,
@@ -7,22 +6,11 @@ import {
     updateQuiz as apiUpdateQuiz,
     isTransientApiError,
 } from '../services/api';
-import { AnimatePresence, motion as Motion } from 'framer-motion';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { ArrowUpDown, LayoutGrid, List, Plus, SlidersHorizontal } from 'lucide-react';
-import Toast from '../components/common/Toast';
-import ConfirmationDialog from '../components/common/ConfirmationDialog';
-import useToast from '../hooks/useToast';
 import { prefetchOrganizerEditRoute, prefetchOrganizerLiveRoute } from '../utils/routePrefetch';
 import { useAuthStore } from '../stores/useAuthStore';
 import { useQuizStore } from '../stores/useQuizStore';
-import ProjectGrid from '../components/organizerDashboard/ProjectGrid';
-import CreateTemplatePanel from '../components/organizerDashboard/CreateTemplatePanel';
-import { LivePulseBadge } from '../components/ui';
-import { layoutStyles } from '../styles/layoutStyles';
-import { components } from '../styles/components';
-import { cx } from '../styles/theme';
-import { motionTokens } from '../design';
+import useToast from './useToast';
 
 const REQUEST_TIMEOUT_MS = 12000;
 
@@ -58,7 +46,11 @@ const getNextCloneTitle = (sourceTitle, existingTitles = []) => {
     return `${safeBase} Copy ${index}`;
 };
 
-const StudioDashboard = () => {
+/**
+ * Controller hook for the studio dashboard.
+ * @returns {object} Dashboard state and action handlers.
+ */
+const useStudioDashboardController = () => {
     const { folderId } = useParams();
     const location = useLocation();
     const navigate = useNavigate();
@@ -69,7 +61,7 @@ const StudioDashboard = () => {
     const [showCreate, setShowCreate] = useState(false);
     const [newQuizTitle, setNewQuizTitle] = useState('');
     const [activeQuiz, setActiveQuiz] = useState(null);
-    const [currentSubject, setCurrentSubject] = useState(null);
+    const [currentSubject, setCurrentSubject] = useState(location.state?.subject || null);
     const [quizType, setQuizType] = useState('quiz');
     const [accessType, setAccessType] = useState('public');
     const [allowedEmailsText, setAllowedEmailsText] = useState('');
@@ -85,6 +77,8 @@ const StudioDashboard = () => {
     const [filterMode, setFilterMode] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [isMobileView, setIsMobileView] = useState(false);
+    const [isLoadingSubject, setIsLoadingSubject] = useState(Boolean(folderId));
+    const [isLoadingQuizzes, setIsLoadingQuizzes] = useState(true);
 
     const user = useAuthStore((state) => state.user);
     const authLoading = useAuthStore((state) => state.loading);
@@ -144,13 +138,7 @@ const StudioDashboard = () => {
 
             if (!query) return true;
 
-            const haystack = [
-                quiz.title,
-                quiz.accessType,
-                quiz.mode,
-                quiz.status,
-                quiz.type,
-            ]
+            const haystack = [quiz.title, quiz.accessType, quiz.mode, quiz.status, quiz.type]
                 .map((value) => String(value || '').toLowerCase())
                 .join(' ');
 
@@ -168,10 +156,6 @@ const StudioDashboard = () => {
         [quizzes],
     );
 
-    const showConfirm = (message, onConfirm) => {
-        setConfirmDialog({ message, onConfirm });
-    };
-
     const parseAllowedEmails = useCallback((rawText) => {
         if (!rawText) return [];
         return Array.from(new Set(
@@ -182,18 +166,32 @@ const StudioDashboard = () => {
         ));
     }, []);
 
+    const showConfirm = useCallback((message, onConfirm) => {
+        setConfirmDialog({ message, onConfirm });
+    }, []);
+
     useEffect(() => {
         let active = true;
 
         const syncCurrentFolder = async () => {
+            if (active) {
+                setIsLoadingSubject(Boolean(folderId));
+            }
+
             if (!folderId) {
-                if (active) setCurrentSubject(null);
+                if (active) {
+                    setCurrentSubject(null);
+                    setIsLoadingSubject(false);
+                }
                 return;
             }
 
             const subjectFromState = location.state?.subject;
             if (subjectFromState && String(subjectFromState._id) === String(folderId)) {
-                if (active) setCurrentSubject(subjectFromState);
+                if (active) {
+                    setCurrentSubject(subjectFromState);
+                    setIsLoadingSubject(false);
+                }
                 return;
             }
 
@@ -219,6 +217,8 @@ const StudioDashboard = () => {
                 if (!active) return;
                 showToastRef.current?.('Failed to load folder');
                 navigateRef.current('/studio', { replace: true });
+            } finally {
+                if (active) setIsLoadingSubject(false);
             }
         };
 
@@ -233,23 +233,35 @@ const StudioDashboard = () => {
         let active = true;
 
         const loadQuizzes = async () => {
-            if (authLoading || !user?._id) return;
+            if (authLoading) {
+                return;
+            }
+
+            if (!user?._id) {
+                if (active) setIsLoadingQuizzes(false);
+                return;
+            }
 
             if (!['organizer', 'admin'].includes(user.role)) {
                 if (active) setQuizzes([]);
+                if (active) setIsLoadingQuizzes(false);
                 return;
             }
+
+            if (active) setIsLoadingQuizzes(true);
 
             try {
                 const parentId = currentSubject ? currentSubject._id : 'none';
                 const data = await withTimeout(useQuizStore.getState().getQuizzesForParent(parentId));
                 if (!active) return;
                 setQuizzes(data);
-            } catch (error) {
+            } catch {
                 if (active) {
                     setQuizzes([]);
                     showToastRef.current?.('Failed to load quizzes');
                 }
+            } finally {
+                if (active) setIsLoadingQuizzes(false);
             }
         };
 
@@ -260,7 +272,7 @@ const StudioDashboard = () => {
         };
     }, [authLoading, currentSubject, user?._id, user?.role]);
 
-    const handleRenameQuiz = async (quizId) => {
+    const handleRenameQuiz = useCallback(async (quizId) => {
         if (!editingTitle.trim()) {
             setEditingQuizId(null);
             return;
@@ -301,9 +313,9 @@ const StudioDashboard = () => {
             setEditingQuizId(null);
             setEditingTitle('');
         }
-    };
+    }, [activeQuiz, editingTitle, quizzes, currentSubject]);
 
-    const createQuiz = async () => {
+    const createQuiz = useCallback(async () => {
         if (!newQuizTitle.trim()) {
             showToast('Please enter a title');
             return;
@@ -372,9 +384,9 @@ const StudioDashboard = () => {
                     : 'Failed to create template');
             showToast(message);
         }
-    };
+    }, [newQuizTitle, quizType, quizMode, accessType, allowedEmailsText, isPaid, quizPrice, quizzes, currentSubject, parseAllowedEmails]);
 
-    const cloneTemplate = async (source) => {
+    const cloneTemplate = useCallback(async (source) => {
         if (!source) {
             showToast('Source template not found');
             return;
@@ -397,7 +409,6 @@ const StudioDashboard = () => {
                 },
             );
 
-            // Clone question set for quiz templates.
             if (source.type === 'quiz' && Array.isArray(source.questions) && source.questions.length > 0) {
                 for (const question of source.questions) {
                     await addQuestion(created._id, {
@@ -424,9 +435,9 @@ const StudioDashboard = () => {
         } finally {
             setCloning(false);
         }
-    };
+    }, [quizzes, currentSubject]);
 
-    const handleDeleteQuiz = (quizId) => {
+    const handleDeleteQuiz = useCallback((quizId) => {
         showConfirm('All data for this project will be permanently wiped. This cannot be undone.', async () => {
             setConfirmDialog(null);
             const previousQuizzes = quizzes;
@@ -448,7 +459,7 @@ const StudioDashboard = () => {
                 );
             }
         });
-    };
+    }, [quizzes, currentSubject, showConfirm]);
 
     const prefetchQuizNavigation = useCallback((quiz) => {
         const parentId = currentSubject ? currentSubject._id : 'none';
@@ -462,195 +473,103 @@ const StudioDashboard = () => {
         }
     }, [currentSubject]);
 
-    const handleToggleCreate = () => {
-        setShowCreate(!showCreate);
+    const onOpenSubject = useCallback((subject) => {
+        if (!subject?._id) return;
+        prefetchQuizNavigation(subject);
+        navigateRef.current(`/studio/${subject._id}`, { state: { subject } });
+    }, [prefetchQuizNavigation]);
+
+    const onEditQuiz = useCallback((quiz) => {
+        if (!quiz?._id) return;
+        prefetchOrganizerEditRoute().catch(() => {});
+        navigateRef.current(`/edit/${quiz._id}`, { state: { quiz } });
+    }, []);
+
+    const onGoLive = useCallback((quiz) => {
+        if (!quiz?._id) return;
+
+        if (quiz?.type === 'subject') {
+            onOpenSubject(quiz);
+            return;
+        }
+
+        prefetchOrganizerLiveRoute().catch(() => {});
+
+        if (String(quiz?.status || '').toLowerCase() === 'waiting') {
+            navigateRef.current(`/invite/${quiz._id}`, {
+                state: { quiz, forceLaunch: true },
+            });
+            return;
+        }
+
+        navigateRef.current(`/launch/${quiz._id}`, {
+            state: { quiz, forceLaunch: true },
+        });
+    }, [onOpenSubject]);
+
+    const handleToggleCreate = useCallback(() => {
+        setShowCreate((previous) => !previous);
+    }, []);
+
+    const handleViewModeChange = useCallback((nextMode) => {
+        setViewMode(nextMode);
+    }, []);
+
+    return {
+        quizzes,
+        visibleQuizzes,
+        liveSessionCount,
+        showCreate,
+        setShowCreate,
+        handleToggleCreate,
+        newQuizTitle,
+        setNewQuizTitle,
+        activeQuiz,
+        currentSubject,
+        quizType,
+        setQuizType,
+        accessType,
+        setAccessType,
+        allowedEmailsText,
+        setAllowedEmailsText,
+        quizMode,
+        setQuizMode,
+        confirmDialog,
+        setConfirmDialog,
+        editingQuizId,
+        setEditingQuizId,
+        editingTitle,
+        setEditingTitle,
+        isPaid,
+        setIsPaid,
+        quizPrice,
+        setQuizPrice,
+        cloning,
+        viewMode,
+        effectiveViewMode,
+        sortMode,
+        setSortMode,
+        filterMode,
+        setFilterMode,
+        searchQuery,
+        setSearchQuery,
+        isMobileView,
+        authLoading,
+        isLoading: authLoading || isLoadingSubject || isLoadingQuizzes,
+        user,
+        toast,
+        showToast,
+        clearToast,
+        handleRenameQuiz,
+        createQuiz,
+        cloneTemplate,
+        handleDeleteQuiz,
+        prefetchQuizNavigation,
+        onOpenSubject,
+        onEditQuiz,
+        onGoLive,
+        handleViewModeChange,
     };
-
-    const controlBar = (
-        <Motion.div
-            initial={motionTokens.fadeUp.hidden}
-            animate={motionTokens.fadeUp.visible}
-            transition={motionTokens.transition.smooth}
-            className={components.studio.controlBar}
-        >
-            <div className={components.studio.controlInner}>
-                <div className={components.studio.headingWrap}>
-                    {currentSubject && (
-                        <p className={components.studio.crumb}>Studio / {currentSubject.title}</p>
-                    )}
-                    <h1 className={components.studio.title}>
-                        {currentSubject ? currentSubject.title : 'Studio'}
-                    </h1>
-                    <p className={components.studio.subtitle}>
-                        {currentSubject ? 'Manage quizzes in this folder' : 'Manage your quizzes'}
-                    </p>
-                    <LivePulseBadge count={liveSessionCount} label="sessions live" />
-                </div>
-
-                <div className={components.studio.centerControlsWrap}>
-                    <div className={components.studio.segmentedShell}>
-                        <div className={components.studio.segmentedInner}>
-                            <button
-                                type="button"
-                                onClick={() => setViewMode('grid')}
-                                disabled={isMobileView}
-                                className={cx(
-                                    components.studio.modeBtnBase,
-                                    effectiveViewMode === 'grid' ? components.studio.modeBtnActive : components.studio.modeBtnIdle,
-                                    components.studio.modeBtnDisabled,
-                                )}
-                                aria-pressed={effectiveViewMode === 'grid'}
-                            >
-                                <LayoutGrid size={14} /> Grid
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setViewMode('list')}
-                                className={cx(
-                                    components.studio.modeBtnBase,
-                                    effectiveViewMode === 'list' ? components.studio.modeBtnActive : components.studio.modeBtnIdle,
-                                )}
-                                aria-pressed={effectiveViewMode === 'list'}
-                            >
-                                <List size={14} /> List
-                            </button>
-                        </div>
-
-                        <label className={components.studio.sortFilterLabel}>
-                            <ArrowUpDown size={13} />
-                            <span>Sort</span>
-                            <select
-                                value={sortMode}
-                                onChange={(event) => setSortMode(event.target.value)}
-                                className={components.studio.sortFilterSelect}
-                                aria-label="Sort quiz templates"
-                            >
-                                <option value="activity">Activity (Latest)</option>
-                                <option value="newest">Newest</option>
-                                <option value="oldest">Oldest</option>
-                            </select>
-                        </label>
-
-                        <label className={components.studio.sortFilterLabel}>
-                            <SlidersHorizontal size={13} />
-                            <span>Filter</span>
-                            <select
-                                value={filterMode}
-                                onChange={(event) => setFilterMode(event.target.value)}
-                                className={components.studio.sortFilterSelect}
-                                aria-label="Filter quiz templates"
-                            >
-                                <option value="all">All</option>
-                                <option value="public">Public</option>
-                                <option value="private">Private</option>
-                                <option value="live">Live</option>
-                            </select>
-                        </label>
-                    </div>
-                </div>
-
-                <div className={components.studio.actionWrap}>
-                    <input
-                        type="search"
-                        value={searchQuery}
-                        onChange={(event) => setSearchQuery(event.target.value)}
-                        placeholder="Search templates"
-                        className={components.studio.searchInput}
-                        aria-label="Search templates"
-                    />
-
-                    <button
-                        onClick={handleToggleCreate}
-                        className={components.studio.newBtn}
-                    >
-                        <Plus size={16} />
-                        {showCreate ? 'Close Menu' : 'New Template'}
-                    </button>
-                </div>
-            </div>
-        </Motion.div>
-    );
-
-    return (
-        <>
-            <AnimatePresence>
-                {toast && <Toast message={toast.message} type={toast.type} onClose={clearToast} />}
-                {confirmDialog && (
-                    <ConfirmationDialog
-                        open={!!confirmDialog}
-                        message={confirmDialog.message}
-                        confirmLabel="Delete"
-                        onConfirm={confirmDialog.onConfirm}
-                        onCancel={() => setConfirmDialog(null)}
-                    />
-                )}
-            </AnimatePresence>
-
-            <div className={cx(components.studio.pageShell, layoutStyles.pageStack)}>
-                {controlBar}
-
-                <ProjectGrid
-                    quizzes={visibleQuizzes}
-                    cloning={cloning}
-                    editingQuizId={editingQuizId}
-                    editingTitle={editingTitle}
-                    onStartEdit={(quiz) => {
-                        setEditingQuizId(quiz._id);
-                        setEditingTitle(quiz.title);
-                    }}
-                    onEditingTitleChange={setEditingTitle}
-                    onRename={handleRenameQuiz}
-                    onCancelEdit={() => setEditingQuizId(null)}
-                    onDelete={handleDeleteQuiz}
-                    onClone={cloneTemplate}
-                    onOpenSubject={(subject) => {
-                        prefetchQuizNavigation(subject);
-                        navigate(`/studio/${subject._id}`, { state: { subject } });
-                    }}
-                    onEditQuiz={(quiz) => navigate(`/edit/${quiz._id}`, { state: { quiz } })}
-                    onGoLive={(quiz) => {
-                        if (quiz?.type === 'subject') {
-                            navigate(`/studio/${quiz._id}`, { state: { subject: quiz } });
-                            return;
-                        }
-
-                        if (String(quiz?.status || '').toLowerCase() === 'waiting') {
-                            navigate(`/invite/${quiz._id}`, {
-                                state: { quiz, forceLaunch: true },
-                            });
-                            return;
-                        }
-
-                        navigate(`/launch/${quiz._id}`, {
-                            state: { quiz, forceLaunch: true },
-                        });
-                    }}
-                    onPrefetch={prefetchQuizNavigation}
-                    viewMode={effectiveViewMode}
-                />
-
-                <CreateTemplatePanel
-                    showCreate={showCreate}
-                    currentSubject={currentSubject}
-                    quizType={quizType}
-                    onQuizTypeChange={setQuizType}
-                    accessType={accessType}
-                    onAccessTypeChange={setAccessType}
-                    allowedEmailsText={allowedEmailsText}
-                    onAllowedEmailsTextChange={setAllowedEmailsText}
-                    quizMode={quizMode}
-                    onQuizModeChange={setQuizMode}
-                    newQuizTitle={newQuizTitle}
-                    onTitleChange={setNewQuizTitle}
-                    onCreate={createQuiz}
-                    isPaid={isPaid}
-                    onPaidToggle={() => setIsPaid(!isPaid)}
-                    quizPrice={quizPrice}
-                    onPriceChange={setQuizPrice}
-                />
-            </div>
-        </>
-    );
 };
 
-export default StudioDashboard;
+export default useStudioDashboardController;

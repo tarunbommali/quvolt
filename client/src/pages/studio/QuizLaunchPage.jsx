@@ -1,17 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
-import { scheduleQuiz, startQuizSession as apiStartQuizSession } from '../services/api';
-import Toast from '../components/common/Toast';
-import useToast from '../hooks/useToast';
-import LiveLoading from '../components/organizerLive/LiveLoading';
-import LaunchChooser from '../components/organizerLive/LaunchChooser';
-import { useQuizStore } from '../stores/useQuizStore';
-import { resolveSessionRoute } from '../utils/sessionRouteResolver';
+import { scheduleQuiz, startQuizSession as apiStartQuizSession } from '../../services/api';
+import Toast from '../../components/common/Toast';
+import useToast from '../../hooks/useToast';
+import LiveLoading from '../../components/organizerLive/LiveLoading';
+import LaunchChooser from '../../components/organizerLive/LaunchChooser';
+import { useQuizStore } from '../../stores/useQuizStore';
+import { resolveSessionRoute } from '../../utils/sessionRouteResolver';
 
 const getQuizStatus = (quiz) => String(quiz?.status || '').toLowerCase();
 
-const OrganizerLaunch = () => {
+const QuizLaunchPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
@@ -143,4 +143,4 @@ const OrganizerLaunch = () => {
     );
 };
 
-export default OrganizerLaunch;
+export default QuizLaunchPage;

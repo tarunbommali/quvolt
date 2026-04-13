@@ -147,6 +147,8 @@ export const components = {
         actionWrap: 'order-2 ml-auto sticky bottom-3 flex w-full items-center justify-end gap-2 rounded-xl bg-white/95 p-1.5 shadow-sm md:order-3 md:static md:w-auto md:bg-transparent md:p-0 md:shadow-none dark:bg-gray-800/95',
         searchInput: 'h-9 w-50 rounded-xl border border-gray-300 bg-white px-3 text-sm text-gray-900 outline-none transition-all duration-200 placeholder:text-gray-400 focus:border-indigo-300 focus:shadow-[0_0_0_3px_rgba(99,102,241,0.12)] focus:w-57.5 md:w-65 md:focus:w-75 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500',
         newBtn: 'inline-flex h-9 items-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-medium text-white shadow-sm transition-colors hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600',
+        welcomeText: 'text-sm text-gray-500 dark:text-gray-400',
+        welcomeName: 'font-medium text-gray-700 dark:text-gray-300',
     },
     organizer: {
         loading: 'min-h-screen bg-(--color-dark) flex flex-col items-center justify-center text-slate-400 dark:text-gray-500',
@@ -251,5 +253,10 @@ export const components = {
         canvasEmptyText: 'text-lg font-medium',
         canvasEmptySub: 'text-sm text-slate-400',
         canvasFooter: 'mt-6 text-[10px] tracking-widest uppercase text-slate-400',
+    },
+    home: {
+        page: 'relative overflow-hidden bg-gray-50 dark:bg-gray-900',
+        glowWrap: 'absolute inset-0 -z-10',
+        glowOrb: 'absolute left-1/2 top-[-20%] h-175 w-175 -translate-x-1/2 rounded-full bg-indigo-500/20 blur-3xl',
     },
 };

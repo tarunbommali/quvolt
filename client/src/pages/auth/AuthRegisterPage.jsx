@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, User, AlertCircle, Github, Eye, EyeOff } from 'lucide-react';
-import InputField from '../components/ui/InputField';
-import Button from '../components/ui/Button';
-import { useAuthStore } from '../stores/useAuthStore';
+import InputField from '../../components/ui/InputField';
+import Button from '../../components/ui/Button';
+import { useAuthStore } from '../../stores/useAuthStore';
 
-const Register = () => {
+const AuthRegisterPage = () => {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -243,4 +243,5 @@ const Register = () => {
     );
 };
 
-export default Register;
+export default AuthRegisterPage;
+

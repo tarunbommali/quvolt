@@ -1,17 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
-import api from '../services/api';
-import { startLiveSession } from '../services/api';
-import Toast from '../components/common/Toast';
-import useToast from '../hooks/useToast';
-import LiveLoading from '../components/organizerLive/LiveLoading';
-import LiveLobby from '../components/organizerLive/LiveLobby';
-import { useQuizStore } from '../stores/useQuizStore';
-import { useSocketStore } from '../stores/useSocketStore';
-import { resolveSessionRoute } from '../utils/sessionRouteResolver';
+import api from '../../services/api';
+import { startLiveSession } from '../../services/api';
+import Toast from '../../components/common/Toast';
+import useToast from '../../hooks/useToast';
+import LiveLoading from '../../components/organizerLive/LiveLoading';
+import LiveLobby from '../../components/organizerLive/LiveLobby';
+import { useQuizStore } from '../../stores/useQuizStore';
+import { useSocketStore } from '../../stores/useSocketStore';
+import { resolveSessionRoute } from '../../utils/sessionRouteResolver';
 
-const OrganizerInviteRoom = () => {
+const QuizLobbyPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
@@ -154,4 +154,5 @@ const OrganizerInviteRoom = () => {
     );
 };
 
-export default OrganizerInviteRoom;
+export default QuizLobbyPage;
+

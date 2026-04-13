@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, AlertCircle, Eye, EyeOff } from 'lucide-react';
-import InputField from '../components/ui/InputField';
-import Button from '../components/ui/Button';
-import { useAuthStore } from '../stores/useAuthStore';
+import InputField from '../../components/ui/InputField';
+import Button from '../../components/ui/Button';
+import { useAuthStore } from '../../stores/useAuthStore';
 
-const Login = () => {
+const AuthLoginPage = () => {
     const [email, setEmail] = useState('test@gmail.com');
     const [password, setPassword] = useState('abcd@1234');
     const [showPassword, setShowPassword] = useState(false);
@@ -161,4 +161,5 @@ const Login = () => {
     );
 };
 
-export default Login;
+export default AuthLoginPage;
+

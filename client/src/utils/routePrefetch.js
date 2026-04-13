@@ -1,3 +1,3 @@
-export const prefetchOrganizerEditRoute = () => import('../pages/OrganizerEdit');
-export const prefetchOrganizerLiveRoute = () => import('../pages/OrganizerLive');
-export const prefetchHistoryDetailRoute = () => import('../pages/HistoryDetail');
+export const prefetchOrganizerEditRoute = () => import('../pages/studio/QuizEditorPage');
+export const prefetchOrganizerLiveRoute = () => import('../pages/studio/LiveSessionPage');
+export const prefetchHistoryDetailRoute = () => import('../pages/history/SessionHistoryDetailPage');

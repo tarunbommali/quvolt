@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Hash, AlertCircle, CreditCard, Loader2 } from 'lucide-react';
-import { getPaymentStatus, createPaymentOrder, verifyPayment } from '../services/api';
-import { useAuthStore } from '../stores/useAuthStore';
-import { useQuizStore } from '../stores/useQuizStore';
-import useRazorpay from '../hooks/useRazorpay';
-import Card from '../components/ui/Card';
-import Button from '../components/ui/Button';
-import InputField from '../components/ui/InputField';
-import { textStyles } from '../styles/commonStyles';
+import { getPaymentStatus, createPaymentOrder, verifyPayment } from '../../services/api';
+import { useAuthStore } from '../../stores/useAuthStore';
+import { useQuizStore } from '../../stores/useQuizStore';
+import useRazorpay from '../../hooks/useRazorpay';
+import Card from '../../components/ui/Card';
+import Button from '../../components/ui/Button';
+import InputField from '../../components/ui/InputField';
+import { textStyles } from '../../styles/commonStyles';
 
 const INR_SYMBOL = '\u20B9';
 const LAST_ROOM_KEY = 'qb_last_room_code';
@@ -18,7 +18,7 @@ const sanitizeRoomCode = (value) => String(value || '')
     .replace(/[^A-Z0-9]/g, '')
     .slice(0, 6);
 
-const JoinRoom = () => {
+const JoinSessionPage = () => {
     const [roomCode, setRoomCode] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -260,4 +260,5 @@ const JoinRoom = () => {
     );
 };
 
-export default JoinRoom;
+export default JoinSessionPage;
+

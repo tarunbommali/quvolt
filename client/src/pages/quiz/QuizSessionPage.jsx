@@ -1,15 +1,15 @@
-﻿import { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import api from '../services/api';
-import useQuizTimer from '../hooks/useQuizTimer';
-import WaitingLobby from '../components/quizRoom/WaitingLobby';
-import PlayingScreen from '../components/quizRoom/PlayingScreen';
-import FinishedScreen from '../components/quizRoom/FinishedScreen';
-import Loader from '../components/ui/Loader';
-import { useQuizStore } from '../stores/useQuizStore';
-import { useAuthStore } from '../stores/useAuthStore';
-import { useSocketStore } from '../stores/useSocketStore';
-import ErrorToast from '../components/quizRoom/ErrorToast';
+import api from '../../services/api';
+import useQuizTimer from '../../hooks/useQuizTimer';
+import WaitingLobby from '../../components/quizRoom/WaitingLobby';
+import PlayingScreen from '../../components/quizRoom/PlayingScreen';
+import FinishedScreen from '../../components/quizRoom/FinishedScreen';
+import Loader from '../../components/ui/Loader';
+import { useQuizStore } from '../../stores/useQuizStore';
+import { useAuthStore } from '../../stores/useAuthStore';
+import { useSocketStore } from '../../stores/useSocketStore';
+import ErrorToast from '../../components/quizRoom/ErrorToast';
 
 const hasRenderableQuestionPayload = (question) => {
     if (!question || typeof question !== 'object') return false;
@@ -19,7 +19,7 @@ const hasRenderableQuestionPayload = (question) => {
     return (hasId || hasText) && hasOptions;
 };
 
-const QuizRoom = () => {
+const QuizSessionPage = () => {
     const { roomCode } = useParams();
     const user = useAuthStore((state) => state.user);
     const { connected, connectionState, joinRoom, submitAnswer: emitSubmitAnswer } = useSocketStore();
@@ -36,7 +36,7 @@ const QuizRoom = () => {
                         api.post(`/quiz/join-scheduled/${roomCode}`).catch(() => {});
                     }
                 })
-                .catch(() => { /* silent â€“ quiz may be live-only */ });
+                .catch(() => { /* silent – quiz may be live-only */ });
         }
     }, [roomCode, user]);
 
@@ -177,6 +177,7 @@ const QuizRoom = () => {
     );
 };
 
-export default QuizRoom;
+export default QuizSessionPage;
+
 
 
