@@ -1,200 +1,339 @@
+/* eslint-disable no-unused-vars */
+/* eslint-disable no-restricted-syntax */
 import { Link } from 'react-router-dom';
-import { BarChart3, CheckCircle2, Coins, Radio, Shield, Users, Zap } from 'lucide-react';
+import {
+  BarChart3,
+  CheckCircle2,
+  Coins,
+  Radio,
+  Shield,
+  Users,
+  Zap,
+  Lock,
+  Bolt,
+  TrendingUp,
+} from 'lucide-react';
+import { motion } from 'framer-motion';
 import Container from '../components/layout/Container';
 import Section from '../components/layout/Section';
 import { buttonStyles } from '../styles/buttonStyles';
 import { useAuthStore } from '../stores/useAuthStore';
 
+/* ---------------- ANIMATION VARIANTS ---------------- */
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 30 },
+  visible: { opacity: 1, y: 0 },
+};
+
+const stagger = {
+  visible: {
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+/* ---------------- DATA ---------------- */
+
 const features = [
-    {
-        title: 'Backend-owned lifecycle engine',
-        description: 'Session transitions are enforced server-side across draft, scheduled, waiting, live, completed, and aborted states.',
-        icon: Radio,
-    },
-    {
-        title: 'Realtime orchestration',
-        description: 'Organizer controls, participant submissions, and leaderboard updates run live over Socket.IO with reconnect handling.',
-        icon: Zap,
-    },
-    {
-        title: 'AI quiz generation',
-        description: 'Generate quiz sets with controlled difficulty distribution and save directly into studio workflows.',
-        icon: BarChart3,
-    },
-    {
-        title: 'Paid quizzes + subscriptions',
-        description: 'Support one-time quiz payments and recurring plans with create-order, verify, and webhook-safe flows.',
-        icon: Coins,
-    },
-    {
-        title: 'Host onboarding and payouts',
-        description: 'Host account setup, payout summaries, and revenue breakdowns are available through the payment-service layer.',
-        icon: Shield,
-    },
-    {
-        title: 'Role-aware analytics + history',
-        description: 'Organizer and participant analytics, history views, participant exports, and session stats are built into the core API.',
-        icon: Users,
-    },
+  {
+    title: 'Backend-driven lifecycle',
+    description:
+      'Control every quiz stage with precision — from draft to live to completed.',
+    icon: Radio,
+  },
+  {
+    title: 'Real-time orchestration',
+    description:
+      'Run live sessions with instant sync and seamless leaderboard updates.',
+    icon: Zap,
+  },
+  {
+    title: 'AI-powered quiz creation',
+    description:
+      'Generate quizzes with balanced difficulty in seconds.',
+    icon: BarChart3,
+  },
+  {
+    title: 'Monetization ready',
+    description:
+      'Launch paid quizzes and subscriptions with built-in billing.',
+    icon: Coins,
+  },
+  {
+    title: 'Creator onboarding',
+    description:
+      'Manage creators, track earnings, and automate payouts.',
+    icon: Users,
+  },
+  {
+    title: 'Advanced analytics',
+    description:
+      'Track performance, engagement, and behavior with deep insights.',
+    icon: TrendingUp,
+  },
+];
+
+const trustPoints = [
+  { label: 'Zero-lag real-time engine', icon: Bolt },
+  { label: 'Cheat-resistant assessments', icon: Lock },
+  { label: 'Deep performance analytics', icon: TrendingUp },
+  { label: 'Works across all devices', icon: Shield },
 ];
 
 const steps = [
-    { title: 'Author in Studio', description: 'Create quizzes, add questions, and save full quiz state from organizer tools.' },
-    { title: 'Schedule or launch', description: 'Move sessions through guarded lifecycle transitions based on organizer intent.' },
-    { title: 'Run live in realtime', description: 'Participants join with code while hosts control pacing, pause/resume, and reveals.' },
-    { title: 'Analyze and monetize', description: 'Review analytics/history and manage paid access, subscriptions, and payouts.' },
+  { title: 'Create', description: 'Build quizzes in seconds.' },
+  { title: 'Launch', description: 'Go live or schedule.' },
+  { title: 'Engage', description: 'Run sessions in real-time.' },
+  { title: 'Analyze', description: 'Track performance & monetize.' },
 ];
 
 const plans = [
-    {
-        name: 'Free',
-        price: '₹0/month',
-        description: 'Perfect for educators just getting started.',
-        points: ['25% platform commission', 'Up to 5 free quizzes', 'Unlimited paid quizzes', 'Up to 10k participants'],
-    },
-    {
-        name: 'Creator',
-        price: '₹499/month',
-        description: 'For creators ready to monetize their expertise.',
-        points: ['10% platform commission', 'Up to 15 free quizzes', 'Unlimited paid quizzes', 'Up to 15k participants'],
-        featured: true,
-    },
-    {
-        name: 'Teams',
-        price: '₹999/month',
-        description: 'Built for organizations running high-volume training.',
-        points: ['5% platform commission', 'Up to 25 free quizzes', 'Unlimited paid quizzes', 'Up to 25k participants'],
-    },
+  {
+    name: 'Free',
+    price: '₹0/mo',
+    points: ['25% commission', '5 quizzes', '10k participants'],
+  },
+  {
+    name: 'Creator',
+    price: '₹499/mo',
+    featured: true,
+    points: ['10% commission', '15 quizzes', '15k participants'],
+  },
+  {
+    name: 'Teams',
+    price: '₹999/mo',
+    points: ['5% commission', '25 quizzes', '25k participants'],
+  },
 ];
 
+/* ---------------- REUSABLE COMPONENTS ---------------- */
+
+const FeatureCard = ({ icon: Icon, title, description }) => (
+  <motion.div
+    variants={fadeUp}
+    whileHover={{ y: -8, scale: 1.02 }}
+    className="group bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-white/20 dark:border-gray-700 rounded-2xl p-6 transition-all shadow-sm hover:shadow-xl"
+  >
+    <div className="w-10 h-10 flex items-center justify-center rounded-lg bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 mb-4">
+      <Icon size={20} />
+    </div>
+    <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+      {title}
+    </h3>
+    <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+      {description}
+    </p>
+  </motion.div>
+);
+
+const PricingCard = ({ plan }) => (
+  <motion.div
+    variants={fadeUp}
+    whileHover={{ y: -8 }}
+    className={`rounded-2xl p-6 border transition-all ${
+      plan.featured
+        ? 'border-indigo-500 ring-2 ring-indigo-500/20 shadow-xl'
+        : 'border-gray-200 dark:border-gray-700'
+    } bg-white dark:bg-gray-800`}
+  >
+    {plan.featured && (
+      <span className="text-xs bg-indigo-600 text-white px-2 py-1 rounded-full">
+        Most Popular
+      </span>
+    )}
+
+    <h3 className="text-xl font-bold mt-3">{plan.name}</h3>
+    <p className="text-3xl font-bold mt-2">{plan.price}</p>
+
+    <ul className="mt-4 space-y-2 text-sm">
+      {plan.points.map((p) => (
+        <li key={p} className="flex items-center gap-2">
+          <CheckCircle2 size={14} className="text-indigo-500" />
+          {p}
+        </li>
+      ))}
+    </ul>
+
+    <Link
+      to="/register"
+      className={`${buttonStyles.base} ${
+        plan.featured
+          ? buttonStyles.primary
+          : buttonStyles.secondary
+      } mt-5 w-full justify-center`}
+    >
+      Get Started
+    </Link>
+  </motion.div>
+);
+
+/* ---------------- MAIN COMPONENT ---------------- */
+
 const Home = () => {
-    const user = useAuthStore((state) => state.user);
+  const user = useAuthStore((s) => s.user);
 
-    return (
-        <div className="app-page bg-gray-50 space-y-12 pb-12 dark:bg-gray-900">
-            <Section className="mt-0">
-                <Container>
-                    <div className="max-w-4xl mx-auto text-center space-y-4 py-16">
-                        <h1 className="text-2xl md:text-3xl font-semibold text-gray-900 dark:text-gray-100">
-                            Real-time quizzes that engage and improve performance.
-                        </h1>
-                        <p className="text-sm text-gray-500 max-w-2xl mx-auto dark:text-gray-400">
-                            Quvolt is a real-time quiz platform for live sessions, AI-assisted content creation, secure access control, and actionable analytics — built for educators, teams, and organizations.
-                        </p>
-                        <div className="flex gap-3 justify-center flex-wrap">
-                            <Link to={user ? '/studio' : '/register'} className={`${buttonStyles.base} ${buttonStyles.primary}`}>
-                                {user ? 'Open Studio' : 'Start for free'}
-                            </Link>
-                            <Link to="/join" className={`${buttonStyles.base} ${buttonStyles.secondary}`}>
-                                Join a session
-                            </Link>
-                        </div>
-                    </div>
-                </Container>
-            </Section>
+  return (
+    <div className="relative bg-gray-50 dark:bg-gray-900 overflow-hidden">
 
-            <Section id="features">
-                <Container>
-                    <div className="space-y-4 text-center max-w-3xl mx-auto">
-                        <p className="text-xs font-medium uppercase tracking-wide text-indigo-600 dark:text-indigo-400">Why Quvolt</p>
-                        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Everything you need to teach, engage, and grow.</h2>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                            These capabilities map directly to the implemented services in this repo: client, server, and payment-service.
-                        </p>
-                    </div>
+      {/* BACKGROUND GLOW */}
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute w-[700px] h-[700px] bg-indigo-500/20 blur-3xl rounded-full top-[-20%] left-1/2 -translate-x-1/2" />
+      </div>
 
-                    <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {features.map((feature) => {
-                            const Icon = feature.icon;
-                            return (
-                                <article key={feature.title} className="bg-white border border-gray-200 rounded-2xl p-4 space-y-2 dark:bg-gray-800 dark:border-gray-700">
-                                    <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-300">
-                                        <Icon size={16} />
-                                    </div>
-                                    <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">{feature.title}</h3>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">{feature.description}</p>
-                                </article>
-                            );
-                        })}
-                    </div>
-                </Container>
-            </Section>
+      {/* HERO */}
+      <Section>
+        <Container>
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={stagger}
+            className="text-center py-24 max-w-4xl mx-auto"
+          >
+            <motion.h1
+              variants={fadeUp}
+              className="text-5xl md:text-6xl font-bold tracking-tight"
+            >
+              Real-time quizzes —{' '}
+              <span className="bg-gradient-to-r from-indigo-500 to-blue-500 text-transparent bg-clip-text">
+                fast, fair, scalable
+              </span>
+            </motion.h1>
 
-            <Section id="how-it-works">
-                <Container>
-                    <div className="space-y-4 text-center max-w-3xl mx-auto">
-                        <p className="text-xs font-medium uppercase tracking-wide text-indigo-600 dark:text-indigo-400">How it works</p>
-                        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Up and running in minutes.</h2>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Use the same flow as the live product: create, schedule/launch, run live, then review outcomes.</p>
-                    </div>
+            <motion.p
+              variants={fadeUp}
+              className="mt-6 text-lg text-gray-600 dark:text-gray-300"
+            >
+              Engage thousands of users instantly with zero lag and
+              deep performance insights.
+            </motion.p>
 
-                    <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {steps.map((step, index) => (
-                            <article key={step.title} className="bg-white border border-gray-200 rounded-2xl p-4 space-y-2 dark:bg-gray-800 dark:border-gray-700">
-                                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-indigo-50 text-indigo-700 text-xs font-medium dark:bg-indigo-900/30 dark:text-indigo-300">
-                                    {index + 1}
-                                </span>
-                                <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">{step.title}</h3>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">{step.description}</p>
-                            </article>
-                        ))}
-                    </div>
-                </Container>
-            </Section>
+            <motion.div
+              variants={fadeUp}
+              className="flex justify-center gap-4 mt-8"
+            >
+              <Link
+                to={user ? '/studio' : '/register'}
+                className={`${buttonStyles.base} ${buttonStyles.primary}`}
+              >
+                Start Free
+              </Link>
 
-            <Section id="pricing">
-                <Container>
-                    <div className="space-y-4 text-center max-w-3xl mx-auto">
-                        <p className="text-xs font-medium uppercase tracking-wide text-indigo-600 dark:text-indigo-400">Pricing</p>
-                        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Simple, transparent pricing.</h2>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Plan limits and commission rates match the current billing implementation.</p>
-                    </div>
+              <Link
+                to="/join"
+                className={`${buttonStyles.base} ${buttonStyles.secondary}`}
+              >
+                Join Session
+              </Link>
+            </motion.div>
+          </motion.div>
+        </Container>
+      </Section>
 
-                    <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {plans.map((plan) => (
-                            <article
-                                key={plan.name}
-                                className={`bg-white border rounded-2xl p-4 space-y-3 dark:bg-gray-800 ${plan.featured ? 'border-indigo-400 dark:border-indigo-500' : 'border-gray-200 dark:border-gray-700'}`}
-                            >
-                                <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">{plan.name}</h3>
-                                <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">{plan.price}</p>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">{plan.description}</p>
-                                <ul className="space-y-2">
-                                    {plan.points.map((point) => (
-                                        <li key={point} className="flex items-start gap-2 text-sm text-gray-500 dark:text-gray-400">
-                                            <CheckCircle2 size={14} className="mt-0.5 text-indigo-600 dark:text-indigo-400" />
-                                            <span>{point}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                                <Link to="/register" className={`${buttonStyles.base} ${plan.featured ? buttonStyles.primary : buttonStyles.secondary} w-full`}>
-                                    Choose {plan.name}
-                                </Link>
-                            </article>
-                        ))}
-                    </div>
-                </Container>
-            </Section>
+      {/* TRUST */}
+      <Section>
+        <Container>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+            {trustPoints.map((p) => {
+              const Icon = p.icon;
+              return (
+                <div
+                  key={p.label}
+                  className="flex flex-col items-center gap-2"
+                >
+                  <Icon className="text-indigo-500" />
+                  <span className="text-sm">{p.label}</span>
+                </div>
+              );
+            })}
+          </div>
+        </Container>
+      </Section>
 
-            <Section>
-                <Container>
-                    <div className="bg-white border border-gray-200 rounded-2xl p-6 text-center space-y-3 max-w-4xl mx-auto dark:bg-gray-800 dark:border-gray-700">
-                        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Start teaching, earning, and growing today.</h2>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Launch from Studio, run live sessions, and track analytics and revenue in one connected product.</p>
-                        <div className="flex gap-3 justify-center flex-wrap">
-                            <Link to={user ? '/studio' : '/register'} className={`${buttonStyles.base} ${buttonStyles.primary}`}>
-                                {user ? 'Go to dashboard' : 'Get started free'}
-                            </Link>
-                            <Link to={user ? '/analytics' : '/login'} className={`${buttonStyles.base} ${buttonStyles.secondary}`}>
-                                {user ? 'View analytics' : 'Log in'}
-                            </Link>
-                        </div>
-                    </div>
-                </Container>
-            </Section>
-        </div>
-    );
+      {/* FEATURES */}
+      <Section>
+        <Container>
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            variants={stagger}
+            viewport={{ once: true }}
+            className="grid md:grid-cols-3 gap-6"
+          >
+            {features.map((f) => (
+              <FeatureCard key={f.title} {...f} />
+            ))}
+          </motion.div>
+        </Container>
+      </Section>
+
+      {/* HOW IT WORKS */}
+      <Section>
+        <Container>
+          <motion.div
+            variants={stagger}
+            initial="hidden"
+            whileInView="visible"
+            className="grid md:grid-cols-4 gap-6"
+          >
+            {steps.map((s, i) => (
+              <motion.div
+                key={s.title}
+                variants={fadeUp}
+                className="p-6 bg-white dark:bg-gray-800 rounded-xl text-center"
+              >
+                <div className="text-indigo-600 font-bold text-xl">
+                  {i + 1}
+                </div>
+                <h3 className="mt-2 font-semibold">{s.title}</h3>
+                <p className="text-sm text-gray-500">{s.description}</p>
+              </motion.div>
+            ))}
+          </motion.div>
+        </Container>
+      </Section>
+
+      {/* PRICING */}
+      <Section>
+        <Container>
+          <motion.div
+            variants={stagger}
+            initial="hidden"
+            whileInView="visible"
+            className="grid md:grid-cols-3 gap-6"
+          >
+            {plans.map((plan) => (
+              <PricingCard key={plan.name} plan={plan} />
+            ))}
+          </motion.div>
+        </Container>
+      </Section>
+
+      {/* CTA */}
+      <Section>
+        <Container>
+          <div className="text-center py-16 bg-gradient-to-r from-indigo-600 to-blue-600 rounded-3xl text-white">
+            <h2 className="text-3xl font-bold">
+              Start engaging today
+            </h2>
+            <p className="mt-3 text-indigo-100">
+              Run live quizzes and scale effortlessly.
+            </p>
+
+            <div className="mt-6 flex justify-center gap-4">
+              <Link
+                to={user ? '/studio' : '/register'}
+                className="bg-white text-indigo-600 px-6 py-3 rounded-xl font-semibold"
+              >
+                Get Started
+              </Link>
+            </div>
+          </div>
+        </Container>
+      </Section>
+    </div>
+  );
 };
 
 export default Home;
- 

@@ -2,6 +2,9 @@ export const cx = (...classes) => classes.filter(Boolean).join(' ');
 
 export const theme = {
     surface: 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700',
+    surfaceGlass: 'glass-surface rounded-2xl',
+    surfaceDepth: 'depth-card',
+    accentGlow: 'glow-border',
     panel: 'bg-gray-50 dark:bg-gray-900',
     textPrimary: 'text-gray-900 dark:text-gray-100',
     textSecondary: 'text-gray-600 dark:text-gray-400',

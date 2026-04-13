@@ -20,6 +20,32 @@ const noInlineClassNameSelectors = [
 export default defineConfig([
   globalIgnores(['dist']),
   {
+    files: [
+      '**/*.config.{js,cjs,mjs}',
+      'playwright.config.js',
+      'vite.config.js',
+      'babel.config.cjs',
+      'jest.config.cjs',
+      'e2e/**/*.{js,mjs}',
+    ],
+    languageOptions: {
+      globals: globals.node,
+    },
+  },
+  {
+    files: [
+      'src/test/**/*.{js,jsx}',
+      '**/*.test.{js,jsx}',
+      '**/__tests__/**/*.{js,jsx}',
+    ],
+    languageOptions: {
+      globals: {
+        ...globals.jest,
+        ...globals.node,
+      },
+    },
+  },
+  {
     files: ['**/*.{js,jsx}'],
     extends: [
       js.configs.recommended,

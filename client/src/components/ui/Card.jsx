@@ -1,6 +1,9 @@
+import { cards } from '../../styles/cards';
+import { cx } from '../../styles/theme';
+
 const Card = ({ children, className = '' }) => {
     return (
-        <div className={`surface-card ${className}`.trim()}>
+        <div className={cx('surface-card', cards.base, className)}>
             {children}
         </div>
     );

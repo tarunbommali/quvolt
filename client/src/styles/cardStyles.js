@@ -1,5 +1,5 @@
 export const cardStyles = {
-    base: 'group rounded-2xl border border-gray-200 bg-white shadow-sm transition-all dark:border-gray-700 dark:bg-gray-800',
+    base: 'depth-card group rounded-2xl border border-gray-200 bg-white shadow-sm transition-all dark:border-gray-700 dark:bg-gray-800',
     hover: 'hover:border-gray-300 hover:shadow-md dark:hover:border-gray-500',
     gridPadding: 'p-5',
     listPadding: 'p-4',

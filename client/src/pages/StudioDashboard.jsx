@@ -7,7 +7,7 @@ import {
     updateQuiz as apiUpdateQuiz,
     isTransientApiError,
 } from '../services/api';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion as Motion } from 'framer-motion';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ArrowUpDown, LayoutGrid, List, Plus, SlidersHorizontal } from 'lucide-react';
 import Toast from '../components/common/Toast';
@@ -18,9 +18,11 @@ import { useAuthStore } from '../stores/useAuthStore';
 import { useQuizStore } from '../stores/useQuizStore';
 import ProjectGrid from '../components/organizerDashboard/ProjectGrid';
 import CreateTemplatePanel from '../components/organizerDashboard/CreateTemplatePanel';
+import { LivePulseBadge } from '../components/ui';
 import { layoutStyles } from '../styles/layoutStyles';
 import { components } from '../styles/components';
 import { cx } from '../styles/theme';
+import { motionTokens } from '../design';
 
 const REQUEST_TIMEOUT_MS = 12000;
 
@@ -160,6 +162,11 @@ const StudioDashboard = () => {
         if (sortMode === 'oldest') return sorted.sort(byCreatedOldest);
         return sorted.sort(byActivityLatest);
     }, [filterMode, quizzes, searchQuery, sortMode]);
+
+    const liveSessionCount = useMemo(
+        () => quizzes.filter((quiz) => ['live', 'waiting'].includes(String(quiz?.status || '').toLowerCase())).length,
+        [quizzes],
+    );
 
     const showConfirm = (message, onConfirm) => {
         setConfirmDialog({ message, onConfirm });
@@ -460,7 +467,12 @@ const StudioDashboard = () => {
     };
 
     const controlBar = (
-        <div className={components.studio.controlBar}>
+        <Motion.div
+            initial={motionTokens.fadeUp.hidden}
+            animate={motionTokens.fadeUp.visible}
+            transition={motionTokens.transition.smooth}
+            className={components.studio.controlBar}
+        >
             <div className={components.studio.controlInner}>
                 <div className={components.studio.headingWrap}>
                     {currentSubject && (
@@ -472,6 +484,7 @@ const StudioDashboard = () => {
                     <p className={components.studio.subtitle}>
                         {currentSubject ? 'Manage quizzes in this folder' : 'Manage your quizzes'}
                     </p>
+                    <LivePulseBadge count={liveSessionCount} label="sessions live" />
                 </div>
 
                 <div className={components.studio.centerControlsWrap}>
@@ -555,7 +568,7 @@ const StudioDashboard = () => {
                     </button>
                 </div>
             </div>
-        </div>
+        </Motion.div>
     );
 
     return (

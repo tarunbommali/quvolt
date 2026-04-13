@@ -68,7 +68,6 @@ const RouteGuard = ({ children }) => {
             }
         };
 
-        setReady(false);
         loadQuiz();
 
         return () => {

@@ -111,4 +111,7 @@ npm run test:integration
 - client README: client/README.md
 - server README: server/README.md
 - payment README: payment-service/README.md
-- architecture docs: docs/
+- documentation index: docs/README.md
+- architecture docs: docs/QUIZBOLT_HLD.md and docs/QUIZBOLT_LLD.md
+- API surface: docs/QUIZBOLT_API_LIST.md
+- release roadmap: docs/ROADMAP.md

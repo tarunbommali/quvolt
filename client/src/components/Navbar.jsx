@@ -1,8 +1,8 @@
 import { Link, NavLink } from 'react-router-dom';
-import { LogOut, Zap, Moon, Sun } from 'lucide-react';
+import { LogOut, Zap } from 'lucide-react';
 import { useAuthStore } from '../stores/useAuthStore';
-import { useUIStore } from '../stores/useUIStore';
 import { useSocketStore } from '../stores/useSocketStore';
+import ThemeToggle from './ui/ThemeToggle';
 import { navbar } from '../styles/navbar';
 import { cx } from '../styles/theme';
 
@@ -16,8 +16,6 @@ const STATUS_STYLES = {
 const Navbar = () => {
     const user = useAuthStore((state) => state.user);
     const logout = useAuthStore((state) => state.logout);
-    const theme = useUIStore((state) => state.theme);
-    const toggleTheme = useUIStore((state) => state.toggleTheme);
     const connectionState = useSocketStore((state) => state.connectionState);
     const isOrganizer = user?.role === 'organizer' || user?.role === 'admin';
     const studioHref = isOrganizer ? '/studio' : '/join';
@@ -78,15 +76,7 @@ const Navbar = () => {
                         LIVE SYNC
                     </span>
 
-                    <button
-                        type="button"
-                        onClick={toggleTheme}
-                        className={navbar.iconButton}
-                        title="Toggle light/dark mode"
-                        aria-label="Toggle light/dark mode"
-                    >
-                        {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-                    </button>
+                    <ThemeToggle className={navbar.iconButton} />
 
                     <div className={navbar.ctaGroup}>
                         <Link to={primaryAction.to} className={navbar.primaryButton}>

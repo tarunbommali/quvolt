@@ -1,6 +1,8 @@
+import { cx } from '../../styles/theme';
+
 const STATUS_STYLES = {
-    live: 'bg-green-100 text-green-700 animate-pulse',
-    ongoing: 'bg-green-100 text-green-700 animate-pulse',
+    live: 'status-live-pill',
+    ongoing: 'status-live-pill',
     upcoming: 'bg-violet-100 text-violet-700',
     waiting: 'bg-indigo-100 text-indigo-700',
     aborted: 'bg-red-100 text-red-700',
@@ -32,7 +34,11 @@ const StatusBadge = ({ status, label, className = '' }) => {
     const text = label || STATUS_LABELS[normalized] || STATUS_LABELS.default;
 
     return (
-        <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest ${tone} ${className}`.trim()}>
+        <span className={cx(
+            'inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest',
+            tone,
+            className,
+        )}>
             {text}
         </span>
     );

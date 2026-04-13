@@ -1,6 +1,6 @@
 export const buttonStyles = {
-    base: 'inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2',
-    primary: 'bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600',
+    base: 'btn-ripple-host relative inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-medium transition-[transform,box-shadow,background-color,border-color,color] duration-200 transform-gpu disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 active:scale-[0.985]',
+    primary: 'bg-indigo-600 text-white shadow-[0_14px_32px_-16px_rgba(79,70,229,0.7)] hover:bg-indigo-700 hover:shadow-[0_18px_36px_-16px_rgba(79,70,229,0.82)] dark:bg-indigo-500 dark:hover:bg-indigo-600',
     secondary: 'border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700',
     danger: 'border border-red-100 bg-red-50 text-red-600 hover:bg-red-100 dark:border-red-900 dark:bg-red-900/40 dark:text-red-300 dark:hover:bg-red-900/60',
     ghost: 'bg-transparent text-slate-600 hover:bg-gray-100 hover:text-slate-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-gray-100',
@@ -8,6 +8,7 @@ export const buttonStyles = {
     slatePrimary: 'bg-gray-900 text-white hover:bg-black dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200',
     success: 'bg-green-600 text-white hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600',
     premium: 'btn-premium',
+    rippleDot: 'btn-ripple-dot',
     sizeSm: 'px-3 py-1.5 text-sm',
     sizeMd: 'px-4 py-2 text-sm',
     sizeLg: 'px-5 py-2.5 text-base',

@@ -2,8 +2,10 @@ import { useState, useEffect, useMemo } from 'react';
 import { Play, Zap, CalendarClock, Clock, Copy, Check } from 'lucide-react';
 import { motion as Motion } from 'framer-motion';
 import SubHeader from '../layout/SubHeader';
+import { LivePulseBadge } from '../ui';
 import { buttonStyles } from '../../styles/buttonStyles';
 import ErrorState from '../common/ErrorState';
+import { motionTokens } from '../../design';
 
 // Formats ms remaining into HH:MM:SS
 const formatCountdown = (ms) => {
@@ -110,15 +112,19 @@ const LiveLobby = ({ activeQuiz, joinCode, participants, startQuizBroadcast, sho
                     </div>
                 )}
 
-                <div className="flex items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white px-5 py-4">
+                <Motion.div
+                    initial={motionTokens.fadeUp.hidden}
+                    animate={motionTokens.fadeUp.visible}
+                    transition={motionTokens.transition.smooth}
+                    className="flex items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white px-5 py-4"
+                >
                     <div className="space-y-2">
                         <div className="space-y-1">
                             <p className="text-xs font-bold text-gray-500">{isScheduled ? 'Permanent code' : 'Live session code'}</p>
                             <p className="text-xl font-black tracking-widest text-gray-900">{displayedCode}</p>
                         </div>
-                        <div className="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-indigo-700">
-                            <span className="h-2 w-2 rounded-full bg-indigo-600" />
-                            Connected: {participants.length}
+                        <div>
+                            <LivePulseBadge count={participants.length} label="users connected" />
                         </div>
                     </div>
                     <button
@@ -128,7 +134,7 @@ const LiveLobby = ({ activeQuiz, joinCode, participants, startQuizBroadcast, sho
                     >
                         {copiedCode ? 'Copied' : 'Copy Code'}
                     </button>
-                </div>
+                </Motion.div>
 
                 <div className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-white px-5 py-4 md:flex-row md:items-center md:justify-between">
                     <div className="space-y-1">
@@ -174,7 +180,12 @@ const LiveLobby = ({ activeQuiz, joinCode, participants, startQuizBroadcast, sho
                     </div>
                 </div>
 
-                <div className="rounded-xl border border-gray-200 bg-white p-4">
+                <Motion.div
+                    initial={motionTokens.fadeUp.hidden}
+                    animate={motionTokens.fadeUp.visible}
+                    transition={motionTokens.transition.smooth}
+                    className="rounded-xl border border-gray-200 bg-white p-4"
+                >
                     <div className="mb-3 flex items-center justify-between gap-3">
                         <div>
                             <h3 className="text-xs font-bold text-gray-500">Participants</h3>
@@ -186,8 +197,9 @@ const LiveLobby = ({ activeQuiz, joinCode, participants, startQuizBroadcast, sho
                     <div className="max-h-64 space-y-2 overflow-y-auto pr-1 custom-scrollbar">
                         {participants.map((p, i) => (
                             <Motion.div
-                                initial={{ x: -8, opacity: 0 }}
-                                animate={{ x: 0, opacity: 1 }}
+                                initial={motionTokens.fadeUp.hidden}
+                                animate={motionTokens.fadeUp.visible}
+                                transition={{ ...motionTokens.transition.snappy, delay: i * 0.03 }}
                                 key={p._id || i}
                                 className="flex items-center gap-2 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-800"
                             >
@@ -202,7 +214,7 @@ const LiveLobby = ({ activeQuiz, joinCode, participants, startQuizBroadcast, sho
                             </div>
                         )}
                     </div>
-                </div>
+                </Motion.div>
             </section>
         </div>
     );

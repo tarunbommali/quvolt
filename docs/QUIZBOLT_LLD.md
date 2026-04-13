@@ -2244,8 +2244,8 @@ GET    /payment/revenue/summary      -> Revenue reporting
 ## 20. Links to Design Documents
 
 - [HLD](QUIZBOLT_HLD.md) - High-level architecture with C4 model and enterprise patterns
-- [Combined Index](QUIZBOLT_HLD_LLD.md) - Quick reference to HLD and LLD
-- [Future Roadmap](../future.md) - 10 advanced features with phase plan
+- [Documentation Index](README.md) - Canonical entry point for product and engineering docs
+- [Roadmap](ROADMAP.md) - Prioritized delivery roadmap
 
 ### 3.2 Payment Verification Module
 Files:

@@ -8,6 +8,7 @@ import { useAuthStore } from './stores/useAuthStore';
 import { useUIStore } from './stores/useUIStore';
 import { useQuizStore } from './stores/useQuizStore';
 import { useSocketStore } from './stores/useSocketStore';
+import { components } from './styles/components';
 
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
@@ -22,7 +23,6 @@ const History = lazy(() => import('./pages/History'));
 const HistoryDetail = lazy(() => import('./pages/HistoryDetail'));
 const QuizResults = lazy(() => import('./pages/QuizResults'));
 const Profile = lazy(() => import('./pages/Profile'));
-const ProfileEdit = lazy(() => import('./pages/ProfileEdit'));
 const Billing = lazy(() => import('./pages/Billing'));
 const Analytics = lazy(() => import('./pages/Analytics'));
 const Home = lazy(() => import('./pages/Home'));
@@ -86,9 +86,9 @@ function App() {
     <ErrorBoundary>
       <Router>
         <AppBootstrap />
-        <div className="app-shell">
+        <div className={components.appShell}>
           <Navbar />
-          <main className="app-main">
+          <main className={components.appMain}>
             <Suspense fallback={<LoadingScreen />}>
               <Routes>
                 <Route path="/" element={<Home />} />
@@ -108,8 +108,8 @@ function App() {
                 <Route path="/histroy/template_id/:quizid" element={<ProtectedRoute><HistoryDetail /></ProtectedRoute>} />
                 <Route path="/history/template_id/:quizid" element={<ProtectedRoute><HistoryDetail /></ProtectedRoute>} />
                 <Route path="/history/:id" element={<ProtectedRoute><HistoryDetail /></ProtectedRoute>} />
-                <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-                <Route path="/profile/edit" element={<ProtectedRoute><ProfileEdit /></ProtectedRoute>} />
+                <Route path="/profile" element={<ProtectedRoute><Profile initialMode="view" /></ProtectedRoute>} />
+                <Route path="/profile/edit" element={<ProtectedRoute><Profile initialMode="edit" /></ProtectedRoute>} />
                 <Route path="/billing" element={<ProtectedRoute role="organizer"><Billing /></ProtectedRoute>} />
                 <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />

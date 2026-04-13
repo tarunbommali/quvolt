@@ -1,8 +1,11 @@
 import { Zap, Pause, Play, ChevronRight, Timer, Users, Trophy, Activity } from 'lucide-react';
+import { motion as Motion } from 'framer-motion';
 import AnswerDistributionCard from '../quizRoom/AnswerDistributionCard';
 import SubHeader from '../layout/SubHeader';
+import { LivePulseBadge } from '../ui';
 import { buttonStyles } from '../../styles/buttonStyles';
 import ErrorState from '../common/ErrorState';
+import { motionTokens } from '../../design';
 
 const LiveView = ({ activeQuiz, joinCode, currentQuestion, timeLeft, answerStats, fastestUser, participants, leaderboard, isPaused, realtimeError, onPause, onResume, onNext, onAbort }) => {
     const isManual = activeQuiz?.mode === 'teaching' || activeQuiz?.mode === 'tutor';
@@ -76,18 +79,36 @@ const LiveView = ({ activeQuiz, joinCode, currentQuestion, timeLeft, answerStats
             />
 
             <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                <div className="rounded-xl border border-gray-200 bg-white px-4 py-3">
+                <Motion.div
+                    initial={motionTokens.fadeUp.hidden}
+                    animate={motionTokens.fadeUp.visible}
+                    transition={motionTokens.transition.smooth}
+                    className="rounded-xl border border-gray-200 bg-white px-4 py-3"
+                >
                     <p className="text-[11px] font-bold text-gray-500">Session code</p>
                     <p className="mt-1 text-sm font-black tracking-wider text-gray-900">{effectiveJoinCode}</p>
-                </div>
-                <div className="rounded-xl border border-gray-200 bg-white px-4 py-3">
+                </Motion.div>
+                <Motion.div
+                    initial={motionTokens.fadeUp.hidden}
+                    animate={motionTokens.fadeUp.visible}
+                    transition={motionTokens.transition.smooth}
+                    className="rounded-xl border border-gray-200 bg-white px-4 py-3"
+                >
                     <p className="text-[11px] font-bold text-gray-500">Mode</p>
                     <p className="mt-1 text-sm font-black tracking-wider text-gray-900">{activeQuiz?.mode || 'auto'}</p>
-                </div>
-                <div className="rounded-xl border border-gray-200 bg-white px-4 py-3">
+                </Motion.div>
+                <Motion.div
+                    initial={motionTokens.fadeUp.hidden}
+                    animate={motionTokens.fadeUp.visible}
+                    transition={motionTokens.transition.smooth}
+                    className="rounded-xl border border-gray-200 bg-white px-4 py-3"
+                >
                     <p className="text-[11px] font-bold text-gray-500">Participants</p>
                     <p className="mt-1 text-sm font-black tracking-wider text-gray-900">{participants.length}</p>
-                </div>
+                    <div className="mt-2">
+                        <LivePulseBadge count={participants.length} label="users live" />
+                    </div>
+                </Motion.div>
             </section>
 
             {realtimeError ? (
@@ -143,7 +164,12 @@ const LiveView = ({ activeQuiz, joinCode, currentQuestion, timeLeft, answerStats
                     />
                 </div>
 
-                <div className="rounded-xl border border-gray-200 bg-white p-4">
+                <Motion.div
+                    initial={motionTokens.fadeUp.hidden}
+                    animate={motionTokens.fadeUp.visible}
+                    transition={motionTokens.transition.smooth}
+                    className="rounded-xl border border-gray-200 bg-white p-4"
+                >
                     <div className="mb-3 flex items-center justify-between">
                         <h3 className="inline-flex items-center gap-1 text-xs font-bold text-gray-500">
                             <Trophy size={13} /> Live leaderboard
@@ -155,10 +181,13 @@ const LiveView = ({ activeQuiz, joinCode, currentQuestion, timeLeft, answerStats
 
                     <div className="space-y-2">
                         {leaderboard.map((player, i) => (
-                            <div
+                            <Motion.div
                                 key={player.name || i}
                                 className="flex items-center justify-between rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 animate-in slide-in-from-right"
                                 style={{ animationDelay: `${i * 40}ms` }}
+                                initial={motionTokens.fadeIn.hidden}
+                                animate={motionTokens.fadeIn.visible}
+                                transition={{ ...motionTokens.transition.snappy, delay: i * 0.03 }}
                             >
                                 <div className="flex items-center gap-2 min-w-0">
                                     <span className="text-xs font-black text-slate-400">#{i + 1}</span>
@@ -168,7 +197,7 @@ const LiveView = ({ activeQuiz, joinCode, currentQuestion, timeLeft, answerStats
                                     <p className="text-sm font-black text-indigo-600 leading-none">{player.score}</p>
                                     <p className="text-[11px] font-semibold text-slate-400">{player.time?.toFixed?.(1) || 0}s</p>
                                 </div>
-                            </div>
+                            </Motion.div>
                         ))}
 
                         {leaderboard.length === 0 && (
@@ -177,7 +206,7 @@ const LiveView = ({ activeQuiz, joinCode, currentQuestion, timeLeft, answerStats
                             </p>
                         )}
                     </div>
-                </div>
+                </Motion.div>
             </div>
         </div>
     );
