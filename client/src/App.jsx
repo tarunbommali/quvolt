@@ -28,6 +28,7 @@ const AnalyticsDashboardPage = lazy(() => import('./pages/analytics/AnalyticsDas
 const PublicLandingPage = lazy(() => import('./pages/public/PublicLandingPage'));
 const NotFound = lazy(() => import('./components/errors/NotFound'));
 import LoadingScreen from './components/common/LoadingScreen';
+import GlobalCommandPalette from './components/common/GlobalCommandPalette';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import AuthRoute from './components/auth/AuthRoute';
 import RouteGuard from './components/RouteGuard';
@@ -87,6 +88,7 @@ function App() {
       <Router>
         <AppBootstrap />
         <div className={components.appShell}>
+          <GlobalCommandPalette />
           <Navbar />
           <main className={components.appMain}>
             <Suspense fallback={<LoadingScreen />}>

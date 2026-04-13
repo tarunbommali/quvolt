@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, AlertCircle, Eye, EyeOff, Loader2 } from 'lucide-react';
 import InputField from '../../components/ui/InputField';
 import Button from '../../components/ui/Button';
 import { useAuthStore } from '../../stores/useAuthStore';
@@ -93,9 +93,15 @@ const AuthLoginPage = () => {
                         type="submit"
                         variant="primary"
                         disabled={loading}
-                        className="w-full uppercase tracking-widest"
+                        aria-busy={loading}
+                        className="w-full flex items-center justify-center gap-2"
                     >
-                        {loading ? 'SIGNING IN...' : 'SIGN IN'}
+                        {loading ? (
+                            <>
+                                <Loader2 size={16} className="animate-spin" />
+                                <span>Signing in...</span>
+                            </>
+                        ) : <span className="uppercase tracking-widest">SIGN IN</span>}
                     </Button>
                 </form>
 

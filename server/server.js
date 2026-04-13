@@ -26,6 +26,8 @@ const {
     socketSessionDropsTotal,
 } = require('./observability/metrics');
 
+const httpServerEnabled = String(process.env.HTTP_SERVER_ENABLED || 'true').toLowerCase() === 'true';
+
 // Routes
 const authRoutes = require('./routes/authRoutes');
 const quizRoutes = require('./routes/quizRoutes');
@@ -231,9 +233,16 @@ const bootstrap = async () => {
         });
     });
 
-    server.listen(config.port, () =>
-        logger.info(`Server started`, { port: config.port, environment: config.nodeEnv })
-    );
+    if (httpServerEnabled) {
+        server.listen(config.port, () =>
+            logger.info(`Server started`, { port: config.port, environment: config.nodeEnv })
+        );
+    } else {
+        logger.info('Quiz worker mode started (HTTP server disabled)', {
+            environment: config.nodeEnv,
+            subscriptionJobsEnabled: String(process.env.SUBSCRIPTION_JOBS_ENABLED || 'false').toLowerCase() === 'true',
+        });
+    }
 };
 
 bootstrap().catch((err) => {
@@ -244,6 +253,12 @@ bootstrap().catch((err) => {
 // ── Graceful Shutdown ───────────────────────────────────────────────────────
 const shutdown = (signal) => {
     logger.info(`${signal} received, shutting down gracefully`);
+
+    if (!httpServerEnabled) {
+        process.exit(0);
+        return;
+    }
+
     server.close(async () => {
         logger.info('HTTP server closed');
         process.exit(0);

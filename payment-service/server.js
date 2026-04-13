@@ -10,6 +10,8 @@ const { initSubscriptionJobs } = require('./jobs/subscriptionExpiryJob');
 const { initFailedJobWorker } = require('./jobs/failedJobWorker');
 const FailedJob = require('./models/FailedJob');
 
+const httpServerEnabled = String(process.env.HTTP_SERVER_ENABLED || 'true').toLowerCase() === 'true';
+
 const app = express();
 
 // Connect to database
@@ -178,10 +180,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-const server = app.listen(config.port, () => {
-  logger.info(`Payment service running on port ${config.port}`);
-
-  // In clustered deployments, only enable this on a designated instance.
+const bootWorkers = () => {
   if (String(process.env.SUBSCRIPTION_JOBS_ENABLED || 'false').toLowerCase() === 'true') {
     initSubscriptionJobs();
     logger.info('Subscription jobs enabled');
@@ -192,16 +191,29 @@ const server = app.listen(config.port, () => {
   if (String(process.env.FAILED_JOB_WORKER_ENABLED || 'true').toLowerCase() === 'true') {
     initFailedJobWorker();
     logger.info('Failed job retry worker enabled');
+  } else {
+    logger.info('Failed job retry worker disabled');
   }
-});
+};
+
+let server = null;
+if (httpServerEnabled) {
+  server = app.listen(config.port, () => {
+    logger.info(`Payment service running on port ${config.port}`);
+    bootWorkers();
+  });
+} else {
+  logger.info('Payment worker mode started (HTTP server disabled)', {
+    environment: config.nodeEnv,
+  });
+  bootWorkers();
+}
 
 // ---- Graceful Shutdown ----
 const gracefulShutdown = (signal) => {
   logger.info(`${signal} received, shutting down gracefully`);
 
-  server.close(async () => {
-    logger.info('HTTP server closed');
-
+  const closeDbAndExit = async () => {
     try {
       await mongoose.connection.close();
       logger.info('Database connection closed');
@@ -210,6 +222,16 @@ const gracefulShutdown = (signal) => {
     }
 
     process.exit(0);
+  };
+
+  if (!server) {
+    closeDbAndExit();
+    return;
+  }
+
+  server.close(async () => {
+    logger.info('HTTP server closed');
+    await closeDbAndExit();
   });
 
   setTimeout(() => {

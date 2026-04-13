@@ -8,6 +8,7 @@ import {
 } from '../services/api';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { prefetchOrganizerEditRoute, prefetchOrganizerLiveRoute } from '../utils/routePrefetch';
+import { getSubscriptionEntitlements } from '../utils/subscriptionEntitlements';
 import { useAuthStore } from '../stores/useAuthStore';
 import { useQuizStore } from '../stores/useQuizStore';
 import useToast from './useToast';
@@ -113,6 +114,11 @@ const useStudioDashboardController = () => {
     }, []);
 
     const effectiveViewMode = isMobileView ? 'list' : viewMode;
+    const subscriptionEntitlements = useMemo(() => getSubscriptionEntitlements(user), [user]);
+    const quizTemplateCount = useMemo(
+        () => quizzes.filter((quiz) => quiz.type === 'quiz').length,
+        [quizzes],
+    );
 
     const visibleQuizzes = useMemo(() => {
         const toTimestamp = (value) => {
@@ -321,6 +327,23 @@ const useStudioDashboardController = () => {
             return;
         }
 
+        if (quizType === 'quiz' && quizTemplateCount >= subscriptionEntitlements.maxQuizTemplates) {
+            showToast(
+                `You have reached your ${subscriptionEntitlements.plan} plan limit of ${subscriptionEntitlements.maxQuizTemplates} quizzes. Upgrade from Billing to create more.`,
+            );
+            return;
+        }
+
+        if (accessType === 'private' && !subscriptionEntitlements.canUsePrivateHosting) {
+            showToast('Private session hosting is available on Creator and Teams plans. Upgrade from Billing to continue.');
+            return;
+        }
+
+        if (quizType === 'quiz' && isPaid && !subscriptionEntitlements.canCreatePaidQuiz) {
+            showToast('Paid quiz creation is available on Creator and Teams plans. Upgrade from Billing to continue.');
+            return;
+        }
+
         const title = newQuizTitle.trim();
         const tempId = `temp-${Date.now()}`;
         const now = new Date().toISOString();
@@ -384,7 +407,7 @@ const useStudioDashboardController = () => {
                     : 'Failed to create template');
             showToast(message);
         }
-    }, [newQuizTitle, quizType, quizMode, accessType, allowedEmailsText, isPaid, quizPrice, quizzes, currentSubject, parseAllowedEmails]);
+    }, [newQuizTitle, quizType, quizMode, accessType, allowedEmailsText, isPaid, quizPrice, quizzes, currentSubject, parseAllowedEmails, showToast, quizTemplateCount, subscriptionEntitlements]);
 
     const cloneTemplate = useCallback(async (source) => {
         if (!source) {
@@ -507,6 +530,22 @@ const useStudioDashboardController = () => {
         });
     }, [onOpenSubject]);
 
+    const handleAccessTypeChange = useCallback((nextAccessType) => {
+        if (nextAccessType === 'private' && !subscriptionEntitlements.canUsePrivateHosting) {
+            showToast('Private session hosting is available on Creator and Teams plans. Upgrade from Billing to continue.');
+            return;
+        }
+        setAccessType(nextAccessType);
+    }, [showToast, subscriptionEntitlements]);
+
+    const handlePaidToggle = useCallback(() => {
+        if (!subscriptionEntitlements.canCreatePaidQuiz) {
+            showToast('Paid quiz creation is available on Creator and Teams plans. Upgrade from Billing to continue.');
+            return;
+        }
+        setIsPaid((previous) => !previous);
+    }, [showToast, subscriptionEntitlements]);
+
     const handleToggleCreate = useCallback(() => {
         setShowCreate((previous) => !previous);
     }, []);
@@ -529,7 +568,7 @@ const useStudioDashboardController = () => {
         quizType,
         setQuizType,
         accessType,
-        setAccessType,
+        setAccessType: handleAccessTypeChange,
         allowedEmailsText,
         setAllowedEmailsText,
         quizMode,
@@ -544,6 +583,7 @@ const useStudioDashboardController = () => {
         setIsPaid,
         quizPrice,
         setQuizPrice,
+        handlePaidToggle,
         cloning,
         viewMode,
         effectiveViewMode,
@@ -554,6 +594,8 @@ const useStudioDashboardController = () => {
         searchQuery,
         setSearchQuery,
         isMobileView,
+        subscriptionEntitlements,
+        quizTemplateCount,
         authLoading,
         isLoading: authLoading || isLoadingSubject || isLoadingQuizzes,
         user,

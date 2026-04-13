@@ -8,6 +8,7 @@ const { generateCode } = require('../utils/codeGenerator');
 const logger = require('../utils/logger');
 const quizService = require('../services/quiz.service');
 const { SESSION_STATUS, assertTransition, canTransition, normalizeSessionStatus } = require('../utils/sessionStateMachine');
+const { resolveHostSubscriptionEntitlements } = require('../utils/subscriptionEntitlements');
 
 const ALLOWED_QUIZ_CATEGORIES = ['regular', 'internal', 'external', 'subject-syllabus', 'hackathon', 'interview'];
 
@@ -45,9 +46,40 @@ const getManagedQuizOrError = async (req, id) => {
 const createQuiz = async (req, res) => {
     try {
         const { title, type, quizCategory, parentId, isPaid, price, mode, accessType, allowedEmails } = req.body;
+        const normalizedType = type || 'quiz';
+        const normalizedAccessType = accessType || 'public';
 
         if (!title || !title.trim()) {
             return res.status(400).json({ message: 'Title is required' });
+        }
+
+        if (req.user.role !== 'admin') {
+            const entitlements = await resolveHostSubscriptionEntitlements(req.user._id);
+
+            if (normalizedType === 'quiz') {
+                const quizCount = await Quiz.countDocuments({
+                    organizerId: req.user._id,
+                    type: 'quiz',
+                });
+
+                if (quizCount >= entitlements.maxQuizTemplates) {
+                    return res.status(403).json({
+                        message: `Your ${entitlements.plan} plan allows up to ${entitlements.maxQuizTemplates} quizzes. Upgrade your subscription to create more.`,
+                    });
+                }
+            }
+
+            if (normalizedAccessType === 'private' && !entitlements.canUsePrivateHosting) {
+                return res.status(403).json({
+                    message: 'Private session hosting is available on Creator and Teams plans. Upgrade your subscription to continue.',
+                });
+            }
+
+            if (normalizedType === 'quiz' && Boolean(isPaid) && !entitlements.canCreatePaidQuiz) {
+                return res.status(403).json({
+                    message: 'Paid quiz creation is available on Creator and Teams plans. Upgrade your subscription to continue.',
+                });
+            }
         }
 
         let quiz;
@@ -64,13 +96,13 @@ const createQuiz = async (req, res) => {
                     title: title.trim(),
                     organizerId: req.user._id,
                     roomCode,
-                    type: type || 'quiz',
-                    quizCategory: (type || 'quiz') === 'quiz'
+                    type: normalizedType,
+                    quizCategory: normalizedType === 'quiz'
                         ? (ALLOWED_QUIZ_CATEGORIES.includes(quizCategory) ? quizCategory : 'regular')
                         : null,
                     parentId: parentId || null,
                     mode: mode === 'teaching' ? 'tutor' : (mode || 'auto'),
-                    accessType: accessType || 'public',
+                    accessType: normalizedAccessType,
                     allowedEmails: Array.isArray(allowedEmails)
                         ? allowedEmails.map((email) => String(email || '').trim().toLowerCase()).filter(Boolean)
                         : [],
@@ -423,6 +455,15 @@ const updateQuiz = async (req, res) => {
         const { id } = req.params;
         const { title, status, shuffleQuestions, quizCategory, mode, accessType, allowedEmails } = req.body;
         const updateData = {};
+
+        if (accessType === 'private' && req.user.role !== 'admin') {
+            const entitlements = await resolveHostSubscriptionEntitlements(req.user._id);
+            if (!entitlements.canUsePrivateHosting) {
+                return res.status(403).json({
+                    message: 'Private session hosting is available on Creator and Teams plans. Upgrade your subscription to continue.',
+                });
+            }
+        }
 
         if (title !== undefined) updateData.title = title;
         if (status !== undefined) updateData.status = status;

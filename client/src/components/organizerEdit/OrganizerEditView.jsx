@@ -34,6 +34,8 @@ const OrganizerEditView = ({ editor }) => {
         handleImportSlides,
         handleAIGenerate,
         handleAISave,
+        setImportDialogOpen,
+        handleOpenAIDialog,
         setActiveSlideByIndex,
         addSlide,
         navigate,
@@ -50,7 +52,7 @@ const OrganizerEditView = ({ editor }) => {
                         isSaving={isSaving}
                         onBack={() => navigate('/studio')}
                         onOpenImport={() => setImportDialogOpen(true)}
-                        onOpenAI={() => setAIDialogOpen(true)}
+                        onOpenAI={handleOpenAIDialog}
                         onOpenResults={() => navigate(`/results/${activeQuiz._id}`, { state: { quiz: activeQuiz } })}
                         onSave={() => persistFullState()}
                         onLaunch={() => navigate(`/launch/${activeQuiz._id}`, { state: { quiz: activeQuiz } })}

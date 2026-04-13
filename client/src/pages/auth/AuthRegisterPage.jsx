@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, User, AlertCircle, Github, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, User, AlertCircle, Github, Eye, EyeOff, Loader2 } from 'lucide-react';
 import InputField from '../../components/ui/InputField';
 import Button from '../../components/ui/Button';
 import { useAuthStore } from '../../stores/useAuthStore';
@@ -195,9 +195,15 @@ const AuthRegisterPage = () => {
                         type="submit"
                         variant="primary"
                         disabled={loading}
-                        className="w-full uppercase tracking-widest mt-2"
+                        aria-busy={loading}
+                        className="w-full mt-2 flex items-center justify-center gap-2"
                     >
-                        {loading ? 'CREATING ACCOUNT...' : 'CREATE ACCOUNT'}
+                        {loading ? (
+                            <>
+                                <Loader2 size={16} className="animate-spin" />
+                                <span>Creating account...</span>
+                            </>
+                        ) : <span className="uppercase tracking-widest">CREATE ACCOUNT</span>}
                     </Button>
                 </form>
 

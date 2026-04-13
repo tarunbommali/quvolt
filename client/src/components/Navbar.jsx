@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
-import { LogOut, Menu, X } from 'lucide-react';
+import { ChevronDown, LogOut, Menu, X } from 'lucide-react';
 import { AnimatePresence, motion as Motion } from 'framer-motion';
 import { useAuthStore } from '../stores/useAuthStore';
 import { useSocketStore } from '../stores/useSocketStore';
@@ -46,8 +46,17 @@ const Navbar = () => {
     const logout = useAuthStore((state) => state.logout);
     const connectionState = useSocketStore((state) => state.connectionState);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const isOrganizer = user?.role === 'organizer' || user?.role === 'admin';
-    const studioHref = isOrganizer ? '/studio' : '/join';
+    const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+    const profileMenuRef = useRef(null);
+    const role = user?.role || 'guest';
+    const isHost = role === 'organizer' || role === 'admin';
+    const isParticipant = Boolean(user) && !isHost;
+
+    const primaryCta = isHost
+        ? { label: 'Open Studio', to: '/studio' }
+        : isParticipant
+            ? { label: 'Join Session', to: '/join' }
+            : { label: 'Get Started', to: '/register' };
     const initials = user?.name
         ? user.name
             .split(' ')
@@ -57,26 +66,40 @@ const Navbar = () => {
             .toUpperCase()
         : 'U';
 
-    const navItems = user
+    const navItems = isHost
         ? [
             { label: 'Home', to: '/', end: true },
-            { label: isOrganizer ? 'Studio' : 'Join', to: studioHref },
+            { label: 'Studio', to: '/studio' },
             { label: 'Analytics', to: '/analytics' },
             { label: 'History', to: '/history' },
+        ]
+        : isParticipant
+            ? [
+                { label: 'Home', to: '/', end: true },
+                { label: 'Join', to: '/join' },
+                { label: 'Analytics', to: '/analytics' },
+                { label: 'History', to: '/history' },
+            ]
+            : [
+                { label: 'Home', to: '/', end: true },
+                { label: 'Join', to: '/join' },
+            ];
+
+    const accountItems = isHost
+        ? [
             { label: 'Profile', to: '/profile' },
+            { label: 'Billing', to: '/billing' },
+            { label: 'Settings', to: '/profile/edit' },
         ]
         : [
-            { label: 'Home', to: '/', end: true },
-            { label: 'Join Session', to: '/join' },
+            { label: 'Profile', to: '/profile' },
+            { label: 'Settings', to: '/profile/edit' },
         ];
 
-    const primaryAction = user
-        ? { label: isOrganizer ? 'Open Studio' : 'Join session', to: studioHref }
-        : { label: 'Get Started', to: '/register' };
-
-    const secondaryAction = user
-        ? { label: isOrganizer ? 'Analytics' : 'History', to: isOrganizer ? '/analytics' : '/history' }
-        : { label: 'Log in', to: '/login' };
+    const closeAllMenus = () => {
+        setIsMobileMenuOpen(false);
+        setIsProfileMenuOpen(false);
+    };
 
     useEffect(() => {
         if (!isMobileMenuOpen) {
@@ -91,13 +114,24 @@ const Navbar = () => {
         };
     }, [isMobileMenuOpen]);
 
-    const closeMobileMenu = () => {
-        setIsMobileMenuOpen(false);
-    };
+    useEffect(() => {
+        if (!isProfileMenuOpen) {
+            return undefined;
+        }
+
+        const handleOutsideClick = (event) => {
+            if (!profileMenuRef.current?.contains(event.target)) {
+                setIsProfileMenuOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleOutsideClick);
+        return () => document.removeEventListener('mousedown', handleOutsideClick);
+    }, [isProfileMenuOpen]);
 
     const handleMobilePanelClick = (event) => {
         if (event.target === event.currentTarget) {
-            closeMobileMenu();
+            closeAllMenus();
         }
     };
 
@@ -105,7 +139,6 @@ const Navbar = () => {
         <nav className={navbar.container} aria-label="Primary navigation">
             <div className={navbar.inner}>
                 <Link to="/" className={navbar.brandLink} aria-label="Quvolt home">
-                    
                     <span className={navbar.brandTitle}>QU<span className={navbar.brandAccent}>VOLT</span></span>
                 </Link>
 
@@ -116,12 +149,14 @@ const Navbar = () => {
                             to={item.to}
                             end={item.end}
                             className={({ isActive }) => (isActive ? navbar.navLinkActive : navbar.navLink)}
-                            onClick={closeMobileMenu}
+                            onClick={closeAllMenus}
                         >
                             {item.label}
                         </NavLink>
                     ))}
                 </div>
+
+                <div className={navbar.center} />
 
                 <div className={navbar.actions}>
                     <span className={cx(navbar.badge, STATUS_STYLES[connectionState] || STATUS_STYLES.disconnected)}>
@@ -131,39 +166,60 @@ const Navbar = () => {
 
                     <ThemeToggle className={navbar.iconButton} />
 
-                    <div className={navbar.ctaGroup}>
-                        <Link to={primaryAction.to} className={navbar.primaryButton} onClick={closeMobileMenu}>
-                            {primaryAction.label}
+                    <Link to={primaryCta.to} className={navbar.primaryButton} onClick={closeAllMenus}>
+                        {primaryCta.label}
+                    </Link>
+
+                    {!user ? (
+                        <Link to="/login" className={navbar.secondaryButton} onClick={closeAllMenus}>
+                            Log in
                         </Link>
-                        <Link to={secondaryAction.to} className={navbar.secondaryButton} onClick={closeMobileMenu}>
-                            {secondaryAction.label}
-                        </Link>
-                    </div>
+                    ) : null}
 
                     {user ? (
-                        <>
-                            <Link
-                                to="/profile"
-                                className={navbar.avatar}
-                                title="Open profile"
-                                aria-label="Open profile"
-                            >
-                                {user.profilePhoto ? (
-                                    <img src={user.profilePhoto} alt="Profile" className={navbar.avatarImage} />
-                                ) : (
-                                    <span>{initials}</span>
-                                )}
-                            </Link>
+                        <div ref={profileMenuRef} className={navbar.profileMenuWrap}>
                             <button
                                 type="button"
-                                onClick={logout}
-                                className={navbar.iconButton}
-                                aria-label="Log out"
-                                title="Log out"
+                                className={navbar.avatarTrigger}
+                                aria-label="Open account menu"
+                                aria-expanded={isProfileMenuOpen}
+                                onClick={() => setIsProfileMenuOpen((prev) => !prev)}
                             >
-                                <LogOut size={18} />
+                                <span className={navbar.avatar}>
+                                    {user.profilePhoto ? (
+                                        <img src={user.profilePhoto} alt="Profile" className={navbar.avatarImage} />
+                                    ) : (
+                                        <span>{initials}</span>
+                                    )}
+                                </span>
+                                <ChevronDown size={16} className={navbar.avatarCaret} />
                             </button>
-                        </>
+
+                            {isProfileMenuOpen ? (
+                                <div className={navbar.dropdown} role="menu" aria-label="Account menu">
+                                    {accountItems.map(({ label, to }) => (
+                                        <Link
+                                            key={label}
+                                            to={to}
+                                            className={navbar.dropdownItem}
+                                            role="menuitem"
+                                            onClick={closeAllMenus}
+                                        >
+                                            {label}
+                                        </Link>
+                                    ))}
+                                    <button
+                                        type="button"
+                                        onClick={logout}
+                                        className={cx(navbar.dropdownItem, navbar.dropdownDanger)}
+                                        role="menuitem"
+                                    >
+                                        <LogOut size={16} />
+                                        Logout
+                                    </button>
+                                </div>
+                            ) : null}
+                        </div>
                     ) : null}
                 </div>
 
@@ -175,7 +231,10 @@ const Navbar = () => {
                         aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
                         aria-expanded={isMobileMenuOpen}
                         aria-controls="mobile-navigation"
-                        onClick={() => setIsMobileMenuOpen((open) => !open)}
+                        onClick={() => {
+                            setIsProfileMenuOpen(false);
+                            setIsMobileMenuOpen((open) => !open);
+                        }}
                     >
                         {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
                     </button>
@@ -192,7 +251,7 @@ const Navbar = () => {
                             exit={{ opacity: 0 }}
                             transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
                             aria-hidden="true"
-                            onClick={closeMobileMenu}
+                            onClick={closeAllMenus}
                         />
 
                         <Motion.div
@@ -220,7 +279,7 @@ const Navbar = () => {
                                             to={item.to}
                                             end={item.end}
                                             className={({ isActive }) => (isActive ? navbar.mobileNavLinkActive : navbar.mobileNavLink)}
-                                            onClick={closeMobileMenu}
+                                            onClick={closeAllMenus}
                                         >
                                             <span>{item.label}</span>
                                             <span aria-hidden="true">↗</span>
@@ -232,17 +291,31 @@ const Navbar = () => {
                             <div className={navbar.mobileBottomSpacer} />
 
                             <Motion.div variants={mobileItemVariants} className={navbar.mobileCtaGroup}>
-                                <Link to={primaryAction.to} className={navbar.mobilePrimaryButton} onClick={closeMobileMenu}>
-                                    {primaryAction.label}
+                                <Link to={primaryCta.to} className={navbar.mobilePrimaryButton} onClick={closeAllMenus}>
+                                    {primaryCta.label}
                                 </Link>
-                                <Link to={secondaryAction.to} className={navbar.mobileSecondaryButton} onClick={closeMobileMenu}>
-                                    {secondaryAction.label}
-                                </Link>
+
+                                {!user ? (
+                                    <Link to="/login" className={navbar.mobileSecondaryButton} onClick={closeAllMenus}>
+                                        Log in
+                                    </Link>
+                                ) : null}
+
+                                {user ? (
+                                    <>
+                                        <p className={navbar.mobileSectionTitle}>Account</p>
+                                        {accountItems.map(({ label, to }) => (
+                                            <Link key={label} to={to} className={navbar.mobileSecondaryButton} onClick={closeAllMenus}>
+                                                {label}
+                                            </Link>
+                                        ))}
+                                    </>
+                                ) : null}
 
                                 {user ? (
                                     <button type="button" onClick={logout} className={navbar.mobileLogoutButton}>
                                         <LogOut size={16} />
-                                        Log out
+                                        Logout
                                     </button>
                                 ) : null}
                             </Motion.div>

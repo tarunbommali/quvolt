@@ -18,8 +18,15 @@ const CreateTemplatePanel = ({
     onPaidToggle,
     quizPrice,
     onPriceChange,
+    subscriptionEntitlements,
+    quizTemplateCount,
 }) => {
     if (!showCreate) return null;
+
+    const canUsePrivateHosting = subscriptionEntitlements?.canUsePrivateHosting;
+    const canCreatePaidQuiz = subscriptionEntitlements?.canCreatePaidQuiz;
+    const maxQuizTemplates = subscriptionEntitlements?.maxQuizTemplates || 5;
+    const plan = subscriptionEntitlements?.plan || 'FREE';
 
     return (
         <div className="bg-white p-8 space-y-6 mt-12 animate-in slide-in-from-bottom duration-300 border border-gray-100 rounded-4xl shadow-sm">
@@ -62,8 +69,13 @@ const CreateTemplatePanel = ({
                         className="w-full bg-gray-50 border border-gray-200 text-slate-900 rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500 transition-colors"
                     >
                         <option value="public">Public</option>
-                        <option value="private">Private</option>
+                        <option value="private" disabled={!canUsePrivateHosting}>Private (Creator+)</option>
                     </select>
+                    {!canUsePrivateHosting ? (
+                        <p className="mt-2 text-[11px] font-semibold text-amber-600 uppercase tracking-widest">
+                            Private hosting requires Creator or Teams plan.
+                        </p>
+                    ) : null}
                 </div>
 
                 {quizType === 'quiz' && (
@@ -106,6 +118,11 @@ const CreateTemplatePanel = ({
                         </div>
                         <span className="text-xs font-bold uppercase tracking-widest text-slate-400">Paid Quiz</span>
                     </label>
+                    {!canCreatePaidQuiz ? (
+                        <p className="text-[11px] font-semibold text-amber-600 uppercase tracking-widest">
+                            Paid quizzes require Creator or Teams plan.
+                        </p>
+                    ) : null}
                     {isPaid && (
                         <div className="flex items-center gap-2">
                             <span className="text-primary font-black text-lg">{INR_SYMBOL}</span>
@@ -126,6 +143,10 @@ const CreateTemplatePanel = ({
                 {quizType === 'quiz'
                     ? 'Creates a standalone high-speed competitive template with autotime or tutor flow.'
                     : 'Creates a collaborative folder template to group multiple quizzes with a cumulative leaderboard.'}
+            </p>
+
+            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest">
+                Plan {plan}: {quizTemplateCount}/{maxQuizTemplates} quizzes used.
             </p>
         </div>
     );

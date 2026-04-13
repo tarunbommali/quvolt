@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { generateAIQuiz, saveQuizFullState } from '../services/api';
+import { useAuthStore } from '../stores/useAuthStore';
 import { useQuizStore } from '../stores/useQuizStore';
 import { useEditorState } from '../stores/useEditorState';
+import { getSubscriptionEntitlements } from '../utils/subscriptionEntitlements';
 
 const buildImportedQuestions = (payload) => {
     const source = Array.isArray(payload)
@@ -63,6 +65,7 @@ const useOrganizerEditController = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const getQuizzesForParent = useQuizStore((state) => state.getQuizzesForParent);
+    const user = useAuthStore((state) => state.user);
 
     const initializeFromQuiz = useEditorState((state) => state.initializeFromQuiz);
     const replaceFromServerQuiz = useEditorState((state) => state.replaceFromServerQuiz);
@@ -98,6 +101,7 @@ const useOrganizerEditController = () => {
     const autoSaveTimerRef = useRef(null);
     const saveInFlightRef = useRef(false);
     const queuedSaveRef = useRef(false);
+    const subscriptionEntitlements = useMemo(() => getSubscriptionEntitlements(user), [user]);
 
     const orderedSlides = useMemo(() => {
         const byId = new Map(slides.map((slide) => [slide.clientId, slide]));
@@ -266,9 +270,27 @@ const useOrganizerEditController = () => {
         }
     };
 
-    const handleAIGenerate = async ({ topic, count, distribution }) => generateAIQuiz({ topic, count, distribution });
+    const ensureAiAccess = () => {
+        if (!subscriptionEntitlements.canUseAiGeneration) {
+            throw new Error('AI quiz generation is available on Creator and Teams plans. Upgrade from Billing to continue.');
+        }
+    };
+
+    const handleOpenAIDialog = () => {
+        if (!subscriptionEntitlements.canUseAiGeneration) {
+            showToast('AI quiz generation is available on Creator and Teams plans. Upgrade from Billing to continue.');
+            return;
+        }
+        setAIDialogOpen(true);
+    };
+
+    const handleAIGenerate = async ({ topic, count, distribution }) => {
+        ensureAiAccess();
+        return generateAIQuiz({ topic, count, distribution });
+    };
 
     const handleAISave = async ({ quizId, questions }) => {
+        ensureAiAccess();
         const result = await generateAIQuiz({ quizId, questions, persist: true });
         if (result?.quiz) {
             setActiveQuiz(result.quiz);
@@ -291,6 +313,7 @@ const useOrganizerEditController = () => {
         importDialogOpen,
         setImportDialogOpen,
         aiDialogOpen,
+        handleOpenAIDialog,
         setAIDialogOpen,
         importJson,
         setImportJson,

@@ -21,10 +21,8 @@ const StudioDashboardView = ({ dashboard }) => {
         confirmDialog,
         setConfirmDialog,
         visibleQuizzes,
-        liveSessionCount,
         showCreate,
         currentSubject,
-        user,
         cloning,
         editingQuizId,
         editingTitle,
@@ -44,6 +42,8 @@ const StudioDashboardView = ({ dashboard }) => {
         setFilterMode,
         searchQuery,
         setSearchQuery,
+        subscriptionEntitlements,
+        quizTemplateCount,
         quizType,
         setQuizType,
         accessType,
@@ -55,9 +55,9 @@ const StudioDashboardView = ({ dashboard }) => {
         newQuizTitle,
         setNewQuizTitle,
         isPaid,
-        setIsPaid,
         quizPrice,
         setQuizPrice,
+        handlePaidToggle,
         onOpenSubject,
         onEditQuiz,
         onGoLive,
@@ -84,9 +84,6 @@ const StudioDashboardView = ({ dashboard }) => {
 
             <div className={cx(components.studio.pageShell, layoutStyles.pageStack)}>
                 <StudioDashboardToolbar
-                    userName={user?.name || 'there'}
-                    currentSubject={currentSubject}
-                    liveSessionCount={liveSessionCount}
                     showCreate={showCreate}
                     onToggleCreate={handleToggleCreate}
                     viewMode={effectiveViewMode}
@@ -136,9 +133,11 @@ const StudioDashboardView = ({ dashboard }) => {
                     onTitleChange={setNewQuizTitle}
                     onCreate={createQuiz}
                     isPaid={isPaid}
-                    onPaidToggle={() => setIsPaid(!isPaid)}
+                    onPaidToggle={handlePaidToggle}
                     quizPrice={quizPrice}
                     onPriceChange={setQuizPrice}
+                    subscriptionEntitlements={subscriptionEntitlements}
+                    quizTemplateCount={quizTemplateCount}
                 />
             </div>
         </>

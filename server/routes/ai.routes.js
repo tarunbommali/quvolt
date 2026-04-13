@@ -10,6 +10,7 @@ const {
     saveQuestionsToQuiz,
     validateGenerateInput,
 } = require('../services/ai.service');
+const { resolveHostSubscriptionEntitlements } = require('../utils/subscriptionEntitlements');
 
 const router = express.Router();
 
@@ -43,6 +44,15 @@ router.post(
     ],
     async (req, res) => {
         try {
+            if (req.user.role !== 'admin') {
+                const entitlements = await resolveHostSubscriptionEntitlements(req.user._id);
+                if (!entitlements.canUseAiGeneration) {
+                    return res.status(403).json({
+                        message: 'AI quiz generation is available on Creator and Teams plans. Upgrade your subscription to continue.',
+                    });
+                }
+            }
+
             const {
                 topic,
                 difficulty,
