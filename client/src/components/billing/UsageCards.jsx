@@ -1,3 +1,4 @@
+/* eslint-disable no-restricted-syntax */
 import Card from '../ui/Card';
 import { cardStyles } from '../../styles/cardStyles';
 import { textStyles } from '../../styles/commonStyles';

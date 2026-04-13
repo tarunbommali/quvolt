@@ -1621,7 +1621,7 @@ dlqQueue.process(async (job) => {
 });
 ```
 
-### 7.3 Queue Configuration (docker-compose.yml)
+### 7.3 Queue Configuration (example)
 ```yaml
 services:
   redis-queue:

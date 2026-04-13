@@ -11,10 +11,10 @@ QuizBolt production deployment consists of:
 - MongoDB and Redis: data + realtime/session support
 
 Recommended path for a single EC2 host:
-- Deploy with Docker Compose for predictable service startup and health checks.
+- PM2 + Nginx process deployment using `ecosystem.config.js`.
 
-Alternative path:
-- PM2 + Nginx process deployment using ecosystem.config.js.
+Future option:
+- Docker Compose deployment can be introduced later if you choose containerized operations.
 
 ## 2. EC2 Prerequisites
 
@@ -36,7 +36,9 @@ sudo apt update
 sudo apt install -y ca-certificates curl gnupg nginx certbot python3-certbot-nginx
 ```
 
-Install Docker Engine + Compose plugin (official Docker docs preferred).
+Critical production rule:
+- Do not run npm run dev on EC2 production hosts.
+- npm run dev launches nodemon processes and can conflict with PM2-managed services, causing EADDRINUSE on 5000/5001.
 
 ## 3. Prepare Application
 
@@ -58,42 +60,11 @@ Required highlights:
 - CLIENT_URL and CORS_ORIGIN with your HTTPS domain
 - VITE_API_URL=/api
 
-Compose-only required variables:
-- MONGO_ROOT_USER
-- MONGO_ROOT_PASSWORD
-
 Important:
 - Keep one shared root .env as the single source of truth.
 - Use strong random secrets for JWT and webhook keys.
 
-## 4. Deployment Option A (Recommended): Docker Compose on EC2
-
-Run from repo root:
-
-```bash
-docker compose up -d --build
-```
-
-Check status:
-
-```bash
-docker compose ps
-docker compose logs -f server
-docker compose logs -f payment-service
-```
-
-Health endpoints:
-- http://<domain>/api/health
-- http://<domain>/payment/health
-
-Update release:
-
-```bash
-git pull
-docker compose up -d --build
-```
-
-## 5. Deployment Option B: PM2 + Nginx on EC2
+## 4. Deployment (Current): PM2 + Nginx on EC2
 
 ### Install app dependencies
 
@@ -124,6 +95,14 @@ mkdir -p logs
 npx pm2 start ecosystem.config.js --env production
 npx pm2 save
 npx pm2 startup
+```
+
+Alternative with root scripts:
+
+```bash
+npm run prod:start
+npm run prod:save
+npm run prod:status
 ```
 
 The ecosystem file starts:
@@ -189,7 +168,7 @@ Enable TLS:
 sudo certbot --nginx -d yourdomain.com
 ```
 
-## 6. Post-Deployment Verification
+## 5. Post-Deployment Verification
 
 Required checks:
 - GET /api/health returns status healthy
@@ -209,7 +188,7 @@ npm run test:payment
 cd server && npm run test:integration
 ```
 
-## 7. Operations and Rollback
+## 6. Operations and Rollback
 
 PM2 operations:
 
@@ -219,22 +198,36 @@ npx pm2 logs
 npx pm2 restart all
 ```
 
-Docker operations:
+Safe restart after deploy:
 
 ```bash
-docker compose ps
-docker compose logs --tail=200 server
-docker compose logs --tail=200 payment-service
-docker compose down
-docker compose up -d
+npm run prod:stop
+npm run prod:start
+npm run prod:save
+```
+
+One-shot EC2 deploy helper:
+
+```bash
+chmod +x scripts/ec2-prod-deploy.sh
+./scripts/ec2-prod-deploy.sh /home/ubuntu/quvolt
 ```
 
 Quick rollback strategy:
 - keep previous git tag available
 - checkout previous tag
-- redeploy using same command path (compose or PM2)
+- redeploy using the same PM2 command path
 
-## 8. Common Failure Checks
+## 7. Common Failure Checks
+
+- EADDRINUSE on 5000/5001:
+   - stop PM2 and stale listeners, then start only PM2 ecosystem
+
+```bash
+pm2 delete all || true
+for port in 5000 5001; do sudo fuser -k ${port}/tcp || true; done
+npm run prod:start
+```
 
 - Socket disconnects: confirm Upgrade/Connection headers in Nginx for /socket.io/
 - 401/403 across services: confirm JWT_SECRET consistency in shared .env

@@ -4,6 +4,7 @@
   "description": "Quiz Platform - Monorepo root",
   "private": true,
   "scripts": {
+    "predev": "node scripts/free-dev-ports.js",
     "dev": "concurrently -k -n SERVER,PAYMENT,CLIENT -c blue,yellow,magenta \"npm run dev:server\" \"npm run dev:payment\" \"npm run dev:client\"",
     "dev:server": "cd server && npm run dev",
     "dev:payment": "cd payment-service && npm run dev",
@@ -14,7 +15,13 @@
     "test:server": "cd server && npm test",
     "test:payment": "cd payment-service && npm test",
     "test:realtime-smoke": "node scripts/realtime-smoke.js",
-    "validate:full": "npm run lint:client && npm run build:client && npm run test:server && npm run test:payment"
+    "validate:full": "npm run lint:client && npm run build:client && npm run test:server && npm run test:payment",
+    "prod:stop": "pm2 delete all",
+    "prod:start": "pm2 start ecosystem.config.js --env production",
+    "prod:restart": "pm2 reload ecosystem.config.js --env production",
+    "prod:logs": "pm2 logs --lines 200",
+    "prod:status": "pm2 status",
+    "prod:save": "pm2 save"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

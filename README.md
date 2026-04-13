@@ -104,7 +104,20 @@ npm run test:integration
 
 - EC2 production guide: DEPLOYMENT_AWS.md
 - PM2 process file: ecosystem.config.js
-- Container stack: docker-compose.yml
+- Future container stack option: docker-compose.yml
+
+## Production Commands (PM2)
+
+Use these on EC2 production hosts:
+
+```bash
+npm run prod:stop
+npm run prod:start
+npm run prod:save
+npm run prod:status
+```
+
+Do not use npm run dev on production hosts.
 
 ## References
 
