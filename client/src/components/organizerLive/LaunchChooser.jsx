@@ -53,9 +53,9 @@ const LaunchChooser = ({ activeQuiz, navigate, onGoLiveNow, onSchedule, showToas
         }
     };
 
-    const rowBase = 'flex cursor-pointer items-center justify-between gap-4 rounded-xl border px-5 py-4 transition-all hover:bg-gray-50';
-    const selectedRow = 'border-indigo-300 bg-indigo-50/40';
-    const idleRow = 'border-gray-200 bg-white';
+    const rowBase = 'flex cursor-pointer items-center justify-between gap-4 rounded-xl border theme-border theme-surface px-5 py-4 transition-colors theme-interactive hover:theme-surface-soft';
+    const selectedRow = 'border-[color-mix(in_srgb,var(--qb-primary)_45%,var(--qb-border))] bg-[color-mix(in_srgb,var(--qb-primary)_14%,var(--qb-surface-1))]';
+    const idleRow = '';
 
     return (
         <div className="app-page mx-auto  space-y-6 animate-in fade-in duration-300">
@@ -67,15 +67,6 @@ const LaunchChooser = ({ activeQuiz, navigate, onGoLiveNow, onSchedule, showToas
                     { label: activeQuiz.title },
                     { label: 'Launch Session' },
                 ]}
-                actions={(
-                    <button
-                        type="button"
-                        onClick={() => navigate(`/edit/${activeQuiz._id}`, { state: { quiz: activeQuiz } })}
-                        className={`${buttonStyles.secondary} rounded-xl px-4 py-2 text-sm font-semibold`}
-                    >
-                        Back to Quiz
-                    </button>
-                )}
             />
 
             <section className="space-y-4">
@@ -92,15 +83,15 @@ const LaunchChooser = ({ activeQuiz, navigate, onGoLiveNow, onSchedule, showToas
                     className={`${rowBase} ${mode === 'instant' ? selectedRow : idleRow}`}
                 >
                     <div className="flex items-center gap-3">
-                        <span className="rounded-lg bg-indigo-50 p-2 text-indigo-600">
-                            <Zap size={16} className="fill-indigo-600" />
+                        <span className="rounded-lg bg-[color-mix(in_srgb,var(--qb-primary)_14%,var(--qb-surface-1))] p-2 text-(--qb-primary)">
+                            <Zap size={16} className="fill-(--qb-primary)" />
                         </span>
                         <div className="space-y-1">
                             <div className="flex items-center gap-2">
-                                <h2 className="text-sm font-semibold text-gray-900">Instant Live</h2>
-                                <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-bold text-indigo-700">Recommended</span>
+                                <h2 className="text-sm font-semibold theme-text-primary">Instant Live</h2>
+                                <span className="rounded-full bg-[color-mix(in_srgb,var(--qb-primary)_16%,var(--qb-surface-1))] px-2 py-0.5 text-[10px] font-bold text-(--qb-primary)">Recommended</span>
                             </div>
-                            <p className="text-sm text-gray-500">{instantDescription}</p>
+                            <p className="text-sm theme-text-secondary">{instantDescription}</p>
                         </div>
                     </div>
 
@@ -130,12 +121,12 @@ const LaunchChooser = ({ activeQuiz, navigate, onGoLiveNow, onSchedule, showToas
                     className={`${rowBase} ${mode === 'schedule' ? selectedRow : idleRow}`}
                 >
                     <div className="flex items-center gap-3">
-                        <span className="rounded-lg bg-violet-50 p-2 text-violet-600">
+                        <span className="rounded-lg bg-[color-mix(in_srgb,var(--qb-accent)_14%,var(--qb-surface-1))] p-2 text-(--qb-accent)">
                             <CalendarClock size={16} />
                         </span>
                         <div className="space-y-1">
-                            <h2 className="text-sm font-semibold text-gray-900">Schedule Session</h2>
-                            <p className="text-sm text-gray-500">Pick a future date and time</p>
+                            <h2 className="text-sm font-semibold theme-text-primary">Schedule Session</h2>
+                            <p className="text-sm theme-text-secondary">Pick a future date and time</p>
                         </div>
                     </div>
 
@@ -157,8 +148,8 @@ const LaunchChooser = ({ activeQuiz, navigate, onGoLiveNow, onSchedule, showToas
                 </div>
 
                 {mode === 'schedule' && (
-                    <div className="rounded-xl border border-gray-200 bg-white px-5 py-4">
-                        <label className="mb-2 block text-xs font-bold text-slate-500">
+                    <div className="rounded-xl border theme-border theme-surface px-5 py-4">
+                        <label className="mb-2 block text-xs font-bold theme-text-muted">
                             Session date and time
                         </label>
                         <input
@@ -166,7 +157,7 @@ const LaunchChooser = ({ activeQuiz, navigate, onGoLiveNow, onSchedule, showToas
                             min={minDatetime}
                             value={scheduledAt}
                             onChange={(event) => setScheduledAt(event.target.value)}
-                            className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="w-full rounded-xl border theme-border theme-surface-soft px-3 py-2 text-sm theme-text-primary focus:outline-none focus:ring-2 focus:ring-(--qb-primary)"
                         />
                     </div>
                 )}

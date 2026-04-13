@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ArrowUpDown, LayoutGrid, List, Plus, SlidersHorizontal } from 'lucide-react';
 import { components } from '../../styles/components';
 import { cx } from '../../styles/theme';
@@ -33,6 +33,31 @@ const StudioDashboardToolbar = ({
     onSearchQueryChange,
 }) => {
     const [isMobileControlsOpen, setIsMobileControlsOpen] = useState(false);
+    const mobileControlsRef = useRef(null);
+
+    useEffect(() => {
+        if (!isMobileControlsOpen) return undefined;
+
+        const onMouseDown = (event) => {
+            if (mobileControlsRef.current && !mobileControlsRef.current.contains(event.target)) {
+                setIsMobileControlsOpen(false);
+            }
+        };
+
+        const onKeyDown = (event) => {
+            if (event.key === 'Escape') {
+                setIsMobileControlsOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', onMouseDown);
+        document.addEventListener('keydown', onKeyDown);
+
+        return () => {
+            document.removeEventListener('mousedown', onMouseDown);
+            document.removeEventListener('keydown', onKeyDown);
+        };
+    }, [isMobileControlsOpen]);
 
     return (
         <div className={components.studio.controlBar}>
@@ -109,7 +134,7 @@ const StudioDashboardToolbar = ({
                         </label>
                     </div>
 
-                    <div className={components.studio.mobileControlsWrap}>
+                    <div className={components.studio.mobileControlsWrap} ref={mobileControlsRef}>
                         <button
                             type="button"
                             className={components.studio.mobileControlsTrigger}
@@ -122,8 +147,16 @@ const StudioDashboardToolbar = ({
                         </button>
 
                         {isMobileControlsOpen ? (
-                            <div className={components.studio.mobileControlsMenu}>
-                                <div className={components.studio.mobileControlsSection}>
+                            <>
+                                <button
+                                    type="button"
+                                    aria-label="Close controls menu"
+                                    className={components.studio.mobileControlsOverlay}
+                                    onClick={() => setIsMobileControlsOpen(false)}
+                                />
+
+                                <div className={components.studio.mobileControlsMenu}>
+                                    <div className={components.studio.mobileControlsSection}>
                                     <div className={components.studio.segmentedShell}>
                                         <div className={components.studio.segmentedInner}>
                                             <button
@@ -191,8 +224,9 @@ const StudioDashboardToolbar = ({
                                             <option value="live">Live</option>
                                         </select>
                                     </label>
+                                    </div>
                                 </div>
-                            </div>
+                            </>
                         ) : null}
                     </div>
 

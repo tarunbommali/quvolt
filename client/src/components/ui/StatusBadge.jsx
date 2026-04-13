@@ -3,12 +3,12 @@ import { cx } from '../../styles/theme';
 const STATUS_STYLES = {
     live: 'status-live-pill',
     ongoing: 'status-live-pill',
-    upcoming: 'bg-violet-100 text-violet-700',
+    upcoming: 'theme-status-caution',
     waiting: 'bg-indigo-100 text-indigo-700',
-    aborted: 'bg-red-100 text-red-700',
+    aborted: 'theme-status-danger',
     completed: 'bg-slate-100 text-slate-600',
     finished: 'bg-slate-100 text-slate-600',
-    draft: 'bg-amber-100 text-amber-700',
+    draft: 'theme-status-warning',
     active: 'bg-emerald-100 text-emerald-700',
     default: 'bg-slate-100 text-slate-600',
 };

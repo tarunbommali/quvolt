@@ -18,6 +18,13 @@ const createNewSlide = (count = 0) => ({
     mediaUrl: null,
 });
 
+const duplicateSlide = (slide, index = 0) => ({
+    ...slide,
+    _id: undefined,
+    clientId: `tmp-copy-${Date.now()}-${index}`,
+    text: slide?.text ? `${slide.text} (Copy)` : 'Untitled question (Copy)',
+});
+
 const getOrderedSlides = (slides, order) => {
     const byId = new Map(slides.map((slide) => [slide.clientId, slide]));
     const ordered = [];
@@ -108,6 +115,22 @@ export const useEditorState = create((set, get) => ({
         set({ slides, order, activeSlideId: next.clientId, dirty: true });
     },
 
+    duplicateSlideAtIndex: (index) => {
+        const state = get();
+        const sourceId = state.order[index];
+        if (!sourceId) return;
+
+        const sourceSlide = state.slides.find((slide) => slide.clientId === sourceId);
+        if (!sourceSlide) return;
+
+        const nextSlide = duplicateSlide(sourceSlide, state.slides.length);
+        const slides = [...state.slides, nextSlide];
+        const order = [...state.order];
+        order.splice(index + 1, 0, nextSlide.clientId);
+
+        set({ slides, order, activeSlideId: nextSlide.clientId, dirty: true });
+    },
+
     deleteSlide: (slideId) => {
         const state = get();
         const slides = state.slides.filter((slide) => slide.clientId !== slideId);
@@ -141,6 +164,28 @@ export const useEditorState = create((set, get) => ({
 
     replaceFromServerQuiz: (quiz) => {
         get().initializeFromQuiz(quiz);
+    },
+
+    restoreSnapshot: (snapshot) => {
+        if (!snapshot || !Array.isArray(snapshot.slides) || !Array.isArray(snapshot.order)) return;
+
+        const slides = snapshot.slides.map((slide, index) => ({
+            ...slide,
+            clientId: slide.clientId || slide._id || `tmp-restore-${Date.now()}-${index}`,
+        }));
+        const order = snapshot.order.map((id) => String(id)).filter(Boolean);
+
+        set({
+            slides,
+            order,
+            activeSlideId: snapshot.activeSlideId || order[0] || null,
+            config: {
+                shuffleQuestions: Boolean(snapshot.config?.shuffleQuestions),
+                interQuestionDelay: Number(snapshot.config?.interQuestionDelay || 5),
+                mode: snapshot.config?.mode || 'auto',
+            },
+            dirty: true,
+        });
     },
 
     getSnapshot: () => {

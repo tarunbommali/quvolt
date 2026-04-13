@@ -128,11 +128,11 @@ const SessionHistoryDetailPage = () => {
     const statusLabel = String(selectedQuiz.status || 'completed');
     const normalizedStatus = statusLabel.toLowerCase();
     const statusBadgeClass = normalizedStatus === 'completed'
-        ? 'bg-emerald-50 text-emerald-600'
+        ? 'theme-status-success'
         : normalizedStatus === 'live'
-            ? 'bg-indigo-50 text-indigo-600'
+            ? 'theme-status-info'
             : normalizedStatus === 'waiting'
-                ? 'bg-amber-50 text-amber-600'
+                ? 'theme-status-warning'
                 : 'bg-gray-100 text-gray-600';
 
     const exportToCSV = (record) => {
@@ -225,7 +225,7 @@ const SessionHistoryDetailPage = () => {
                                             <td className="py-2 pr-3 text-gray-900 font-medium max-w-90 truncate" title={ans.questionText}>{ans.questionText}</td>
                                             <td className="py-2 pr-3 text-gray-700">{ans.selected || '—'}</td>
                                             <td className="py-2 pr-3 text-gray-700">
-                                                <span className={`inline-flex items-center gap-1 ${ans.isCorrect ? 'text-emerald-600' : 'text-red-600'}`}>
+                                                <span className={`inline-flex items-center gap-1 ${ans.isCorrect ? 'theme-tone-success' : 'theme-tone-danger'}`}>
                                                     {ans.isCorrect ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
                                                     {ans.isCorrect ? 'Correct' : 'Wrong'}
                                                 </span>

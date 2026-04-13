@@ -21,7 +21,7 @@ const HistoryLeaderboardModal = ({ open, leaderboard, meta, onClose }) => (
                     {leaderboard.map((player, i) => (
                         <div key={player.name || i} className={`${cardStyles.base} ${cardStyles.hover} ${cardStyles.leaderboardEntry}`}>
                             <div className={cardStyles.leaderboardIdentity}>
-                                <span className={`${cardStyles.leaderboardRank} ${i === 0 ? 'text-yellow-500 dark:text-yellow-300' : i === 1 ? 'text-slate-400 dark:text-gray-300' : i === 2 ? 'text-amber-600 dark:text-amber-300' : 'text-slate-300 dark:text-gray-500'}`}>
+                                <span className={`${cardStyles.leaderboardRank} ${i === 0 ? 'theme-tone-caution' : i === 1 ? 'text-slate-400 dark:text-gray-300' : i === 2 ? 'theme-tone-warning' : 'text-slate-300 dark:text-gray-500'}`}>
                                     #{i + 1}
                                 </span>
                                 <div>

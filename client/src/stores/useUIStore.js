@@ -3,6 +3,15 @@ import { devtools, persist } from 'zustand/middleware';
 
 const THEME_STORAGE_KEY = 'theme';
 
+const applyThemeToRoot = (nextTheme) => {
+    const root = window.document.documentElement;
+    root.classList.remove('light', 'dark');
+    root.classList.add(nextTheme);
+    root.setAttribute('data-theme', nextTheme);
+    root.style.colorScheme = nextTheme;
+    window.localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+};
+
 const resolveInitialTheme = () => {
     if (typeof window === 'undefined') return 'light';
 
@@ -21,10 +30,7 @@ export const useUIStore = create()(devtools(persist((set, get) => ({
 
     initializeTheme: () => {
         const nextTheme = resolveInitialTheme();
-        const root = window.document.documentElement;
-        root.classList.remove('light', 'dark');
-        root.classList.add(nextTheme);
-        window.localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+        applyThemeToRoot(nextTheme);
         if (get().theme !== nextTheme) {
             set({ theme: nextTheme });
         }
@@ -32,10 +38,7 @@ export const useUIStore = create()(devtools(persist((set, get) => ({
 
     setTheme: (theme) => {
         const nextTheme = theme === 'light' ? 'light' : 'dark';
-        const root = window.document.documentElement;
-        root.classList.remove('light', 'dark');
-        root.classList.add(nextTheme);
-        window.localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+        applyThemeToRoot(nextTheme);
         set({ theme: nextTheme });
     },
 

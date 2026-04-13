@@ -1,6 +1,6 @@
 export const cards = {
-    base: 'depth-card bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-4 shadow-sm',
-    padded: 'rounded-2xl p-5',
-    subtle: 'rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50 p-4',
-    compact: 'rounded-2xl p-4 md:p-6',
+    base: 'surface-card theme-surface border theme-border theme-radius-card p-4 shadow-sm theme-interactive theme-hover-surface',
+    padded: 'rounded-3xl p-5 md:p-6',
+    subtle: 'rounded-2xl border theme-border theme-surface-soft p-4',
+    compact: 'rounded-3xl p-4 md:p-6',
 };

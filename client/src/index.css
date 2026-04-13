@@ -51,6 +51,23 @@
 }
 
 :root {
+  --qb-bg-base: #f4f7ff;
+  --qb-bg-elevated: #eef3ff;
+  --qb-surface-1: #ffffff;
+  --qb-surface-2: #f8fafc;
+  --qb-border: #dbe4f3;
+  --qb-text-1: #0f172a;
+  --qb-text-2: #475569;
+  --qb-text-3: #64748b;
+  --qb-primary: #4f46e5;
+  --qb-primary-strong: #4338ca;
+  --qb-accent: #7c3aed;
+  --qb-accent-strong: #6d28d9;
+  --qb-success-soft: rgba(16, 185, 129, 0.12);
+  --qb-success-ink: #047857;
+  --qb-danger-soft: rgba(220, 38, 38, 0.12);
+  --qb-danger-ink: #b91c1c;
+
   --color-dark: #f8fafc;
   --color-surface: #ffffff;
   --color-surface-bright: #ffffff;
@@ -71,6 +88,23 @@
 }
 
 .dark {
+  --qb-bg-base: #050c1a;
+  --qb-bg-elevated: #0a1427;
+  --qb-surface-1: #101c31;
+  --qb-surface-2: #16253d;
+  --qb-border: #23324b;
+  --qb-text-1: #e2e8f0;
+  --qb-text-2: #cbd5e1;
+  --qb-text-3: #94a3b8;
+  --qb-primary: #7c82ff;
+  --qb-primary-strong: #8a8fff;
+  --qb-accent: #c4b5fd;
+  --qb-accent-strong: #a78bfa;
+  --qb-success-soft: rgba(16, 185, 129, 0.22);
+  --qb-success-ink: #6ee7b7;
+  --qb-danger-soft: rgba(248, 113, 113, 0.2);
+  --qb-danger-ink: #fca5a5;
+
   --color-dark: #111827;
   --color-surface: #1f2937;
   --color-surface-bright: #111827;
@@ -153,9 +187,9 @@
   .app-shell {
     @apply min-h-screen overflow-x-hidden text-(--color-text) transition-colors duration-300;
     background:
-      radial-gradient(900px 500px at -10% -10%, rgba(79, 70, 229, 0.22), transparent 70%),
-      radial-gradient(700px 460px at 110% 10%, rgba(14, 165, 233, 0.16), transparent 70%),
-      linear-gradient(180deg, #0b1020 0%, #111827 52%, #0f172a 100%);
+      radial-gradient(960px 520px at -10% -10%, rgba(79, 70, 229, 0.14), transparent 70%),
+      radial-gradient(720px 470px at 110% 10%, rgba(14, 165, 233, 0.1), transparent 70%),
+      linear-gradient(180deg, var(--qb-bg-base) 0%, var(--qb-bg-elevated) 52%, #eaf0ff 100%);
   }
 
   .dark .app-shell {
@@ -188,11 +222,19 @@
   }
 
   .surface-card {
-    @apply rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800;
+    @apply rounded-2xl border shadow-sm;
+    border-color: var(--qb-border);
+    background: var(--qb-surface-1);
   }
 
   .surface-card-hover {
-    @apply rounded-2xl border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-indigo-200 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-indigo-500;
+    @apply rounded-2xl border shadow-sm transition-all duration-200 hover:shadow-md;
+    border-color: var(--qb-border);
+    background: var(--qb-surface-1);
+  }
+
+  .surface-card-hover:hover {
+    border-color: color-mix(in srgb, var(--qb-primary) 32%, var(--qb-border));
   }
 
   .field-label {
@@ -231,7 +273,17 @@
   }
 
   .ui-icon-btn {
-    @apply inline-flex min-h-10 min-w-10 items-center justify-center rounded-xl border border-gray-100 bg-white text-slate-600 transition-colors hover:bg-gray-50 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-gray-100;
+    @apply inline-flex min-h-10 min-w-10 items-center justify-center rounded-xl border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2;
+    border-color: var(--qb-border);
+    background: var(--qb-surface-1);
+    color: var(--qb-text-2);
+    --tw-ring-color: var(--qb-primary);
+    --tw-ring-offset-color: var(--qb-surface-1);
+  }
+
+  .ui-icon-btn:hover {
+    background: var(--qb-surface-2);
+    color: var(--qb-text-1);
   }
 
   .ui-chip {
@@ -243,7 +295,193 @@
   }
 
   .ui-section-card {
-    @apply rounded-3xl border border-gray-100 bg-white p-6 shadow-sm sm:p-8 dark:border-gray-700 dark:bg-gray-800;
+    @apply rounded-3xl border p-6 shadow-sm sm:p-8;
+    border-color: var(--qb-border);
+    background: var(--qb-surface-1);
+  }
+
+  .theme-surface {
+    background: var(--qb-surface-1);
+  }
+
+  .theme-surface-soft {
+    background: var(--qb-surface-2);
+  }
+
+  .theme-border {
+    border-color: var(--qb-border);
+  }
+
+  .theme-text-primary {
+    color: var(--qb-text-1);
+  }
+
+  .theme-text-secondary {
+    color: var(--qb-text-2);
+  }
+
+  .theme-text-muted {
+    color: var(--qb-text-3);
+  }
+
+  .theme-primary {
+    color: var(--qb-primary);
+  }
+
+  .theme-primary-bg {
+    background: var(--qb-primary);
+  }
+
+  .theme-status-success {
+    background: var(--qb-success-soft);
+    color: var(--qb-success-ink);
+  }
+
+  .theme-status-danger {
+    background: var(--qb-danger-soft);
+    color: var(--qb-danger-ink);
+  }
+
+  .theme-status-info {
+    background: color-mix(in srgb, var(--qb-primary) 14%, var(--qb-surface-1));
+    color: var(--qb-primary);
+    border-color: color-mix(in srgb, var(--qb-primary) 30%, var(--qb-border));
+  }
+
+  .theme-status-accent {
+    background: color-mix(in srgb, var(--qb-accent) 14%, var(--qb-surface-1));
+    color: var(--qb-accent-strong);
+    border-color: color-mix(in srgb, var(--qb-accent) 30%, var(--qb-border));
+  }
+
+  .theme-status-warning {
+    background: color-mix(in srgb, #f59e0b 18%, var(--qb-surface-1));
+    color: #b45309;
+    border-color: color-mix(in srgb, #f59e0b 38%, var(--qb-border));
+  }
+
+  .dark .theme-status-warning {
+    color: #fcd34d;
+    border-color: color-mix(in srgb, #f59e0b 42%, var(--qb-border));
+  }
+
+  .theme-status-private {
+    background: color-mix(in srgb, #f97316 16%, var(--qb-surface-1));
+    color: #c2410c;
+    border-color: color-mix(in srgb, #f97316 38%, var(--qb-border));
+  }
+
+  .dark .theme-status-private {
+    color: #fdba74;
+    border-color: color-mix(in srgb, #f97316 45%, var(--qb-border));
+  }
+
+  .theme-status-caution {
+    background: color-mix(in srgb, #eab308 18%, var(--qb-surface-1));
+    color: #a16207;
+    border-color: color-mix(in srgb, #eab308 36%, var(--qb-border));
+  }
+
+  .dark .theme-status-caution {
+    color: #fde047;
+    border-color: color-mix(in srgb, #eab308 42%, var(--qb-border));
+  }
+
+  .theme-tone-warning {
+    color: #b45309;
+  }
+
+  .dark .theme-tone-warning {
+    color: #fcd34d;
+  }
+
+  .theme-tone-private {
+    color: #c2410c;
+  }
+
+  .dark .theme-tone-private {
+    color: #fdba74;
+  }
+
+  .theme-tone-caution {
+    color: #a16207;
+  }
+
+  .dark .theme-tone-caution {
+    color: #fde047;
+  }
+
+  .theme-tone-success {
+    color: var(--qb-success-ink);
+  }
+
+  .theme-tone-danger {
+    color: var(--qb-danger-ink);
+  }
+
+  .theme-tone-info {
+    color: var(--qb-primary);
+  }
+
+  .theme-tone-accent {
+    color: var(--qb-accent-strong);
+  }
+
+  .theme-interactive {
+    transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+  }
+
+  .theme-hover-surface:hover {
+    background: var(--qb-surface-2);
+    border-color: color-mix(in srgb, var(--qb-primary) 26%, var(--qb-border));
+  }
+
+  .theme-hover-lift:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--ds-shadow-mid);
+  }
+
+  .theme-radius-card {
+    border-radius: 1.15rem;
+  }
+
+  /* Make legacy utility-heavy components inherit theme tokens without rewriting every file. */
+  .app-shell .bg-white {
+    background-color: var(--qb-surface-1) !important;
+  }
+
+  .app-shell .bg-gray-50,
+  .app-shell .bg-slate-50,
+  .app-shell .bg-gray-100 {
+    background-color: var(--qb-surface-2) !important;
+  }
+
+  .app-shell .border-gray-100,
+  .app-shell .border-gray-200,
+  .app-shell .border-slate-200,
+  .app-shell .border-gray-300 {
+    border-color: var(--qb-border) !important;
+  }
+
+  .app-shell .text-gray-900,
+  .app-shell .text-slate-900,
+  .app-shell .text-gray-800,
+  .app-shell .text-slate-800 {
+    color: var(--qb-text-1) !important;
+  }
+
+  .app-shell .text-gray-700,
+  .app-shell .text-slate-700,
+  .app-shell .text-gray-600,
+  .app-shell .text-slate-600 {
+    color: var(--qb-text-2) !important;
+  }
+
+  .app-shell .text-gray-500,
+  .app-shell .text-slate-500,
+  .app-shell .text-gray-400,
+  .app-shell .text-slate-400 {
+    color: var(--qb-text-3) !important;
   }
 
   .glass-surface {

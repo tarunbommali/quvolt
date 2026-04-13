@@ -12,9 +12,9 @@ const FinishedScreen = ({ leaderboard }) => {
             </div>
 
             <div className="qr-card rounded-xl p-10 space-y-8 relative overflow-hidden border border-gray-100">
-                <div className="absolute top-0 left-0 w-full h-[1px] bg-indigo-200" />
+                <div className="absolute top-0 left-0 w-full h-px bg-indigo-200" />
                 <h2 className="text-2xl font-medium flex items-center justify-center gap-3 text-slate-900">
-                    <Trophy className="text-yellow-500" size={32} /> Top Participants
+                    <Trophy className="theme-tone-caution" size={32} /> Top Participants
                 </h2>
                 <div className="space-y-4">
                     {leaderboard.map((entry, i) => (
@@ -22,13 +22,13 @@ const FinishedScreen = ({ leaderboard }) => {
                             key={entry._id || entry.userId || `${entry.name}-${i}`}
                             className={`flex justify-between items-center p-6 rounded-2xl ${
                                 i === 0
-                                    ? 'bg-yellow-50 border border-yellow-300'
+                                    ? 'theme-status-caution'
                                     : 'bg-gray-50 border border-gray-100'
                             }`}
                         >
                             <div className="flex items-center gap-6">
                                 <span className={`text-2xl font-medium w-10 ${
-                                    i === 0 ? 'text-yellow-500' : 'text-slate-400'
+                                    i === 0 ? 'theme-tone-caution' : 'text-slate-400'
                                 }`}>
                                     {i + 1}
                                 </span>

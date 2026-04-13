@@ -177,8 +177,8 @@ const JoinSessionPage = () => {
                 )}
 
                 {paymentQuiz && (
-                    <div className="space-y-6 p-8 bg-yellow-50 border border-yellow-200 rounded-4xl animate-in zoom-in duration-300 shadow-sm">
-                        <div className={`${textStyles.overline} flex items-center justify-center gap-2 text-yellow-600`}>
+                    <div className="space-y-6 p-8 theme-status-caution rounded-4xl animate-in zoom-in duration-300 shadow-sm">
+                        <div className={`${textStyles.overline} flex items-center justify-center gap-2 theme-tone-caution`}>
                             <CreditCard size={20} />
                             <span>Payment Required</span>
                         </div>

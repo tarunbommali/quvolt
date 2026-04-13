@@ -9,6 +9,7 @@ const OptionsGrid = ({ options, selectedOption, timeLeft, onSubmitAnswer, myResu
                 {options.map((option, i) => {
                     const isSelected = selectedOption === option;
                     const isSubmitting = isSelected && !myResult;
+
                     return (
                         <button
                             key={`${option}-${i}`}
@@ -19,25 +20,27 @@ const OptionsGrid = ({ options, selectedOption, timeLeft, onSubmitAnswer, myResu
                             className={`qr-option-btn
                                 ${
                                     isSelected
-                                        ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200 scale-[0.98]'
-                                        : 'border-indigo-200 bg-indigo-50/80 hover:bg-indigo-100/80 hover:border-indigo-300'
+                                        ? 'border-(--qb-primary) bg-[color-mix(in_srgb,var(--qb-primary)_14%,var(--qb-surface-1))] ring-2 ring-[color-mix(in_srgb,var(--qb-primary)_30%,white)] scale-[0.98]'
+                                        : 'border-[color-mix(in_srgb,var(--qb-primary)_28%,var(--qb-border))] bg-[color-mix(in_srgb,var(--qb-primary)_10%,var(--qb-surface-1))] hover:bg-[color-mix(in_srgb,var(--qb-primary)_16%,var(--qb-surface-1))] hover:border-(--qb-primary)'
                                 }
                                 ${selectedOption && !isSelected ? 'opacity-45 saturate-50' : 'opacity-100'}
                             `}
                         >
                             <div
                                 className={`absolute top-4 left-6 px-3 py-1 text-xs font-bold rounded-full flex items-center gap-1 ${
-                                    isSelected ? 'bg-slate-900 text-white' : 'bg-indigo-600 text-white'
+                                    isSelected ? 'bg-(--qb-text-1) text-white' : 'bg-(--qb-primary) text-white'
                                 }`}
                             >
                                 OPTION {String.fromCharCode(65 + i)}
                             </div>
-                            <span className="w-full wrap-break-word text-slate-900 mt-2 text-lg font-semibold">
+
+                            <span className="w-full wrap-break-word theme-text-primary mt-2 text-lg font-semibold">
                                 {option}
                             </span>
+
                             {isSubmitting && (
                                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                                    <span className="absolute h-8 w-8 rounded-full bg-indigo-300/10 animate-ping" />
+                                    <span className="absolute h-8 w-8 rounded-full bg-[color-mix(in_srgb,var(--qb-primary)_18%,transparent)] animate-ping" />
                                 </div>
                             )}
                         </button>

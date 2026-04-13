@@ -29,21 +29,21 @@ const CreateTemplatePanel = ({
     const plan = subscriptionEntitlements?.plan || 'FREE';
 
     return (
-        <div className="bg-white p-8 space-y-6 mt-12 animate-in slide-in-from-bottom duration-300 border border-gray-100 rounded-4xl shadow-sm">
+        <div className="theme-surface p-8 space-y-6 mt-12 animate-in slide-in-from-bottom duration-300 border theme-border rounded-3xl shadow-sm">
             <div className="flex justify-between items-center">
-                <h3 className="text-2xl font-black text-slate-900 uppercase">
+                <h3 className="text-2xl font-black theme-text-primary uppercase">
                     {currentSubject ? `New Template in ${currentSubject.title}` : 'New Template Configuration'}
                 </h3>
-                <div className="flex bg-gray-100 p-1 rounded-xl border border-gray-200">
+                <div className="flex theme-surface-soft p-1 rounded-xl border theme-border">
                     <button
                         onClick={() => onQuizTypeChange('quiz')}
-                        className={`px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${quizType === 'quiz' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        className={`px-6 py-2 rounded-xl text-xs font-bold uppercase tracking-widest theme-interactive ${quizType === 'quiz' ? 'bg-(--qb-primary) text-white shadow-sm' : 'theme-text-muted hover:theme-text-primary'}`}
                     >
                         Quiz File
                     </button>
                     <button
                         onClick={() => onQuizTypeChange('subject')}
-                        className={`px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${quizType === 'subject' ? 'bg-yellow-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        className={`px-6 py-2 rounded-xl text-xs font-bold uppercase tracking-widest theme-interactive ${quizType === 'subject' ? 'theme-status-caution shadow-sm' : 'theme-text-muted hover:theme-text-primary'}`}
                     >
                         Folder
                     </button>
@@ -72,7 +72,7 @@ const CreateTemplatePanel = ({
                         <option value="private" disabled={!canUsePrivateHosting}>Private (Creator+)</option>
                     </select>
                     {!canUsePrivateHosting ? (
-                        <p className="mt-2 text-[11px] font-semibold text-amber-600 uppercase tracking-widest">
+                        <p className="mt-2 text-[11px] font-semibold theme-status-warning inline-flex rounded-full border px-2 py-1 uppercase tracking-widest">
                             Private hosting requires Creator or Teams plan.
                         </p>
                     ) : null}
@@ -119,7 +119,7 @@ const CreateTemplatePanel = ({
                         <span className="text-xs font-bold uppercase tracking-widest text-slate-400">Paid Quiz</span>
                     </label>
                     {!canCreatePaidQuiz ? (
-                        <p className="text-[11px] font-semibold text-amber-600 uppercase tracking-widest">
+                        <p className="text-[11px] font-semibold theme-status-warning inline-flex rounded-full border px-2 py-1 uppercase tracking-widest">
                             Paid quizzes require Creator or Teams plan.
                         </p>
                     ) : null}

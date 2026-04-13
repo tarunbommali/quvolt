@@ -320,10 +320,10 @@ const BillingOverviewPage = () => {
     };
 
     const payoutCards = [
-        { key: 'pending', label: 'Pending', value: totals.pending, tone: 'text-amber-600' },
-        { key: 'processing', label: 'Processing', value: totals.processing, tone: 'text-indigo-600' },
-        { key: 'transferred', label: 'Transferred', value: totals.transferred, tone: 'text-emerald-600' },
-        { key: 'blocked_kyc', label: 'Blocked KYC', value: totals.blocked_kyc, tone: 'text-red-600' },
+        { key: 'pending', label: 'Pending', value: totals.pending, tone: 'theme-tone-warning' },
+        { key: 'processing', label: 'Processing', value: totals.processing, tone: 'theme-tone-info' },
+        { key: 'transferred', label: 'Transferred', value: totals.transferred, tone: 'theme-tone-success' },
+        { key: 'blocked_kyc', label: 'Blocked KYC', value: totals.blocked_kyc, tone: 'theme-tone-danger' },
     ];
 
     return (

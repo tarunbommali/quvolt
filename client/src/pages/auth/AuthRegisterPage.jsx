@@ -56,7 +56,7 @@ const AuthRegisterPage = () => {
                 </div>
 
                 {error && (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm font-bold">
+                    <div className="flex items-center gap-3 px-4 py-3 theme-status-danger border rounded-lg text-sm font-bold">
                         <AlertCircle size={18} className="shrink-0" />
                         {error}
                     </div>
@@ -168,7 +168,7 @@ const AuthRegisterPage = () => {
                                 id="role-organizer"
                                 onClick={() => setRole('organizer')}
                                 className={`flex-1 min-h-11 px-3 rounded-lg border transition-all text-sm font-bold focus-ring ${role === 'organizer'
-                                        ? 'bg-yellow-50 border-yellow-500 text-yellow-700'
+                                    ? 'theme-status-caution'
                                         : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                                     }`}
                             >

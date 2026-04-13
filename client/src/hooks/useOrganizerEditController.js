@@ -76,13 +76,16 @@ const useOrganizerEditController = () => {
     const order = useEditorState((state) => state.order);
     const activeSlideId = useEditorState((state) => state.activeSlideId);
     const setActiveSlideByIndex = useEditorState((state) => state.setActiveSlideByIndex);
+    const setActiveSlideById = useEditorState((state) => state.setActiveSlideById);
     const updateActiveSlide = useEditorState((state) => state.updateActiveSlide);
     const updateSlideById = useEditorState((state) => state.updateSlideById);
     const updateConfig = useEditorState((state) => state.updateConfig);
     const addSlide = useEditorState((state) => state.addSlide);
+    const duplicateSlideAtIndex = useEditorState((state) => state.duplicateSlideAtIndex);
     const deleteSlide = useEditorState((state) => state.deleteSlide);
     const moveSlide = useEditorState((state) => state.moveSlide);
     const importSlides = useEditorState((state) => state.importSlides);
+    const restoreSnapshot = useEditorState((state) => state.restoreSnapshot);
     const config = useEditorState((state) => state.config);
 
     const [activeQuiz, setActiveQuiz] = useState(location.state?.quiz || null);
@@ -231,6 +234,8 @@ const useOrganizerEditController = () => {
 
     const handleMoveQuestionUp = (index) => moveSlide(index, Math.max(index - 1, 0));
     const handleMoveQuestionDown = (index) => moveSlide(index, Math.min(index + 1, order.length - 1));
+    const handleMoveSlide = (fromIndex, toIndex) => moveSlide(fromIndex, toIndex);
+    const handleDuplicateSlide = (index) => duplicateSlideAtIndex(index);
 
     const handleApplyToAllSlides = () => {
         if (!activeQuestion) return;
@@ -323,9 +328,14 @@ const useOrganizerEditController = () => {
         saveError,
         persistFullState,
         orderedSlides,
+        dirty,
         activeQuestionIndex,
         activeQuestion,
+        activeSlideId,
+        getSnapshot,
+        restoreSnapshot,
         handleDeleteQuestion,
+        deleteSlide,
         handleQuestionTextChange,
         handleOptionChange,
         handleTimeLimitChange,
@@ -335,11 +345,14 @@ const useOrganizerEditController = () => {
         handleToggleShuffleQuestions,
         handleMoveQuestionUp,
         handleMoveQuestionDown,
+        handleMoveSlide,
+        handleDuplicateSlide,
         handleApplyToAllSlides,
         handleImportSlides,
         handleAIGenerate,
         handleAISave,
         setActiveSlideByIndex,
+        setActiveSlideById,
         addSlide,
     };
 };

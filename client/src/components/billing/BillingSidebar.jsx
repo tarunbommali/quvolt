@@ -21,9 +21,9 @@ const BillingSidebar = ({ limitJoin, hostAccount, isOrganizer }) => (
             <Card className="space-y-4 rounded-2xl border border-gray-200 bg-white p-4 md:p-6 shadow-sm">
                 <div className="flex items-center gap-3">
                     {hostAccount?.accountStatus === 'active' ? (
-                        <ShieldCheck className="text-emerald-600" size={20} />
+                        <ShieldCheck className="theme-tone-success" size={20} />
                     ) : (
-                        <CircleAlert className="text-amber-600" size={20} />
+                        <CircleAlert className="theme-tone-warning" size={20} />
                     )}
                     <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Account Readiness</h3>
                 </div>

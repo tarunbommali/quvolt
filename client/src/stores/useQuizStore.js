@@ -85,10 +85,12 @@ const normalizeParticipants = (payload) => {
 
 const hasRenderableQuestionPayload = (question) => {
     if (!question || typeof question !== 'object') return false;
-    const hasId = Boolean(question._id);
     const hasText = typeof question.text === 'string' && question.text.trim().length > 0;
     const hasOptions = Array.isArray(question.options) && question.options.length > 0;
-    return (hasId || hasText) && hasOptions;
+    const hasTimeLimit = Number.isFinite(Number(question.timeLimit)) && Number(question.timeLimit) > 0;
+    const hasIndex = Number.isFinite(Number(question.index));
+    const hasTotal = Number.isFinite(Number(question.total)) && Number(question.total) > 0;
+    return hasText && hasOptions && hasTimeLimit && hasIndex && hasTotal;
 };
 
 export const useQuizStore = create()(devtools((set, get) => ({

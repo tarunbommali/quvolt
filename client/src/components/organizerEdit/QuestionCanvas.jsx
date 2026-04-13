@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { AlertCircle, CheckCircle2, Zap } from 'lucide-react';
 import { components } from '../../styles/components';
 import { cx } from '../../styles/theme';
@@ -8,9 +9,29 @@ const QuestionCanvas = ({
     totalQuestions = 0,
     onQuestionTextChange,
     onOptionChange,
+    isEditing = false,
+    onEnterEdit,
+    onExitEdit,
 }) => {
+    const questionInputRef = useRef(null);
+    const optionInputRefs = useRef([]);
+    const [editingOptionIndex, setEditingOptionIndex] = useState(null);
     const questionNumber = Math.max(1, (activeQuestionIndex || 0) + 1);
     const totalCount = Math.max(0, totalQuestions || 0);
+
+    useEffect(() => {
+        if (!isEditing) {
+            setEditingOptionIndex(null);
+            return;
+        }
+
+        if (editingOptionIndex !== null) {
+            optionInputRefs.current[editingOptionIndex]?.focus();
+            return;
+        }
+
+        questionInputRef.current?.focus();
+    }, [isEditing, editingOptionIndex]);
 
     return (
         <main className={components.organizer.canvasMain}>
@@ -36,15 +57,27 @@ const QuestionCanvas = ({
                             </div>
 
                             <div className={components.organizer.canvasQuestionCol}>
-                                <textarea
-                                    className={components.organizer.canvasQuestionInput}
-                                    placeholder="Type your question here..."
-                                    value={activeQuestion.text}
-                                    onChange={(e) => onQuestionTextChange(e.target.value)}
-                                />
+                                {isEditing ? (
+                                    <textarea
+                                        ref={questionInputRef}
+                                        className={components.organizer.canvasQuestionInput}
+                                        placeholder="Type your question here..."
+                                        value={activeQuestion.text}
+                                        onChange={(e) => onQuestionTextChange(e.target.value)}
+                                        onBlur={() => onExitEdit?.()}
+                                    />
+                                ) : (
+                                    <button
+                                        type="button"
+                                        onClick={onEnterEdit}
+                                        className="w-full rounded-xl border border-dashed theme-border px-3 py-3 text-left text-lg font-semibold theme-text-primary transition-colors hover:theme-surface-soft"
+                                    >
+                                        {activeQuestion.text || 'Click to edit question'}
+                                    </button>
+                                )}
 
                                 <div className={components.organizer.canvasOptionsGrid}>
-                                    {activeQuestion.options.map((option, index) => {
+                                    {(activeQuestion.options || []).map((option, index) => {
                                         const isCorrect = activeQuestion.correctOption === index;
 
                                         return (
@@ -54,35 +87,53 @@ const QuestionCanvas = ({
                                             >
                                                 <div
                                                     className={cx(
-                                                        components.organizer.canvasOptionBadge,
-                                                        isCorrect
-                                                            ? components.organizer.canvasOptionBadgeCorrect
-                                                            : components.organizer.canvasOptionBadgeIdle,
-                                                    )}
-                                                >
-                                                    <span className={components.organizer.canvasOptionBadgeLetter}>
-                                                        {String.fromCharCode(65 + index)}
-                                                    </span>
-                                                    {isCorrect && <CheckCircle2 size={13} />}
-                                                </div>
-
-                                                <button
-                                                    onClick={(e) => e.preventDefault()}
-                                                    className={cx(
                                                         components.organizer.canvasOptionButton,
                                                         isCorrect
                                                             ? components.organizer.canvasOptionButtonCorrect
                                                             : components.organizer.canvasOptionButtonIdle,
                                                     )}
                                                 >
-                                                    <input
-                                                        type="text"
-                                                        className={components.organizer.canvasOptionInput}
-                                                        placeholder={`Option ${index + 1}`}
-                                                        value={option}
-                                                        onChange={(e) => onOptionChange(index, e.target.value)}
-                                                    />
-                                                </button>
+                                                    <span
+                                                        className={cx(
+                                                            components.organizer.canvasOptionLetter,
+                                                            isCorrect ? components.organizer.canvasOptionLetterCorrect : '',
+                                                        )}
+                                                    >
+                                                        {String.fromCharCode(65 + index)}
+                                                    </span>
+                                                    <div className={components.organizer.canvasOptionContent}>
+                                                        {isEditing ? (
+                                                            <input
+                                                                ref={(node) => {
+                                                                    optionInputRefs.current[index] = node;
+                                                                }}
+                                                                type="text"
+                                                                className={components.organizer.canvasOptionInput}
+                                                                placeholder={`Option ${index + 1}`}
+                                                                value={option}
+                                                                onChange={(e) => onOptionChange(index, e.target.value)}
+                                                                onFocus={() => {
+                                                                    onEnterEdit?.();
+                                                                    setEditingOptionIndex(index);
+                                                                }}
+                                                            />
+                                                        ) : (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setEditingOptionIndex(index);
+                                                                    onEnterEdit?.();
+                                                                }}
+                                                                className="w-full text-left text-sm theme-text-primary"
+                                                            >
+                                                                {option || `Option ${index + 1}`}
+                                                            </button>
+                                                        )}
+                                                        {isCorrect ? (
+                                                            <span className={components.organizer.canvasOptionState}>Correct</span>
+                                                        ) : null}
+                                                    </div>
+                                                </div>
                                             </div>
                                         );
                                     })}
@@ -101,10 +152,6 @@ const QuestionCanvas = ({
                         </p>
                     </div>
                 )}
-            </div>
-
-            <div className={components.organizer.canvasFooter}>
-                WYSIWYG Editor // Canvas Phase 1
             </div>
         </main>
     );

@@ -5,7 +5,7 @@ import api from '../../services/api';
 const optionColors = [
     { bg: 'bg-blue-100', bar: 'bg-blue-500', text: 'text-blue-700', border: 'border-blue-200' },
     { bg: 'bg-violet-100', bar: 'bg-violet-500', text: 'text-violet-700', border: 'border-violet-200' },
-    { bg: 'bg-amber-100', bar: 'bg-amber-500', text: 'text-amber-700', border: 'border-amber-200' },
+    { bg: 'theme-status-warning', bar: 'bg-(--qb-warning-bg-strong)', text: 'theme-tone-warning', border: 'border-(--qb-warning-border)' },
     { bg: 'bg-rose-100', bar: 'bg-rose-500', text: 'text-rose-700', border: 'border-rose-200' },
 ];
 
@@ -61,15 +61,15 @@ const LiveResult = ({ activeQuiz, leaderboard, navigate, sessionCode }) => {
                     <p className="text-[11px] font-medium text-slate-400 mt-1">Points</p>
                 </div>
                 {/* 1st */}
-                <div className="h-72 bg-yellow-50 p-6 rounded-xl border-x border-b border-yellow-200 flex flex-col items-center justify-end relative border-t-2 border-t-yellow-400 z-10">
-                    <Trophy className="absolute -top-14 text-yellow-500 w-28 h-28" />
+                <div className="theme-status-caution h-72 p-6 rounded-xl border-x border-b flex flex-col items-center justify-end relative border-t-2 z-10">
+                    <Trophy className="theme-tone-caution absolute -top-14 w-28 h-28" />
                     <p className="text-lg font-medium truncate w-full text-center text-slate-900">{topThree[0]?.name || '—'}</p>
-                    <p className="text-4xl font-medium text-yellow-600">{topThree[0]?.score || 0}</p>
-                    <p className="text-[11px] font-medium text-yellow-700/70 mt-1">Points</p>
+                    <p className="theme-tone-caution text-4xl font-medium">{topThree[0]?.score || 0}</p>
+                    <p className="theme-tone-caution text-[11px] font-medium mt-1 opacity-75">Points</p>
                 </div>
                 {/* 3rd */}
-                <div className="h-44 bg-white p-6 rounded-xl border-x border-b border-gray-100 flex flex-col items-center justify-end relative border-t-2 border-t-amber-500">
-                    <div className="absolute -top-9 w-18 h-18 rounded-full bg-amber-50 flex items-center justify-center text-amber-600 font-medium text-2xl border border-amber-100 px-4 py-3">3</div>
+                <div className="h-44 theme-surface p-6 rounded-xl border-x border-b theme-border flex flex-col items-center justify-end relative border-t-2 border-t-(--qb-warning-border)">
+                    <div className="theme-status-warning absolute -top-9 w-18 h-18 rounded-full border flex items-center justify-center font-medium text-2xl px-4 py-3">3</div>
                     <p className="text-base font-medium truncate w-full text-center text-slate-900">{topThree[2]?.name || '—'}</p>
                     <p className="text-2xl font-medium text-slate-700">{topThree[2]?.score || 0}</p>
                     <p className="text-[11px] font-medium text-slate-400 mt-1">Points</p>
@@ -107,7 +107,7 @@ const LiveResult = ({ activeQuiz, leaderboard, navigate, sessionCode }) => {
                         {[...topThree, ...others].map((p, i) => (
                             <div key={p.name || i} className="flex justify-between items-center px-8 py-4 hover:bg-gray-50 transition-all">
                                 <div className="flex items-center gap-5">
-                                    <span className={`font-medium text-lg w-8 ${i === 0 ? 'text-yellow-500' : i === 1 ? 'text-slate-400' : i === 2 ? 'text-amber-600' : 'text-slate-300'
+                                    <span className={`font-medium text-lg w-8 ${i === 0 ? 'theme-tone-caution' : i === 1 ? 'text-slate-400' : i === 2 ? 'theme-tone-warning' : 'text-slate-300'
                                         }`}>#{i + 1}</span>
                                     <span className="font-medium text-lg tracking-tight text-slate-900">{p.name}</span>
                                 </div>

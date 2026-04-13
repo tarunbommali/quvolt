@@ -1,41 +1,43 @@
 import { memo } from 'react';
-import { Users } from 'lucide-react';
 import SocketStatusPill from '../common/SocketStatusPill';
 
-const WaitingLobby = ({ quizTitle, participants, connectionState, waitingMessage }) => {
+const WaitingLobby = ({ quizTitle, connectionState, waitingMessage, sessionCode }) => {
     return (
-        <div className="qr-page flex flex-col items-center justify-center min-h-[70vh] space-y-8 animate-in fade-in duration-500">
-            <div className="text-center space-y-6">
-                <div className="qr-badge bg-indigo-100 text-indigo-700 border border-indigo-200 animate-pulse">
-                    Waiting for host
+        <div className="qr-page flex items-center justify-center h-[80vh] animate-in fade-in duration-500">
+            <div
+                className="w-full max-w-lg rounded-2xl border p-8 text-center md:p-10"
+                style={{
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    borderColor: 'rgba(255, 255, 255, 0.10)',
+                    backdropFilter: 'blur(12px)',
+                }}
+            >
+                <div className="mx-auto mb-3 h-2.5 w-2.5 rounded-full bg-green-500 animate-pulse" />
+
+                <h2 className="text-xl font-semibold text-white md:text-2xl">
+                    Waiting for Host
+                </h2>
+
+                <p className="mt-2 text-sm md:text-base text-white/60">
+                    {waitingMessage || 'The quiz will begin shortly...'}
+                </p>
+
+                <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-xs text-white/70">
+                    {quizTitle ? (
+                        <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1">
+                            {quizTitle}
+                        </span>
+                    ) : null}
+
+                    {sessionCode ? (
+                        <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1 uppercase tracking-wide">
+                            Code: {sessionCode}
+                        </span>
+                    ) : null}
                 </div>
+
                 <div className="flex justify-center">
                     <SocketStatusPill connectionState={connectionState} className="inline-flex!" />
-                </div>
-                <h1 className="page-title text-3xl md:text-4xl font-medium leading-tight">
-                    {quizTitle || 'Joining Session...'}
-                </h1>
-                <p className="qr-subtle text-base md:text-lg">
-                    {waitingMessage || 'The quiz session is being prepared. Please wait for the host to begin.'}
-                </p>
-            </div>
-
-            <div className="qr-card rounded-xl p-8 w-full max-w-md">
-                <div className="flex items-center gap-3 mb-6 text-indigo-600 border-b border-gray-100 pb-4">
-                    <Users size={24} />
-                    <h3 className="qr-panel-title text-slate-900 font-medium">
-                        Invite Room
-                    </h3>
-                </div>
-                <div className="grid grid-cols-2 gap-3 max-h-60 overflow-y-auto pr-2">
-                    {participants.map((p, i) => (
-                        <div
-                            key={p._id || i}
-                            className="px-4 py-3 bg-gray-50 rounded-lg border border-gray-100 text-center font-medium text-slate-800"
-                        >
-                            {p.name}
-                        </div>
-                    ))}
                 </div>
             </div>
         </div>

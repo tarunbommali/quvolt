@@ -12,18 +12,18 @@ const PaymentOverviewCards = ({ paymentHealth, hostAccount, payoutCards, inrSymb
                     <h3 className={textStyles.overline}>Payment System</h3>
                     <p className={`mt-2 ${textStyles.titleXl}`}>Gateway & Settlement</p>
                 </div>
-                <Activity className={paymentHealth?.status === 'healthy' ? 'text-emerald-500' : 'text-red-500'} />
+                <Activity className={paymentHealth?.status === 'healthy' ? 'theme-tone-success' : 'theme-tone-danger'} />
             </div>
             <div className={cardStyles.stackMdStrong}>
                 <div className={cardStyles.infoRow}>
                     <span className={textStyles.subtitle}>Service Health</span>
-                    <span className={paymentHealth?.status === 'healthy' ? 'text-emerald-600' : 'text-red-600'}>
+                    <span className={paymentHealth?.status === 'healthy' ? 'theme-tone-success' : 'theme-tone-danger'}>
                         {paymentHealth?.status || 'Unavailable'}
                     </span>
                 </div>
                 <div className={cardStyles.infoRow}>
                     <span className={textStyles.subtitle}>KYC Status</span>
-                    <span className={hostAccount?.accountStatus === 'active' ? 'text-emerald-600' : 'text-amber-600'}>
+                    <span className={hostAccount?.accountStatus === 'active' ? 'theme-tone-success' : 'theme-tone-warning'}>
                         {hostAccount?.accountStatus || 'Not linked'}
                     </span>
                 </div>

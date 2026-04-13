@@ -102,7 +102,7 @@ const SubjectProjectCard = ({
 
     if (isList) {
         return (
-            <article className="rounded-xl border border-gray-200 bg-white">
+            <article className="theme-radius-card border theme-border theme-surface theme-interactive theme-hover-surface">
                 <div
                     role="button"
                     tabIndex={0}
@@ -115,14 +115,14 @@ const SubjectProjectCard = ({
                     }}
                     onMouseEnter={onPrefetch}
                     onFocus={onPrefetch}
-                    className="cursor-pointer px-4 py-3 transition-all hover:bg-gray-50 focus-visible:bg-gray-50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-indigo-200"
+                    className="cursor-pointer px-4 py-3 theme-interactive focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-indigo-300"
                 >
                     <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-6">
                         <div className="flex min-w-62.5 flex-col gap-1 md:w-110 md:shrink-0">
-                            <h3 className="truncate text-sm font-semibold text-gray-900 md:text-base" title={quiz.title}>
+                            <h3 className="truncate text-sm font-semibold theme-text-primary md:text-base" title={quiz.title}>
                                 {quiz.title}
                             </h3>
-                            <div className="flex flex-wrap gap-4 text-xs text-gray-500">
+                            <div className="flex flex-wrap gap-4 text-xs theme-text-muted">
                                 <span className="inline-flex items-center gap-1.5">
                                     <CalendarDays size={13} className="text-gray-400" />
                                     Created {toDate(quiz.createdAt)}
@@ -134,14 +134,14 @@ const SubjectProjectCard = ({
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-6 text-sm text-gray-600 md:w-65 md:shrink-0">
+                        <div className="flex items-center gap-6 text-sm theme-text-secondary md:w-65 md:shrink-0">
                             <p className="inline-flex items-center gap-1.5">
                                 <Layers size={13} className="text-gray-400" />
-                                Sub-quizzes <span className="font-semibold text-gray-900">{quiz.subDirectoryCount ?? 0}</span>
+                                Sub-quizzes <span className="font-semibold theme-text-primary">{quiz.subDirectoryCount ?? 0}</span>
                             </p>
                             <p className="inline-flex items-center gap-1.5">
                                 <Radio size={13} className="text-gray-400" />
-                                Sessions Live <span className="font-semibold text-gray-900">{quiz.sessionCount ?? 0}</span>
+                                Sessions Live <span className="font-semibold theme-text-primary">{quiz.sessionCount ?? 0}</span>
                             </p>
                         </div>
 

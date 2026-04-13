@@ -9,10 +9,10 @@ import { navbar } from '../styles/navbar';
 import { cx } from '../styles/theme';
 
 const STATUS_STYLES = {
-    connected: 'bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-300',
-    reconnecting: 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-300',
-    connecting: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-300',
-    disconnected: 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-300',
+    connected: 'theme-status-success',
+    reconnecting: 'theme-status-warning',
+    connecting: 'bg-[color-mix(in_srgb,var(--qb-primary)_14%,var(--qb-surface-1))] text-[var(--qb-primary)]',
+    disconnected: 'theme-surface-soft theme-text-muted',
 };
 
 const mobilePanelVariants = {

@@ -4,24 +4,24 @@ const SOCKET_STATE_COPY = {
     connected: {
         icon: Wifi,
         label: 'Live Sync',
-        tone: 'text-emerald-700 bg-emerald-50 border-emerald-100',
+        tone: 'theme-status-success',
     },
     reconnecting: {
         icon: Loader2,
         label: 'Reconnecting',
-        tone: 'text-amber-700 bg-amber-50 border-amber-100',
+        tone: 'theme-status-warning',
         spinning: true,
     },
     connecting: {
         icon: Loader2,
         label: 'Connecting',
-        tone: 'text-indigo-700 bg-indigo-50 border-indigo-100',
+        tone: 'theme-status-info',
         spinning: true,
     },
     disconnected: {
         icon: WifiOff,
         label: 'Offline',
-        tone: 'text-red-700 bg-red-50 border-red-100',
+        tone: 'theme-status-danger',
     },
 };
 

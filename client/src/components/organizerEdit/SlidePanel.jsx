@@ -2,25 +2,25 @@ import SlideList from './SlideList';
 
 /**
  * Slide panel wrapper for the organizer editor.
- * @param {{ questions: Array, activeQuestionIndex: number, onSelect: Function, onAddSlide: Function, onDeleteSlide: Function, onMoveUp: Function, onMoveDown: Function }} props
+ * @param {{ questions: Array, activeQuestionIndex: number, onSelect: Function, onAddSlide: Function, onReorder?: Function, onRequestEdit?: Function }} props
  */
 const SlidePanel = ({
+    mobile = false,
     questions,
     activeQuestionIndex,
     onSelect,
     onAddSlide,
-    onDeleteSlide,
-    onMoveUp,
-    onMoveDown,
+    onReorder,
+    onRequestEdit,
 }) => (
     <SlideList
+        mobile={mobile}
         questions={questions}
         activeQuestionIndex={activeQuestionIndex}
         onSelect={onSelect}
         onAddSlide={onAddSlide}
-        onDeleteSlide={onDeleteSlide}
-        onMoveUp={onMoveUp}
-        onMoveDown={onMoveDown}
+        onReorder={onReorder}
+        onRequestEdit={onRequestEdit}
     />
 );
 

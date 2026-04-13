@@ -3,7 +3,7 @@ import { CalendarDays, Check, Clock, EllipsisVertical, Play, Radio, X, Zap } fro
 import StatusBadge from '../ui/StatusBadge';
 
 const INR_SYMBOL = '\u20B9';
-const badgeClass = 'inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em]';
+const badgeClass = 'inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em]';
 
 const QuizProjectCard = ({
     quiz,
@@ -160,7 +160,7 @@ const QuizProjectCard = ({
         </div>
 
         <div className="flex flex-wrap gap-2">
-            <span className={`${badgeClass} ${quiz.accessType === 'private' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
+            <span className={`${badgeClass} ${quiz.accessType === 'private' ? 'theme-status-private' : 'theme-status-success'}`}>
                 {quiz.accessType === 'private' ? 'Private' : 'Public'}
             </span>
             <span className={`${badgeClass} ${quiz.mode === 'tutor' ? 'bg-sky-100 text-sky-700' : 'bg-indigo-100 text-indigo-700'}`}>

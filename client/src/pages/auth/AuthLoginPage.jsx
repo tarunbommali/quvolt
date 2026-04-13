@@ -40,7 +40,7 @@ const AuthLoginPage = () => {
                 </div>
 
                 {error && (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm font-bold">
+                    <div className="flex items-center gap-3 px-4 py-3 theme-status-danger border rounded-xl text-sm font-bold">
                         <AlertCircle size={18} className="shrink-0" />
                         {error}
                     </div>

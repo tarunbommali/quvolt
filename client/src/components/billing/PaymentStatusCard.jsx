@@ -22,9 +22,9 @@ const PaymentStatusCard = ({ status, lastPaymentDate, nextPaymentDate, amount, p
         pending: {
             icon: Clock,
             label: 'Payment Pending',
-            color: 'text-amber-600',
-            bgColor: 'bg-amber-50',
-            borderColor: 'border-amber-200',
+            color: 'theme-tone-warning',
+            bgColor: 'theme-status-warning',
+            borderColor: '',
         },
         processing: {
             icon: Clock,

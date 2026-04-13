@@ -63,7 +63,7 @@ const HomePricingGrid = ({ plans }) => {
                             <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ${
                                 billingCycle === 'yearly'
                                     ? 'border-white/60 bg-white/15 text-white'
-                                    : 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300'
+                                    : 'theme-status-warning'
                             }`}>
                                 Soon
                             </span>
@@ -148,7 +148,7 @@ const PricingCard = ({ plan }) => (
             </p>
         ) : null}
 
-        <p className={`mt-4 text-sm font-semibold ${plan.name === 'Free' ? 'text-amber-600 dark:text-amber-300' : 'text-emerald-600 dark:text-emerald-300'}`}>
+        <p className={`mt-4 text-sm font-semibold ${plan.name === 'Free' ? 'theme-tone-warning' : 'text-emerald-600 dark:text-emerald-300'}`}>
             {plan.name === 'Free' ? 'Warning: ' : 'Value: '}{plan.commission}
         </p>
 

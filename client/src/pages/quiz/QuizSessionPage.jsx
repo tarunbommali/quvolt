@@ -13,10 +13,12 @@ import ErrorToast from '../../components/quizRoom/ErrorToast';
 
 const hasRenderableQuestionPayload = (question) => {
     if (!question || typeof question !== 'object') return false;
-    const hasId = Boolean(question._id);
     const hasText = typeof question.text === 'string' && question.text.trim().length > 0;
     const hasOptions = Array.isArray(question.options) && question.options.length > 0;
-    return (hasId || hasText) && hasOptions;
+    const hasTimeLimit = Number.isFinite(Number(question.timeLimit)) && Number(question.timeLimit) > 0;
+    const hasIndex = Number.isFinite(Number(question.index));
+    const hasTotal = Number.isFinite(Number(question.total)) && Number(question.total) > 0;
+    return hasText && hasOptions && hasTimeLimit && hasIndex && hasTotal;
 };
 
 const QuizSessionPage = () => {
@@ -62,6 +64,9 @@ const QuizSessionPage = () => {
     const setSessionCode = useQuizStore((state) => state.setSessionCode);
     const resetRealtimeState = useQuizStore((state) => state.resetRealtimeState);
     const hasRenderableQuestion = hasRenderableQuestionPayload(currentQuestion);
+    const normalizedStatus = String(status || '').toLowerCase();
+    const quizStarted = ['live', 'playing', 'ongoing', 'started', 'active', 'in_progress'].includes(normalizedStatus);
+    const isFinishedState = normalizedStatus === 'finished' || normalizedStatus === 'completed';
 
     useEffect(() => {
         resetRealtimeState();
@@ -116,10 +121,8 @@ const QuizSessionPage = () => {
         emitSubmitAnswer(liveRoomCode, sessionId || useQuizStore.getState().activeQuiz?.sessionId, currentQuestion._id, option);
     };
 
-    const isWaitingForHost = (status === 'waiting' || status === 'upcoming')
-        || (status === 'live' && !hasRenderableQuestion)
-        || (status === 'playing' && !hasRenderableQuestion);
-    const waitingMessage = status === 'live' && !currentQuestion
+    const isWaitingForHost = !quizStarted || !hasRenderableQuestion;
+    const waitingMessage = quizStarted && !hasRenderableQuestion
         ? 'Connected. Waiting for host to launch...'
         : 'The quiz session is being prepared. Please wait for the host to begin.';
 
@@ -140,16 +143,16 @@ const QuizSessionPage = () => {
                 <ErrorToast message={errorMessage || abortMessage} />
                 <WaitingLobby
                     quizTitle={quizTitle}
-                    participants={participants}
                     connectionState={connectionState}
                     waitingMessage={waitingMessage}
+                    sessionCode={sessionCode || roomCode}
                 />
             </>
         );
     }
 
     // Render finished/completed state
-    if (status === 'finished' || status === 'completed') {
+    if (isFinishedState) {
         return (
             <>
                 <ErrorToast message={errorMessage || abortMessage} />

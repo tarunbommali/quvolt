@@ -1,4 +1,5 @@
-import { ChevronLeft, Play, Save, Sparkles } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { ChevronLeft, EllipsisVertical, Play, Save, Sparkles, FileJson, BarChart3, MonitorCog } from 'lucide-react';
 import { buttonStyles } from '../../styles/buttonStyles';
 import { textStyles as textTokens } from '../../styles/commonStyles';
 import { components } from '../../styles/components';
@@ -6,7 +7,7 @@ import { cx } from '../../styles/theme';
 
 /**
  * Editor header with navigation and primary actions.
- * @param {{ title: string, isSaving: boolean, onBack: () => void, onOpenImport: () => void, onOpenAI: () => void, onOpenResults: () => void, onSave: () => void, onLaunch: () => void }} props
+ * @param {{ title: string, isSaving: boolean, onBack: () => void, onOpenImport: () => void, onOpenAI: () => void, onOpenResults: () => void, onSave: () => void, onLaunch: () => void, themeMode?: string, onThemeModeChange?: (mode: string) => void, onOpenCommandPalette?: () => void }} props
  */
 const OrganizerEditHeader = ({
     title,
@@ -17,14 +18,45 @@ const OrganizerEditHeader = ({
     onOpenResults,
     onSave,
     onLaunch,
+    themeMode = 'dark',
+    onThemeModeChange,
+    onOpenCommandPalette,
 }) => {
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const menuRef = useRef(null);
+
+    useEffect(() => {
+        if (!mobileMenuOpen) return undefined;
+
+        const handleClickOutside = (event) => {
+            if (menuRef.current && !menuRef.current.contains(event.target)) {
+                setMobileMenuOpen(false);
+            }
+        };
+
+        const handleEscape = (event) => {
+            if (event.key === 'Escape') setMobileMenuOpen(false);
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        document.addEventListener('keydown', handleEscape);
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('keydown', handleEscape);
+        };
+    }, [mobileMenuOpen]);
+
     return (
         <header className={components.organizer.header}>
             <div className={components.organizer.headerLeft}>
                 <button type="button" onClick={onBack} className={cx(buttonStyles.icon, components.organizer.navBack)}>
                     <ChevronLeft size={20} />
                 </button>
-                <h1 className={cx(textTokens.title, components.organizer.titleClamp)}>{title}</h1>
+                <div className="min-w-0">
+                    <p className={components.organizer.headerEyebrow}>Quiz editor</p>
+                    <h1 className={cx(textTokens.title, components.organizer.titleClamp)}>{title}</h1>
+                </div>
             </div>
 
             <div className={components.organizer.headerActions}>
@@ -47,9 +79,72 @@ const OrganizerEditHeader = ({
                     <Save size={14} /> {isSaving ? 'AUTO SAVING...' : 'SAVE'}
                 </button>
 
+                <div className="inline-flex items-center gap-1 rounded-xl border theme-border theme-surface-soft p-1">
+                    {['light', 'dark', 'presentation'].map((mode) => (
+                        <button
+                            key={mode}
+                            type="button"
+                            onClick={() => onThemeModeChange?.(mode)}
+                            className={cx(
+                                'rounded-lg px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-colors',
+                                themeMode === mode
+                                    ? 'bg-(--qb-primary) text-white'
+                                    : 'theme-text-secondary hover:theme-surface',
+                            )}
+                        >
+                            {mode}
+                        </button>
+                    ))}
+                </div>
+
+                <button
+                    type="button"
+                    onClick={onOpenCommandPalette}
+                    className={cx(buttonStyles.secondary, 'inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold')}
+                    title="Open command palette (Ctrl+K)"
+                >
+                    <MonitorCog size={14} /> Ctrl+K
+                </button>
+
                 <button type="button" onClick={onLaunch} className={cx(buttonStyles.primary, components.organizer.launchBtn)}>
                     <Play size={14} fill="currentColor" /> INVITE ROOM
                 </button>
+            </div>
+
+            <div className={components.organizer.headerActionsMobile} ref={menuRef}>
+                <button type="button" onClick={onSave} className={cx(buttonStyles.secondary, 'rounded-xl px-4 py-2 text-xs font-semibold')}>
+                    <Save size={14} /> {isSaving ? 'SAVING...' : 'SAVE'}
+                </button>
+
+                <div className={components.organizer.mobileMenuWrap}>
+                    <button
+                        type="button"
+                        onClick={() => setMobileMenuOpen((prev) => !prev)}
+                        className={cx(buttonStyles.secondary, 'rounded-xl px-3 py-2 text-xs font-semibold')}
+                        aria-expanded={mobileMenuOpen}
+                        aria-label="Open editor actions"
+                    >
+                        <EllipsisVertical size={14} />
+                    </button>
+
+                    {mobileMenuOpen && (
+                        <div className={components.organizer.mobileMenuPanel}>
+                            <button type="button" onClick={() => { setMobileMenuOpen(false); onOpenImport(); }} className={components.organizer.mobileMenuItem}>
+                                <FileJson size={14} /> Insert JSON
+                            </button>
+                            <button type="button" onClick={() => { setMobileMenuOpen(false); onOpenAI(); }} className={components.organizer.mobileMenuItem}>
+                                <Sparkles size={14} /> AI Generate
+                            </button>
+                            <div className={components.organizer.mobileMenuDivider} />
+                            <button type="button" onClick={() => { setMobileMenuOpen(false); onOpenResults(); }} className={components.organizer.mobileMenuItem}>
+                                <BarChart3 size={14} /> Results
+                            </button>
+                            <button type="button" onClick={() => { setMobileMenuOpen(false); onLaunch(); }} className={components.organizer.mobileMenuItem}>
+                                <Play size={14} /> Invite Room
+                            </button>
+                        </div>
+                    )}
+                </div>
             </div>
         </header>
     );

@@ -14,7 +14,7 @@ const ConfirmationDialog = ({ open, message, confirmLabel = 'Confirm', cancelLab
                 className={modalStyles.dialog}
             >
                 <div className={modalStyles.body}>
-                    <div className="rounded-2xl bg-amber-50 p-3 text-amber-500">
+                    <div className="rounded-2xl theme-status-warning p-3 theme-tone-warning">
                         <AlertTriangle size={24} />
                     </div>
                     <div className="flex-1">
