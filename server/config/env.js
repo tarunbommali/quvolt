@@ -34,7 +34,7 @@ const config = {
     jwtSecret: process.env.JWT_SECRET,
     jwtRefreshSecret: process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
     redisUrl: process.env.REDIS_URL,
-    clientUrl: process.env.CLIENT_URL.split(','),
+    clientUrl: process.env.CLIENT_URL.split(',').map((value) => value.trim()).filter(Boolean),
     paymentServiceUrl: process.env.PAYMENT_SERVICE_URL || 'http://localhost:5001'
 };
 

@@ -45,6 +45,9 @@ export const useSocketStore = create((set, get) => ({
             reconnection: true,
             reconnectionAttempts: 5,
             reconnectionDelay: 1000,
+            withCredentials: true,
+            transports: ['websocket'],
+            path: '/socket.io',
         });
 
         socket.on('connect', () => {
@@ -59,6 +62,9 @@ export const useSocketStore = create((set, get) => ({
         socket.io.on('reconnect_attempt', () => set({ connectionState: 'reconnecting' }));
         socket.io.on('error', (err) => set({ connectionState: 'disconnected', lastError: err?.message || 'Socket error' }));
         socket.io.on('reconnect_error', (err) => set({ connectionState: 'reconnecting', lastError: err?.message || 'Reconnect failed' }));
+        socket.on('connect_error', (err) => {
+            set({ connectionState: 'disconnected', lastError: err?.message || 'Connection failed' });
+        });
 
         socket.on('room_state', (state) => {
             if (!get().shouldProcessEvent('room_state', state)) return;

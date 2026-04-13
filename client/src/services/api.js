@@ -290,6 +290,17 @@ export const verifySubscriptionPayment = (orderId, paymentId, signature, planId)
 export const cancelSubscription = (reason) =>
     api.post('/subscription/cancel', { reason }).then(r => r.data);
 
-export const getSocketUrl = () => (BASE_URL.startsWith('http') ? BASE_URL : window.location.origin);
+export const getSocketUrl = () => {
+    if (!BASE_URL.startsWith('http')) {
+        return window.location.origin;
+    }
+
+    try {
+        // Socket.IO should connect to host origin, not API base path like /api.
+        return new URL(BASE_URL).origin;
+    } catch {
+        return window.location.origin;
+    }
+};
 
 export default api;
