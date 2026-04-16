@@ -25,7 +25,7 @@ QuestionSchema.path('correctOption').validate(function validateCorrectOption(ind
 
 const QuizSchema = new mongoose.Schema({
     title: { type: String, required: true, trim: true, minlength: 1, maxlength: 150 },
-    organizerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    hostId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     roomCode: { type: String, unique: true, sparse: true, uppercase: true, trim: true },
     type: { type: String, enum: ['quiz', 'subject'], default: 'quiz' },
     quizCategory: {
@@ -60,7 +60,7 @@ const QuizSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 
-QuizSchema.index({ organizerId: 1, createdAt: -1 });
+QuizSchema.index({ hostId: 1, createdAt: -1 });
 QuizSchema.index({ parentId: 1, createdAt: -1 });
 QuizSchema.index({ status: 1, updatedAt: -1 });
 

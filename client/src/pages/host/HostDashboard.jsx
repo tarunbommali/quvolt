@@ -1,24 +1,24 @@
 import { useEffect, useState } from 'react';
 import { getMyQuizzes } from '../../services/api';
 
-const OrganizerDashboard = () => {
+const HostDashboard = () => {
 	const [quizzes, setQuizzes] = useState([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(null);
-
+ 
 	useEffect(() => {
 		getMyQuizzes()
 			.then(setQuizzes)
 			.catch(() => setError('Failed to load quizzes'))
 			.finally(() => setLoading(false));
 	}, []);
-
+ 
 	if (loading) return <div>Loading quizzes...</div>;
 	if (error) return <div>{error}</div>;
-
+ 
 	return (
 		<div>
-			<h1>My Quizzes (Organizer)</h1>
+			<h1>Host Dashboard</h1>
 			{quizzes.length === 0 ? (
 				<div>No quizzes found.</div>
 			) : (
@@ -31,5 +31,5 @@ const OrganizerDashboard = () => {
 		</div>
 	);
 };
-export default OrganizerDashboard;
+export default HostDashboard;
  

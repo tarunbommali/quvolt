@@ -3,7 +3,7 @@ import { devtools } from 'zustand/middleware';
 import {
     getMyProfile,
     getMyQuizzes,
-    getOrganizerHistory,
+    gethostHistory,
     getQuizByCode,
     getQuizLeaderboard,
     getSubjectLeaderboard,
@@ -144,8 +144,21 @@ export const useQuizStore = create()(devtools((set, get) => ({
     setAbortMessage: (abortMessage) => set({ abortMessage }),
 
     applyRoomState: (state) => {
+        // Map server status to internal client states
+        let clientStatus = state?.status || get().status;
+        let clientView = get().view;
+
+        if (clientStatus === 'completed') {
+            clientStatus = 'finished';
+            clientView = 'results';
+        } else if (clientStatus === 'aborted') {
+            clientStatus = 'upcoming'; // or some other state
+            clientView = 'loading';
+        }
+
         const updates = {
-            status: state?.status || get().status,
+            status: clientStatus,
+            view: clientView,
         };
         const hasQuestionPayload = hasRenderableQuestionPayload(state?.currentQuestion);
 
@@ -292,7 +305,7 @@ export const useQuizStore = create()(devtools((set, get) => ({
 
         if (inflightHistory[cacheKey]) return inflightHistory[cacheKey];
 
-        const request = (role === 'organizer' ? getOrganizerHistory() : getUserHistory())
+        const request = (role === 'host' ? gethostHistory() : getUserHistory())
             .then((data) => {
                 set((current) => ({
                     historyCache: setCache(current.historyCache, cacheKey, data),

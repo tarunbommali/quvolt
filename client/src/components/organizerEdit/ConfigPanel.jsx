@@ -17,34 +17,34 @@ const ConfigPanel = ({
     onCorrectOptionChange,
     onDeleteCurrentSlide,
 }) => (
-    <aside className={mobile ? 'space-y-4 rounded-2xl border theme-border theme-surface p-4 shadow-sm' : components.organizer.configAside}>
-        <div className={components.organizer.configHeader}>
-            <p className={components.organizer.configTitle}>{mobile ? 'Settings' : 'Configuration'}</p>
+    <aside className={mobile ? 'space-y-4 rounded-2xl border theme-border theme-surface p-4 shadow-sm' : components.host.configAside}>
+        <div className={components.host.configHeader}>
+            <p className={components.host.configTitle}>{mobile ? 'Settings' : 'Configuration'}</p>
         </div>
-        <section className={components.organizer.configSection}>
-            <h3 className={cx(textStyles.metaLabel, components.organizer.configTitle, 'sr-only')}>{mobile ? 'Settings' : 'Configuration'}</h3>
+        <section className={components.host.configSection}>
+            <h3 className={cx(textStyles.metaLabel, components.host.configTitle, 'sr-only')}>{mobile ? 'Settings' : 'Configuration'}</h3>
 
-            <div className={components.organizer.configFieldGroupTop}>
-                <div className={components.organizer.configField}>
-                    <label className={components.organizer.configFieldLabel}>Question Type</label>
-                    <div className={components.organizer.configSelectWrap}>
+            <div className={components.host.configFieldGroupTop}>
+                <div className={components.host.configField}>
+                    <label className={components.host.configFieldLabel}>Question Type</label>
+                    <div className={components.host.configSelectWrap}>
                         <select
-                            className={cx(components.organizer.configFieldSelect, components.organizer.configSelectNative)}
+                            className={cx(components.host.configFieldSelect, components.host.configSelectNative)}
                             value={activeQuestion?.questionType || 'multiple-choice'}
                             onChange={(e) => onQuestionTypeChange(e.target.value)}
                         >
                             <option value="multiple-choice">Multiple Choice</option>
                         </select>
-                        <div className={components.organizer.configSelectIconWrap}>
-                            <Zap size={14} className={components.organizer.iconAccent} />
+                        <div className={components.host.configSelectIconWrap}>
+                            <Zap size={14} className={components.host.iconAccent} />
                         </div>
                     </div>
                 </div>
 
-                <div className={components.organizer.configField}>
-                    <label className={components.organizer.configFieldLabel}>Correct Answer</label>
+                <div className={components.host.configField}>
+                    <label className={components.host.configFieldLabel}>Correct Answer</label>
                     <select
-                        className={components.organizer.configFieldSelect}
+                        className={components.host.configFieldSelect}
                         value={activeQuestion?.correctOption ?? ''}
                         onChange={(e) => onCorrectOptionChange(Number(e.target.value))}
                     >
@@ -56,36 +56,36 @@ const ConfigPanel = ({
                 </div>
             </div>
 
-            <div className={components.organizer.configStack}>
-                     <button
-                        onClick={onToggleShuffleOptions}
-                        disabled={!activeQuestion}
-                        className={cx(
-                            components.organizer.configToggleBtn,
-                            activeQuestion?.shuffleOptions
-                                ? components.organizer.configToggleOnSuccess
-                                : components.organizer.configToggleOff,
-                        )}
-                    >
-                        <span>
-                            <span className={components.organizer.configToggleLabel}>Shuffle Options</span>
-                        </span>
+            <div className={components.host.configStack}>
+                <button
+                    onClick={onToggleShuffleOptions}
+                    disabled={!activeQuestion}
+                    className={cx(
+                        components.host.configToggleBtn,
+                        activeQuestion?.shuffleOptions
+                            ? components.host.configToggleOnSuccess
+                            : components.host.configToggleOff,
+                    )}
+                >
+                    <span>
+                        <span className={components.host.configToggleLabel}>Shuffle Options</span>
+                    </span>
+                    <span className={cx(
+                        components.host.configSwitchTrack,
+                        activeQuestion?.shuffleOptions ? components.host.configSwitchTrackOnSuccess : components.host.configSwitchTrackOff,
+                    )}>
                         <span className={cx(
-                            components.organizer.configSwitchTrack,
-                            activeQuestion?.shuffleOptions ? components.organizer.configSwitchTrackOnSuccess : components.organizer.configSwitchTrackOff,
-                        )}>
-                            <span className={cx(
-                                components.organizer.configSwitchThumb,
-                                activeQuestion?.shuffleOptions ? components.organizer.configSwitchThumbOn : components.organizer.configSwitchThumbOff,
-                            )} />
-                        </span>
-                    </button>
-             </div>
+                            components.host.configSwitchThumb,
+                            activeQuestion?.shuffleOptions ? components.host.configSwitchThumbOn : components.host.configSwitchThumbOff,
+                        )} />
+                    </span>
+                </button>
+            </div>
 
-            <div className={components.organizer.configField}>
-                <label className={components.organizer.configFieldLabel}>Time Limit</label>
+            <div className={components.host.configField}>
+                <label className={components.host.configFieldLabel}>Time Limit</label>
                 <select
-                    className={components.organizer.configFieldSelect}
+                    className={components.host.configFieldSelect}
                     value={activeQuestion?.timeLimit || 10}
                     onChange={(e) => onTimeLimitChange(Number(e.target.value))}
                 >
@@ -98,40 +98,40 @@ const ConfigPanel = ({
             <button
                 onClick={onApplyToAllSlides}
                 disabled={!activeQuestion || questions.length < 2}
-                className={cx(buttonStyles.base, buttonStyles.secondary, components.organizer.configApplyBtn)}
+                className={cx(buttonStyles.base, buttonStyles.secondary, components.host.configApplyBtn)}
                 title="This will overwrite all slides with current Time Limit, Question Type, and Correct Answer"
             >
                 <Shuffle size={14} /> Apply to All Slides
             </button>
 
-                 <button
-                    onClick={onToggleShuffleQuestions}
-                    className={cx(
-                        components.organizer.configToggleBtn,
-                        activeQuiz.shuffleQuestions
-                            ? components.organizer.configToggleOnWarning
-                            : components.organizer.configToggleOff,
-                    )}
-                >
-                    <span>
-                        <span className={components.organizer.configToggleLabel}>Shuffle All Questions</span>
-                    </span>
+            <button
+                onClick={onToggleShuffleQuestions}
+                className={cx(
+                    components.host.configToggleBtn,
+                    activeQuiz.shuffleQuestions
+                        ? components.host.configToggleOnWarning
+                        : components.host.configToggleOff,
+                )}
+            >
+                <span>
+                    <span className={components.host.configToggleLabel}>Shuffle All Questions</span>
+                </span>
+                <span className={cx(
+                    components.host.configSwitchTrack,
+                    activeQuiz.shuffleQuestions ? components.host.configSwitchTrackOnWarning : components.host.configSwitchTrackOff,
+                )}>
                     <span className={cx(
-                        components.organizer.configSwitchTrack,
-                        activeQuiz.shuffleQuestions ? components.organizer.configSwitchTrackOnWarning : components.organizer.configSwitchTrackOff,
-                    )}>
-                        <span className={cx(
-                            components.organizer.configSwitchThumb,
-                            activeQuiz.shuffleQuestions ? components.organizer.configSwitchThumbOn : components.organizer.configSwitchThumbOff,
-                        )} />
-                    </span>
-                </button>
-         </section>
+                        components.host.configSwitchThumb,
+                        activeQuiz.shuffleQuestions ? components.host.configSwitchThumbOn : components.host.configSwitchThumbOff,
+                    )} />
+                </span>
+            </button>
+        </section>
 
-        <div className={components.organizer.configFooter}>
+        <div className={components.host.configFooter}>
             <button
                 onClick={onDeleteCurrentSlide}
-                className={cx(buttonStyles.base, buttonStyles.danger, components.organizer.configDeleteBtn)}
+                className={cx(buttonStyles.base, buttonStyles.danger, components.host.configDeleteBtn)}
             >
                 <Trash2 size={16} /> DELETE SLIDE
             </button>

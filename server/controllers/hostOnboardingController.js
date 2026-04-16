@@ -67,7 +67,7 @@ const registerHost = async (req, res) => {
             name: String(payload.name).trim(),
             email: normalizedEmail,
             password: hashedPassword,
-            role: 'organizer',
+            role: 'host',
         });
 
         let profile;
@@ -96,7 +96,7 @@ const registerHost = async (req, res) => {
             });
         } catch (profileErr) {
             // Rollback: remove the user if profile creation fails to prevent orphaned accounts
-            await User.deleteOne({ _id: user._id }).catch(() => {});
+            await User.deleteOne({ _id: user._id }).catch(() => { });
             throw profileErr;
         }
 

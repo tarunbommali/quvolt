@@ -31,7 +31,7 @@ const paymentError = (res, status, code, message, correlationId, extras = {}) =>
 
 const getQuizForPayment = async (quizId) => {
   if (!mongoose.Types.ObjectId.isValid(quizId)) return null;
-  return QuizSnapshot.findById(quizId).select('organizerId title isPaid price').lean();
+  return QuizSnapshot.findById(quizId).select('hostId title isPaid price').lean();
 };
 
 // Updated computeSplit to accept commission percent
@@ -101,18 +101,18 @@ const createOrder = async (req, res) => {
     }
 
     const hostAccount = await HostAccount.findOne({
-      hostUserId: quiz.organizerId,
+      hostUserId: quiz.hostId,
     }).lean();
 
     // Get host's current plan (from subscription, defaults to FREE)
-    const hostPlan = await getHostCurrentPlan(quiz.organizerId);
+    const hostPlan = await getHostCurrentPlan(quiz.hostId);
     const commissionPercent = getCommissionForPlan(hostPlan);
 
     const split = computeSplit(quiz.price, commissionPercent);
     const notes = {
       quizId: String(quizId),
       userId: String(userId),
-      hostUserId: String(quiz.organizerId),
+      hostUserId: String(quiz.hostId),
       hostPlan: hostPlan,
       platformFeePercent: String(commissionPercent),
     };
@@ -138,7 +138,7 @@ const createOrder = async (req, res) => {
               currency: 'INR',
               notes: {
                 quizId: String(quizId),
-                hostUserId: String(quiz.organizerId),
+                hostUserId: String(quiz.hostId),
                 orderId: options.receipt,
               },
               on_hold: hostAccount.settlementMode !== 'instant',
@@ -180,7 +180,7 @@ const createOrder = async (req, res) => {
       grossAmount: split.grossAmount,
       platformFeeAmount: split.platformFeeAmount,
       hostAmount: split.hostAmount,
-      hostUserId: quiz.organizerId,
+      hostUserId: quiz.hostId,
       hostLinkedAccountId: hostAccount?.linkedAccountId || null,
       payoutMode,
       payoutStatus,

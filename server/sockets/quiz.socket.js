@@ -1,4 +1,4 @@
-const quizService = require('../services/quiz.service');
+const quizService = require('../services/quiz/quiz.service');
 const logger = require('../utils/logger');
 
 const registerQuizSocket = (io, socket) => {
@@ -31,7 +31,7 @@ const registerQuizSocket = (io, socket) => {
 
             io.to(result.roomCode).emit('start_quiz', { roomCode: result.roomCode, sessionId: result.sessionId, mode: result.session.mode });
             socket.emit('session_redirect', { roomCode: result.roomCode, sessionId: result.sessionId });
-            
+
             // STEP 2: Wait briefly to ensure participants have joined the new room before broadcasting
             setTimeout(() => {
                 quizService.broadcastQuestionEnhanced(io, result.roomCode).catch((err) => {
@@ -49,7 +49,7 @@ const registerQuizSocket = (io, socket) => {
             // STEP 3: Fix pause to work anytime (even before answers)
             const result = await quizService.pauseQuizSession({ io, quizId, sessionCode: sessionCode || roomCode, user: socket.data.user });
             if (result.error) return socket.emit('error', result.error);
-            
+
             // Emit pause event to all participants
             io.to(sessionCode || roomCode).emit('quiz_paused', { roomCode: sessionCode || roomCode });
         } catch (error) {
@@ -86,10 +86,10 @@ const registerQuizSocket = (io, socket) => {
     socket.on('reveal_answer', async ({ roomCode, sessionCode }) => {
         try {
             const user = socket.data.user;
-            if (user?.role !== 'organizer' && user?.role !== 'admin') {
+            if (user?.role !== 'host' && user?.role !== 'admin') {
                 return socket.emit('error', 'Unauthorized');
             }
-            
+
             const room = roomCode || sessionCode;
             const result = await quizService.revealAnswer({ io, roomCode: room, user });
             if (result.error) return socket.emit('error', result.error);
@@ -101,10 +101,10 @@ const registerQuizSocket = (io, socket) => {
     socket.on('end_quiz', async ({ quizId, sessionCode, roomCode }) => {
         try {
             const user = socket.data.user;
-            if (user?.role !== 'organizer' && user?.role !== 'admin') {
+            if (user?.role !== 'host' && user?.role !== 'admin') {
                 return socket.emit('error', 'Unauthorized');
             }
-            
+
             const result = await quizService.endQuizSession({ io, quizId, sessionCode: sessionCode || roomCode, user });
             if (result.error) return socket.emit('error', result.error);
         } catch (error) {
@@ -123,6 +123,7 @@ const registerQuizSocket = (io, socket) => {
 
             socket.emit('answer_result', {
                 isCorrect: result.isCorrect,
+                correctAnswer: result.correctAnswer,
                 score: result.score,
                 totalScore: result.totalScore,
                 streak: result.streak,
@@ -132,6 +133,14 @@ const registerQuizSocket = (io, socket) => {
         } catch (error) {
             logger.error('Socket submit_answer error', { roomCode, sessionId, error: error.message, stack: error.stack });
             socket.emit('error', 'Failed to submit answer');
+        }
+    });
+
+    socket.on('disconnect', async () => {
+        try {
+            await quizService.leaveRoom({ io, socket });
+        } catch (error) {
+            logger.error('Socket disconnect leaveRoom error', { error: error.message });
         }
     });
 };

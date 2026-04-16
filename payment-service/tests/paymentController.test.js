@@ -85,7 +85,7 @@ describe('paymentController', () => {
       select: () => ({
         lean: async () => ({
           _id: req.body.quizId,
-          organizerId: '507f1f77bcf86cd799439013',
+          hostId: '507f1f77bcf86cd799439013',
           title: 'Paid Quiz',
           isPaid: true,
           price,
@@ -145,7 +145,7 @@ describe('paymentController', () => {
       select: () => ({
         lean: async () => ({
           _id: req.body.quizId,
-          organizerId: '507f1f77bcf86cd799439023',
+          hostId: '507f1f77bcf86cd799439023',
           title: 'KYC Quiz',
           isPaid: true,
           price: 100,

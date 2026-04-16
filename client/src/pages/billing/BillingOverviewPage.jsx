@@ -71,7 +71,7 @@ const BillingOverviewPage = () => {
                     setUsage({ freeCreated: freeCount, paidCreated: paidCount });
                 }
 
-                if (user?.role === 'organizer') {
+                if (user?.role === 'host') {
                     const [payoutRes, hostAccountRes, paymentHealthRes] = await Promise.allSettled([
                         getHostPayoutSummary(),
                         getMyHostAccount(),
@@ -305,7 +305,7 @@ const BillingOverviewPage = () => {
     const limitFree = currentPlanId === 'PREMIUM' ? 25 : currentPlanId === 'PRO' ? 15 : 5;
     const limitJoin = currentPlanId === 'PREMIUM' ? '25k' : currentPlanId === 'PRO' ? '15k' : '10k';
     const commLimit = currentPlanDetails?.commissionPercent || 25;
-    const dashboardHref = user?.role === 'organizer' || user?.role === 'admin' ? '/studio' : '/join';
+    const dashboardHref = user?.role === 'host' || user?.role === 'admin' ? '/studio' : '/join';
     const billingBreadcrumbs = [
         { label: 'Dashboard', href: dashboardHref },
         { label: 'Billing' },
@@ -362,7 +362,7 @@ const BillingOverviewPage = () => {
 
                     <UsageCards usage={usage} limitFree={limitFree} commLimit={commLimit} participantLimit={participantLimit} />
 
-                    {user?.role === 'organizer' && (
+                    {user?.role === 'host' && (
                         <PaymentOverviewCards
                             paymentHealth={paymentHealth}
                             hostAccount={hostAccount}
@@ -375,7 +375,7 @@ const BillingOverviewPage = () => {
                 <BillingSidebar
                     limitJoin={limitJoin}
                     hostAccount={hostAccount}
-                    isOrganizer={user?.role === 'organizer'}
+                    ishost={user?.role === 'host'}
                 />
             </div>
 
@@ -387,7 +387,7 @@ const BillingOverviewPage = () => {
                 inrSymbol={INR_SYMBOL}
             />
 
-            {user?.role === 'organizer' && (
+            {user?.role === 'host' && (
                 <RecentPaymentsCard payoutSummary={payoutSummary} inrSymbol={INR_SYMBOL} />
             )}
         </div>

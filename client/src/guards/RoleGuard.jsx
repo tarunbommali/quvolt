@@ -16,7 +16,8 @@ const RoleGuard = ({ roles, children }) => {
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
-  if (!roles.includes(user?.role)) {
+  const normalizedUserRole = user?.role === 'host' ? 'host' : user?.role;
+  if (!roles.includes(normalizedUserRole)) {
     return <Navigate to="/unauthorized" replace />;
   }
   return children;

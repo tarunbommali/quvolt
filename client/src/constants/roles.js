@@ -2,12 +2,12 @@
 
 export const ROLES = {
   ADMIN: 'admin',
-  ORGANIZER: 'organizer',
+  host: 'host',
   PARTICIPANT: 'participant',
 };
 
 export const PERMISSIONS = {
-  organizer: ['create_quiz', 'edit_quiz', 'start_session'],
+  host: ['create_quiz', 'edit_quiz', 'start_session'],
   participant: ['join_quiz', 'submit_answer'],
   admin: ['manage_users', 'view_system'],
 };

@@ -1,7 +1,7 @@
 # Session Route Test Matrix
 
 Date: 2026-04-10
-Scope: Organizer session flow route resolution and guard normalization.
+Scope: host session flow route resolution and guard normalization.
 Resolver source: `client/src/utils/sessionRouteResolver.js`
 Guard source: `client/src/components/RouteGuard.jsx`
 

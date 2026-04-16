@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import LiveLoading from './organizerLive/LiveLoading';
+import LiveLoading from './hostLive/LiveLoading';
 import { useQuizStore } from '../stores/useQuizStore';
 import { resolveSessionRoute } from '../utils/sessionRouteResolver';
 

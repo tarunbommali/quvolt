@@ -173,9 +173,9 @@ sudo certbot --nginx -d yourdomain.com
 Required checks:
 - GET /api/health returns status healthy
 - GET /payment/health returns status healthy
-- organizer flow transitions: draft -> waiting -> live -> completed
+- host flow transitions: draft -> waiting -> live -> completed
 - abort flow transitions to aborted
-- cross-organizer mutation attempts return 403
+- cross-host mutation attempts return 403
 - paid quiz join enforcement works only after successful payment state
 
 Recommended pre-release gates:

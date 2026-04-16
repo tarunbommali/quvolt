@@ -92,7 +92,7 @@ async function waitFor(predicate, label, timeout = 25000) {
 }
 
 (async () => {
-    const org = await register('organizer', 'smoke_org');
+    const org = await register('host', 'smoke_org');
     const p1 = await register('participant', 'smoke_p1');
     const p2 = await register('participant', 'smoke_p2');
 

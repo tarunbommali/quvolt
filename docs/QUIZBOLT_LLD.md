@@ -8,7 +8,7 @@ Current implementation baseline:
 - Monorepo services: `client`, `server`, `payment-service`
 - Shared root `.env` for runtime configuration
 - Backend-owned lifecycle state machine and guarded transitions
-- Resolver-driven organizer routing on frontend
+- Resolver-driven host routing on frontend
 
 This document includes:
 - Modular folder structure for 50K-100K concurrent user scale
@@ -44,7 +44,7 @@ Canonical lifecycle map in code:
 Current status wording used across docs:
 - Implemented and active:
   - backend-owned session lifecycle state machine with guarded transitions
-  - resolver-based organizer routing by session status
+  - resolver-based host routing by session status
   - realtime session orchestration over Socket.IO
   - payment order/verify/webhook flow with idempotent handling
   - host onboarding and payout state support
@@ -523,7 +523,7 @@ Responsibilities:
   name: String,
   email: String,              // Unique per tenant
   passwordHash: String,       // bcrypt hash
-  role: String,               // "organizer" | "participant" | "admin"
+  role: String,               // "host" | "participant" | "admin"
   plan: String,               // "FREE" | "PRO" | "PREMIUM"
   createdAt: Date,
   updatedAt: Date,
@@ -541,7 +541,7 @@ db.User.createIndex({ createdAt: -1 });
 {
   _id: ObjectId,
   tenantId: String,           // Multi-tenant key
-  organizerId: String,        // ObjectId of User (organizer)
+  hostId: String,        // ObjectId of User (host)
   title: String,
   description: String,
   isPaid: Boolean,
@@ -569,7 +569,7 @@ db.User.createIndex({ createdAt: -1 });
 }
 
 // Indexes
-db.Quiz.createIndex({ tenantId: 1, organizerId: 1, status: 1 });
+db.Quiz.createIndex({ tenantId: 1, hostId: 1, status: 1 });
 db.Quiz.createIndex({ tenantId: 1, status: 1, publishedAt: -1 });
 db.Quiz.createIndex({ tenantId: 1, tags: 1 });
 ```
@@ -583,7 +583,7 @@ db.Quiz.createIndex({ tenantId: 1, tags: 1 });
   sessionCode: String,        // Unique room code (e.g., "ABC123")
   status: String,             // "upcoming" | "live" | "paused" | "completed"
   
-  organizerId: ObjectId,
+  hostId: ObjectId,
   participantCount: Number,   // Live participant snapshot
   
   startedAt: Date,
@@ -612,7 +612,7 @@ db.Quiz.createIndex({ tenantId: 1, tags: 1 });
 // Indexes (critical for realtime queries)
 db.QuizSession.createIndex({ tenantId: 1, sessionCode: 1 }, { unique: true });
 db.QuizSession.createIndex({ tenantId: 1, quizId: 1, status: 1 });
-db.QuizSession.createIndex({ tenantId: 1, organizerId: 1, createdAt: -1 });
+db.QuizSession.createIndex({ tenantId: 1, hostId: 1, createdAt: -1 });
 ```
 
 ### 3.4 Submission Schema (🔥 High Scale Design)
@@ -731,7 +731,7 @@ Responsibilities:
 session:{roomCode} -> JSON (TTL: session duration + 5 min)
 {
   "quizId": "ObjectId",
-  "organizerId": "ObjectId",
+  "hostId": "ObjectId",
   "currentQuestionIndex": 0,
   "currentQuestionId": "ObjectId",
   "questionStartedAt": 1712660000000,
@@ -884,7 +884,7 @@ cache:session:{roomCode}:dirty -> "1" (TTL: 10s)
 socket.emit("room_state", {
   "sessionId": "ObjectId",
   "quizId": "ObjectId",
-  "organizerId": "ObjectId",
+  "hostId": "ObjectId",
   "currentQuestionIndex": 2,
   "questionsRemaining": 48,
   "leaderboard": [
@@ -895,14 +895,14 @@ socket.emit("room_state", {
 })
 ```
 
-#### start_quiz (Organizer only)
+#### start_quiz (host only)
 ```javascript
 {
   "roomCode": "ABC123"
 }
 
 // Validates:
-- Caller must be organizer
+- Caller must be host
 - Quiz must have questions
 
 // Broadcasts to room:
@@ -931,7 +931,7 @@ io.to(roomCode).emit("quiz_started", {
 // (See Section 6 for full processing flow)
 ```
 
-#### next_question (Organizer)
+#### next_question (host)
 ```javascript
 {
   "roomCode": "ABC123"
@@ -1189,8 +1189,8 @@ This is the exact step-by-step flow for handling submit_answer events at scale.
 │   yourRank, yourScore                                            │
 │ })                                                               │
 │                                                                  │
-│ 10c. Organizer-only detail:                                      │
-│ organizer_socket.emit("answer_submitted", {                      │
+│ 10c. host-only detail:                                      │
+│ host_socket.emit("answer_submitted", {                      │
 │   questionId, userId, name, isCorrect                            │
 │ })                                                               │
 └────────────────────────┬────────────────────────────────────────┘
@@ -1669,7 +1669,7 @@ export const registerSchema = Joi.object({
   email: Joi.string().email().required(),
   password: Joi.string().min(8).pattern(/[A-Z]/).pattern(/[0-9]/).required(),
   name: Joi.string().min(2).max(100).required(),
-  role: Joi.string().valid("organizer", "participant").default("participant")
+  role: Joi.string().valid("host", "participant").default("participant")
 });
 
 export const loginSchema = Joi.object({
@@ -2207,7 +2207,7 @@ GET    /payment/revenue/summary      -> Revenue reporting
 | error | OUT | on error | ~300B | Error codes |
 | submit_answer | IN | per user answer | ~300B | Immediate fanout |
 | join_room | IN | per user join | ~200B | Batch reconnects |
-| next_question | IN | organizer | ~100B | Only from organizer |
+| next_question | IN | host | ~100B | Only from host |
 
 ---
 
@@ -2357,7 +2357,7 @@ Responsibilities:
 ### 13.4 Revenue Module
 Responsibilities:
 - Aggregate completed payments for reporting metrics
-- Compute organizer earnings and payouts
+- Compute host earnings and payouts
 
 ### 13.5 Subscription Module
 Responsibilities:
@@ -2380,8 +2380,8 @@ Responsibilities:
 - History.jsx
 - HistoryDetail.jsx
 - StudioDashboard.jsx
-- OrganizerEdit.jsx
-- OrganizerLive.jsx
+- hostEdit.jsx
+- hostLive.jsx
 - Analytics.jsx
 - Billing.jsx
 - AIGenerator.jsx
@@ -2390,9 +2390,9 @@ Responsibilities:
 - components/auth
 - components/billing
 - components/history
-- components/organizerDashboard
-- components/organizerEdit
-- components/organizerLive
+- components/hostDashboard
+- components/hostEdit
+- components/hostLive
 - components/quizRoom
 - components/analytics
 - components/gamification
@@ -2410,7 +2410,7 @@ Responsibilities:
 - Quiz: ownership, metadata, paid flags, question set, lifecycle status
 - QuizSession: room/session runtime state and summary metadata
 - Submission: answer event with correctness, score, timing, XP linkage
-- HostProfile: organizer-specific profile and publishing state
+- HostProfile: host-specific profile and publishing state
 
 ### 5.2 Payment Service Entities
 - Payment: order/payment ids, amounts, split fields, payout mode/status, verification state
@@ -2488,7 +2488,7 @@ Error handling:
 ## 9. Security and Reliability Design
 Security controls:
 - JWT validation on protected routes
-- Role checks for organizer/admin actions
+- Role checks for host/admin actions
 - Razorpay signature verification for verify/webhook
 - Request hardening and basic rate limiting in payment service
 

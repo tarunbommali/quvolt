@@ -1,6 +1,6 @@
 const axios = require('axios');
-const Quiz = require('../models/Quiz');
-const { hashAnswer } = require('../utils/crypto');
+const Quiz = require('../../models/Quiz');
+const { hashAnswer } = require('../../utils/crypto');
 
 const AI_MAX_COUNT = 20;
 const DISTRIBUTION_STEP = 5;
@@ -276,7 +276,7 @@ const saveQuestionsToQuiz = async ({ quizId, questions, user }) => {
     const quiz = await Quiz.findOne(
         user.role === 'admin'
             ? { _id: quizId }
-            : { _id: quizId, organizerId: user._id },
+            : { _id: quizId, hostId: user._id },
     );
 
     if (!quiz) {

@@ -38,7 +38,7 @@ Key architectural decisions in current code:
 Current production status language (repository-aligned):
 - Implemented and active:
   - backend-owned session lifecycle state machine with guarded transitions
-  - resolver-based organizer routing by session status
+  - resolver-based host routing by session status
   - realtime session orchestration over Socket.IO
   - payment order/verify/webhook flow with idempotent handling
   - host onboarding and payout state support
@@ -67,7 +67,7 @@ Note:
 
 ### 3.1 C4 Level 1: System Context
 Actors:
-- Organizer: creates quizzes, starts sessions, manages plans and billing
+- host: creates quizzes, starts sessions, manages plans and billing
 - Participant: joins live rooms, answers questions, views results
 - Admin: support, abuse handling, operational controls
 - Payment Gateway (Razorpay): order lifecycle and webhook callbacks
@@ -78,7 +78,7 @@ System:
 
 ### 3.2 C4 Level 2: Container View
 Containers:
-- Web Client (React/Vite): participant and organizer UI
+- Web Client (React/Vite): participant and host UI
 - API Gateway: edge auth, routing, throttling, websocket upgrade entry
 - BFF/API Service: REST APIs for auth, quiz, analytics, gamification, subscriptions
 - Realtime Gateway Service: Socket.IO nodes for room lifecycle and event fanout
@@ -121,7 +121,7 @@ Worker components:
 Core code modules in current repository:
 - Server: routes/*.js, controllers/*.js, services/quiz.service.js, services/session.service.js, sockets/quiz.socket.js
 - Payment service: controllers/paymentController.js, revenueController.js, subscriptionController.js, models/Payment.js
-- Client: pages/OrganizerLive.jsx, QuizRoom.jsx, Billing.jsx, Analytics.jsx
+- Client: pages/hostLive.jsx, QuizRoom.jsx, Billing.jsx, Analytics.jsx
 
 Code-level standards:
 - Clear service boundaries by domain folder
@@ -198,7 +198,7 @@ Trade-off:
 - Delta broadcasts instead of full leaderboard payloads.
 - Use binary or compressed payloads for high-frequency events.
 - Broadcast tiers:
-- Tier 1: full data for organizer clients.
+- Tier 1: full data for host clients.
 - Tier 2: compact data for participants.
 
 ### 6.4 Backpressure Handling
@@ -222,7 +222,7 @@ Trade-off:
 - Maintain read-optimized projection collections for dashboards.
 
 Critical indexes:
-- Quiz: { tenantId, organizerId, status, updatedAt }
+- Quiz: { tenantId, hostId, status, updatedAt }
 - Submission: { tenantId, sessionId, questionId, userId, createdAt }
 - Payment: unique sparse index on { razorpayOrderId }
 - Subscription: { tenantId, hostUserId, status, expiresAt }
@@ -240,7 +240,7 @@ Key patterns:
 
 Leaderboard performance:
 - Use ZADD and ZREVRANGE for near O(logN) writes and O(logN + M) reads for top-N.
-- Keep top-N cache key for fast organizer dashboards.
+- Keep top-N cache key for fast host dashboards.
 
 ### 7.3 Caching Strategy
 - Read-through for quiz metadata and active session summaries.

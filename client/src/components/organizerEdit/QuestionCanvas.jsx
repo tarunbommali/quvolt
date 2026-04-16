@@ -34,33 +34,33 @@ const QuestionCanvas = ({
     }, [isEditing, editingOptionIndex]);
 
     return (
-        <main className={components.organizer.canvasMain}>
-            <div className={components.organizer.canvasCard}>
-                <div className={components.organizer.canvasHeader}>
-                    <div className={components.organizer.canvasHeaderLeft}>
-                        <span className={components.organizer.canvasSlidePill}>
+        <main className={components.host.canvasMain}>
+            <div className={components.host.canvasCard}>
+                <div className={components.host.canvasHeader}>
+                    <div className={components.host.canvasHeaderLeft}>
+                        <span className={components.host.canvasSlidePill}>
                             Slide {questionNumber} of {totalCount}
                         </span>
                     </div>
-                    <div className={components.organizer.canvasHeaderIcon}>
-                        <Zap className={components.organizer.iconAccent} size={24} />
+                    <div className={components.host.canvasHeaderIcon}>
+                        <Zap className={components.host.iconAccent} size={24} />
                     </div>
                 </div>
 
                 {activeQuestion ? (
-                    <div className={components.organizer.canvasContent}>
-                        <div className={components.organizer.canvasRow}>
-                            <div className={components.organizer.canvasBadgeCol}>
-                                <div className={components.organizer.canvasBadge}>
+                    <div className={components.host.canvasContent}>
+                        <div className={components.host.canvasRow}>
+                            <div className={components.host.canvasBadgeCol}>
+                                <div className={components.host.canvasBadge}>
                                     Q{questionNumber}
                                 </div>
                             </div>
 
-                            <div className={components.organizer.canvasQuestionCol}>
+                            <div className={components.host.canvasQuestionCol}>
                                 {isEditing ? (
                                     <textarea
                                         ref={questionInputRef}
-                                        className={components.organizer.canvasQuestionInput}
+                                        className={components.host.canvasQuestionInput}
                                         placeholder="Type your question here..."
                                         value={activeQuestion.text}
                                         onChange={(e) => onQuestionTextChange(e.target.value)}
@@ -76,39 +76,39 @@ const QuestionCanvas = ({
                                     </button>
                                 )}
 
-                                <div className={components.organizer.canvasOptionsGrid}>
+                                <div className={components.host.canvasOptionsGrid}>
                                     {(activeQuestion.options || []).map((option, index) => {
                                         const isCorrect = activeQuestion.correctOption === index;
 
                                         return (
                                             <div
                                                 key={index}
-                                                className={components.organizer.canvasOptionCard}
+                                                className={components.host.canvasOptionCard}
                                             >
                                                 <div
                                                     className={cx(
-                                                        components.organizer.canvasOptionButton,
+                                                        components.host.canvasOptionButton,
                                                         isCorrect
-                                                            ? components.organizer.canvasOptionButtonCorrect
-                                                            : components.organizer.canvasOptionButtonIdle,
+                                                            ? components.host.canvasOptionButtonCorrect
+                                                            : components.host.canvasOptionButtonIdle,
                                                     )}
                                                 >
                                                     <span
                                                         className={cx(
-                                                            components.organizer.canvasOptionLetter,
-                                                            isCorrect ? components.organizer.canvasOptionLetterCorrect : '',
+                                                            components.host.canvasOptionLetter,
+                                                            isCorrect ? components.host.canvasOptionLetterCorrect : '',
                                                         )}
                                                     >
                                                         {String.fromCharCode(65 + index)}
                                                     </span>
-                                                    <div className={components.organizer.canvasOptionContent}>
+                                                    <div className={components.host.canvasOptionContent}>
                                                         {isEditing ? (
                                                             <input
                                                                 ref={(node) => {
                                                                     optionInputRefs.current[index] = node;
                                                                 }}
                                                                 type="text"
-                                                                className={components.organizer.canvasOptionInput}
+                                                                className={components.host.canvasOptionInput}
                                                                 placeholder={`Option ${index + 1}`}
                                                                 value={option}
                                                                 onChange={(e) => onOptionChange(index, e.target.value)}
@@ -130,7 +130,7 @@ const QuestionCanvas = ({
                                                             </button>
                                                         )}
                                                         {isCorrect ? (
-                                                            <span className={components.organizer.canvasOptionState}>Correct</span>
+                                                            <span className={components.host.canvasOptionState}>Correct</span>
                                                         ) : null}
                                                     </div>
                                                 </div>
@@ -142,11 +142,11 @@ const QuestionCanvas = ({
                         </div>
                     </div>
                 ) : (
-                    <div className={components.organizer.canvasEmpty}>
+                    <div className={components.host.canvasEmpty}>
                         <AlertCircle size={56} />
-                        <p className={components.organizer.canvasEmptyText}>
+                        <p className={components.host.canvasEmptyText}>
                             No slide selected <br />
-                            <span className={components.organizer.canvasEmptySub}>
+                            <span className={components.host.canvasEmptySub}>
                                 Add a question to get started
                             </span>
                         </p>

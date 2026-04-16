@@ -7,7 +7,7 @@ import {
     isTransientApiError,
 } from '../services/api';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { prefetchOrganizerEditRoute, prefetchOrganizerLiveRoute } from '../utils/routePrefetch';
+import { prefetchhostEditRoute, prefetchhostLiveRoute } from '../utils/routePrefetch';
 import { getSubscriptionEntitlements } from '../utils/subscriptionEntitlements';
 import { useAuthStore } from '../stores/useAuthStore';
 import { useQuizStore } from '../stores/useQuizStore';
@@ -248,7 +248,7 @@ const useStudioDashboardController = () => {
                 return;
             }
 
-            if (!['organizer', 'admin'].includes(user.role)) {
+            if (!['host', 'admin'].includes(user.role)) {
                 if (active) setQuizzes([]);
                 if (active) setIsLoadingQuizzes(false);
                 return;
@@ -487,13 +487,13 @@ const useStudioDashboardController = () => {
 
     const prefetchQuizNavigation = useCallback((quiz) => {
         const parentId = currentSubject ? currentSubject._id : 'none';
-        useQuizStore.getState().prefetchQuizForParent(parentId).catch(() => {});
+        useQuizStore.getState().prefetchQuizForParent(parentId).catch(() => { });
         if (quiz?.type === 'subject' && quiz?._id) {
-            useQuizStore.getState().prefetchQuizForParent(quiz._id).catch(() => {});
+            useQuizStore.getState().prefetchQuizForParent(quiz._id).catch(() => { });
         }
         if (quiz?.type === 'quiz') {
-            prefetchOrganizerEditRoute().catch(() => {});
-            prefetchOrganizerLiveRoute().catch(() => {});
+            prefetchhostEditRoute().catch(() => { });
+            prefetchhostLiveRoute().catch(() => { });
         }
     }, [currentSubject]);
 
@@ -505,7 +505,7 @@ const useStudioDashboardController = () => {
 
     const onEditQuiz = useCallback((quiz) => {
         if (!quiz?._id) return;
-        prefetchOrganizerEditRoute().catch(() => {});
+        prefetchhostEditRoute().catch(() => { });
         navigateRef.current(`/quiz/templates/${quiz._id}`, { state: { quiz } });
     }, []);
 
@@ -517,7 +517,7 @@ const useStudioDashboardController = () => {
             return;
         }
 
-        prefetchOrganizerLiveRoute().catch(() => {});
+        prefetchhostLiveRoute().catch(() => { });
 
         if (String(quiz?.status || '').toLowerCase() === 'waiting') {
             navigateRef.current(`/invite/${quiz._id}`, {

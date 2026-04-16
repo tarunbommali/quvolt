@@ -12,7 +12,7 @@ const PALETTE_ITEMS = [
         label: 'Go to Home',
         description: 'Open public landing page',
         to: '/',
-        roles: ['guest', 'participant', 'organizer', 'admin'],
+        roles: ['guest', 'participant', 'host', 'admin'],
         keywords: ['landing', 'public'],
     },
     {
@@ -36,7 +36,7 @@ const PALETTE_ITEMS = [
         label: 'Join Session',
         description: 'Join an active quiz room',
         to: '/join',
-        roles: ['participant', 'organizer', 'admin'],
+        roles: ['participant', 'host', 'admin'],
         keywords: ['room code', 'quiz'],
     },
     {
@@ -44,7 +44,7 @@ const PALETTE_ITEMS = [
         label: 'Open Studio',
         description: 'Manage templates and sessions',
         to: '/studio',
-        roles: ['organizer', 'admin'],
+        roles: ['host', 'admin'],
         keywords: ['dashboard', 'host'],
     },
     {
@@ -52,7 +52,7 @@ const PALETTE_ITEMS = [
         label: 'Open Billing',
         description: 'Manage subscription and payouts',
         to: '/billing',
-        roles: ['organizer', 'admin'],
+        roles: ['host', 'admin'],
         keywords: ['plan', 'subscription', 'payments'],
     },
     {
@@ -60,7 +60,7 @@ const PALETTE_ITEMS = [
         label: 'Open Analytics',
         description: 'Review performance metrics',
         to: '/analytics',
-        roles: ['participant', 'organizer', 'admin'],
+        roles: ['participant', 'host', 'admin'],
         keywords: ['reports', 'insights'],
     },
     {
@@ -68,7 +68,7 @@ const PALETTE_ITEMS = [
         label: 'Open History',
         description: 'View past quiz sessions',
         to: '/history',
-        roles: ['participant', 'organizer', 'admin'],
+        roles: ['participant', 'host', 'admin'],
         keywords: ['records', 'results'],
     },
     {
@@ -76,7 +76,7 @@ const PALETTE_ITEMS = [
         label: 'Open Profile',
         description: 'View your account profile',
         to: '/profile',
-        roles: ['participant', 'organizer', 'admin'],
+        roles: ['participant', 'host', 'admin'],
         keywords: ['account', 'settings'],
     },
     {
@@ -84,14 +84,14 @@ const PALETTE_ITEMS = [
         label: 'Edit Profile',
         description: 'Update your profile details',
         to: '/profile/edit',
-        roles: ['participant', 'organizer', 'admin'],
+        roles: ['participant', 'host', 'admin'],
         keywords: ['edit account'],
     },
 ];
 
 const normalizeRole = (user) => {
     if (!user) return 'guest';
-    if (user.role === 'organizer' || user.role === 'admin') return user.role;
+    if (user.role === 'host' || user.role === 'admin') return user.role;
     return 'participant';
 };
 

@@ -44,7 +44,7 @@ const JoinSessionPage = () => {
     useEffect(() => {
         if (roomCode.length !== 6) return;
         const id = window.setTimeout(() => {
-            getQuizByCodeCached(roomCode).catch(() => {});
+            getQuizByCodeCached(roomCode).catch(() => { });
         }, 200);
 
         return () => window.clearTimeout(id);
@@ -77,7 +77,7 @@ const JoinSessionPage = () => {
                 // Ignore localStorage failure.
             }
 
-            if (quiz?.isPaid && quiz?.price > 0 && user?.role !== 'organizer') {
+            if (quiz?.isPaid && quiz?.price > 0 && user?.role !== 'host') {
                 const status = await getPaymentStatus(quiz._id);
                 if (status?.data?.paid) {
                     navigate(`/quiz/${cleanedCode}`);
@@ -166,7 +166,7 @@ const JoinSessionPage = () => {
             <Card className="ui-section-card w-full max-w-md text-center space-y-8 rounded-4xl relative overflow-hidden">
                 <div className="page-header">
                     <h2 className="page-title">Ready to Join?</h2>
-                    <p className="page-subtitle">Enter the room code shared by your organizer</p>
+                    <p className="page-subtitle">Enter the room code shared by your host</p>
                 </div>
 
                 {error && (

@@ -43,8 +43,8 @@ Source:
 - `GET /api/quiz/my-quizzes`
 	- Trace flow: `server/routes/quizRoutes.js -> getMyQuizzes (server/controllers/quizController.js)`
 	  Anchors: route [server/routes/quizRoutes.js#L65](server/routes/quizRoutes.js#L65), handler [server/controllers/quizController.js#L158](server/controllers/quizController.js#L158)
-- `GET /api/quiz/organizer/history`
-	- Trace flow: `server/routes/quizRoutes.js -> getOrganizerStats (server/controllers/quizController.js)`
+- `GET /api/quiz/host/history`
+	- Trace flow: `server/routes/quizRoutes.js -> gethostStats (server/controllers/quizController.js)`
 	  Anchors: route [server/routes/quizRoutes.js#L67](server/routes/quizRoutes.js#L67), handler [server/controllers/quizController.js#L375](server/controllers/quizController.js#L375)
 - `GET /api/quiz/user/history`
 	- Trace flow: `server/routes/quizRoutes.js -> getUserHistory (server/controllers/quizController.js)`
@@ -164,7 +164,7 @@ Source:
 	- Trace flow: `server/routes/analytics.routes.js -> inline route handler -> getUserAnalytics (server/services/analytics.service.js)`
 	  Anchors: route [server/routes/analytics.routes.js#L36](server/routes/analytics.routes.js#L36), service [server/services/analytics.service.js#L249](server/services/analytics.service.js#L249)
 - `GET /api/analytics/summary`
-	- Trace flow: `server/routes/analytics.routes.js -> inline route handler -> getOrganizerAnalyticsSummary (server/services/analytics.service.js)`
+	- Trace flow: `server/routes/analytics.routes.js -> inline route handler -> gethostAnalyticsSummary (server/services/analytics.service.js)`
 	  Anchors: route [server/routes/analytics.routes.js#L45](server/routes/analytics.routes.js#L45), service [server/services/analytics.service.js#L411](server/services/analytics.service.js#L411)
 
 ### AI
@@ -302,6 +302,6 @@ Lifecycle and auth-sensitive routes use:
 ```
 
 ## Security Notes
-- Lifecycle mutation routes require organizer/admin role.
+- Lifecycle mutation routes require host/admin role.
 - Ownership is enforced through middleware for lifecycle mutation endpoints.
 - Invalid transitions are rejected as conflict-style responses.

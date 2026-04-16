@@ -13,10 +13,10 @@ if (typeof jest !== 'undefined') {
     describe('Quiz Full State API', () => {
         let mongod;
         let app;
-        let organizerId;
-        let organizerToken;
+        let hostId;
+        let hostToken;
 
-        const authHeader = () => ({ Authorization: `Bearer ${organizerToken}` });
+        const authHeader = () => ({ Authorization: `Bearer ${hostToken}` });
 
         beforeAll(async () => {
             process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret';
@@ -27,8 +27,8 @@ if (typeof jest !== 'undefined') {
             app.use(express.json());
             app.use('/api/quiz', quizRoutes);
 
-            organizerId = new mongoose.Types.ObjectId();
-            organizerToken = jwt.sign({ id: organizerId.toString(), role: 'organizer' }, process.env.JWT_SECRET, { expiresIn: '1h' });
+            hostId = new mongoose.Types.ObjectId();
+            hostToken = jwt.sign({ id: hostId.toString(), role: 'host' }, process.env.JWT_SECRET, { expiresIn: '1h' });
         });
 
         afterEach(async () => {
@@ -43,7 +43,7 @@ if (typeof jest !== 'undefined') {
         test('persists full snapshot and reordered slides atomically', async () => {
             const quiz = await Quiz.create({
                 title: 'Snapshot Quiz',
-                organizerId,
+                hostId,
                 roomCode: 'SNAP01',
                 questions: [
                     {

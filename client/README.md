@@ -3,15 +3,15 @@
 This is the frontend application for QuizBolt, built with React and Vite.
 
 Status snapshot (April 2026):
-- organizer and participant flows are active
-- session-aware organizer route resolution is active
+- host and participant flows are active
+- session-aware host route resolution is active
 - AI generation editor flow includes preview + JSON workflows
 - e2e coverage is available through Playwright tests
 
 ## Responsibilities
 
 - Authentication screens (login/register/profile)
-- Organizer workflows (dashboard, quiz editing, live control, results)
+- host workflows (dashboard, quiz editing, live control, results)
 - AI quiz generation workflow inside the quiz editor flow
 - Participant workflows (join room, play quiz, history)
 - Real-time updates through Socket.IO
@@ -88,10 +88,10 @@ The frontend is designed for fast, clear quiz interactions with:
 
 - High readability for question flow
 - Responsive layouts across desktop/mobile
-- Organizer-first controls for live sessions
+- host-first controls for live sessions
 - Participant-first feedback on submissions and standings
 
-## Organizer Session Routing (Current)
+## host Session Routing (Current)
 
 The client uses centralized status-based route resolution:
 - `draft` -> `/launch/:id`
@@ -103,6 +103,6 @@ The client uses centralized status-based route resolution:
 Implementation files:
 - `src/utils/sessionRouteResolver.js`
 - `src/components/RouteGuard.jsx`
-- `src/pages/OrganizerLaunch.jsx`
-- `src/pages/OrganizerInviteRoom.jsx`
-- `src/pages/OrganizerLive.jsx`
+- `src/pages/hostLaunch.jsx`
+- `src/pages/hostInviteRoom.jsx`
+- `src/pages/hostLive.jsx`

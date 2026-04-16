@@ -7,7 +7,7 @@ const {
     extractJSONArray,
     normalizeQuestions,
     validateGenerateInput,
-} = require('../services/ai.service');
+} = require('../services/ai/ai.service');
 
 test('buildPrompt embeds topic difficulty and count with strict JSON instruction', () => {
     const prompt = buildPrompt({ topic: 'JavaScript closures', difficulty: 'medium', count: 5 });

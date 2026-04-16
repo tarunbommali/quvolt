@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 // session.service uses an in-memory fallback when Redis is unavailable.
 // Requiring the module before any Redis connection is established exercises
 // the memSessions / memAnswerLocks code paths.
-const sessionStore = require('../services/session.service');
+const sessionStore = require('../services/session/session.service');
 
 const uniqueCode = (prefix = 'room') => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
 

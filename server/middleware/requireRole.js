@@ -9,7 +9,7 @@
 //                                protect() produces, so downstream code sees a
 //                                consistent object regardless of which middleware ran.
 //
-// Usage: requireRole(['organizer', 'admin'])
+// Usage: requireRole(['host', 'admin'])
 
 const { protect, authorize } = require('./auth');
 

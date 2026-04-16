@@ -1,14 +1,14 @@
 const mongoose = require('mongoose');
 const axios = require('axios');
-const Quiz = require('../models/Quiz');
-const QuizSession = require('../models/QuizSession');
-const Submission = require('../models/Submission');
-const { compareAnswers } = require('../utils/crypto');
-const { calculateScore } = require('../utils/scoring');
-const logger = require('../utils/logger');
-const sessionStore = require('./session.service');
-const { getPlanConfig } = require('../config/plans');
-const { SESSION_STATUS, assertWaitingSessionExists, canTransition, normalizeSessionStatus } = require('../utils/sessionStateMachine');
+const Quiz = require('../../models/Quiz');
+const QuizSession = require('../../models/QuizSession');
+const Submission = require('../../models/Submission');
+const { compareAnswers } = require('../../utils/crypto');
+const { calculateScore } = require('../../utils/scoring');
+const logger = require('../../utils/logger');
+const sessionStore = require('../session/session.service');
+const { getPlanConfig } = require('../../config/plans');
+const { SESSION_STATUS, assertWaitingSessionExists, canTransition, normalizeSessionStatus } = require('../../utils/sessionStateMachine');
 
 const PAYMENT_SERVICE_URL = process.env.PAYMENT_SERVICE_URL || 'http://localhost:5001';
 const ALLOWED_QUIZ_CATEGORIES = ['regular', 'internal', 'external', 'subject-syllabus', 'hackathon', 'interview'];
@@ -18,13 +18,13 @@ const ALLOWED_QUIZ_CATEGORIES = ['regular', 'internal', 'external', 'subject-syl
 const buildQuizAccessQuery = (user, id, extra = {}) => (
     user.role === 'admin'
         ? { _id: id, ...extra }
-        : { _id: id, organizerId: user._id, ...extra }
+        : { _id: id, hostId: user._id, ...extra }
 );
 
-const buildOrganizerScopeQuery = (user, extra = {}) => (
+const buildhostScopeQuery = (user, extra = {}) => (
     user.role === 'admin'
         ? { ...extra }
-        : { organizerId: user._id, ...extra }
+        : { hostId: user._id, ...extra }
 );
 
 const shuffleArray = (items) => {
@@ -97,22 +97,24 @@ const getSubjectLeaderboardData = async (subjectId) => {
 const findQuizAndActiveSession = async (roomCode, sessionId) => {
     let liveSession = null;
 
+    const normalizedCode = (roomCode || '').toUpperCase();
+
     if (sessionId) {
         liveSession = await QuizSession.findById(sessionId).lean();
     }
 
-    if (!liveSession && roomCode) {
-        liveSession = await QuizSession.findOne({ sessionCode: roomCode }).lean();
+    if (!liveSession && normalizedCode) {
+        liveSession = await QuizSession.findOne({ sessionCode: normalizedCode }).lean();
     }
 
     let quiz = null;
     if (liveSession) {
         quiz = await Quiz.findById(liveSession.quizId)
-            .select('title roomCode isPaid price organizerId parentId mode interQuestionDelay shuffleQuestions questions')
+            .select('title roomCode isPaid price hostId parentId mode interQuestionDelay shuffleQuestions questions')
             .lean();
-    } else if (roomCode) {
-        quiz = await Quiz.findOne({ roomCode })
-            .select('title roomCode isPaid price organizerId parentId mode interQuestionDelay shuffleQuestions questions')
+    } else if (normalizedCode) {
+        quiz = await Quiz.findOne({ roomCode: normalizedCode })
+            .select('title roomCode isPaid price hostId parentId mode interQuestionDelay shuffleQuestions questions')
             .lean();
     }
 
@@ -129,7 +131,7 @@ const findQuizAndActiveSession = async (roomCode, sessionId) => {
     return {
         quiz,
         liveSession,
-        effectiveRoomCode: liveSession?.sessionCode || quiz.roomCode || roomCode,
+        effectiveRoomCode: String(liveSession?.sessionCode || quiz.roomCode || roomCode || '').toUpperCase(),
     };
 };
 
@@ -137,7 +139,7 @@ const resolveQuizActionContext = async ({ user, quizId, sessionCode, sessionId }
     if (quizId) {
         const quiz = await Quiz.findById(quizId).lean();
         if (!quiz) return { error: 'Quiz not found', statusCode: 404 };
-        if (user.role !== 'admin' && String(quiz.organizerId) !== String(user._id)) {
+        if (user.role !== 'admin' && String(quiz.hostId) !== String(user._id)) {
             return { error: 'Forbidden', statusCode: 403 };
         }
 
@@ -185,9 +187,9 @@ const clearTimers = async (roomCode) => {
 };
 
 // Tick timers are inherently distributed to the frontend, so we no longer push 'timer_tick'
-const clearTickTimer = () => {};
-const emitTimerTick = async () => {};
-const startTimerTicks = async () => {};
+const clearTickTimer = () => { };
+const emitTimerTick = async () => { };
+const startTimerTicks = async () => { };
 
 const startDistributedTimerWorker = (io) => {
     setInterval(async () => {
@@ -263,9 +265,10 @@ const buildRoomState = (session, roomCode) => {
         .slice(0, 10);
 
     const isLive = session.status === SESSION_STATUS.LIVE;
-    const question = isLive ? session.questions?.[session.currentQuestionIndex] : null;
+    const questionIndex = session.currentQuestionIndex ?? 0;
+    const question = isLive ? session.questions?.[questionIndex] : null;
     const currentQuestion = question
-        ? formatQuestion(question, session.currentQuestionIndex, session.questions.length, session.questionExpiry)
+        ? formatQuestion(question, questionIndex, session.questions.length, session.questionExpiry)
         : null;
 
     return {
@@ -295,9 +298,9 @@ const joinRoom = async ({ io, socket, roomCode, sessionId }) => {
     }
 
     const token = socket.data.token;
-    const socketRoom = liveSession?.sessionCode || effectiveRoomCode;
+    const socketRoom = String(liveSession?.sessionCode || effectiveRoomCode || '').toUpperCase();
 
-    if (quiz?.accessType === 'private' && !['organizer', 'admin'].includes(user.role)) {
+    if (quiz?.accessType === 'private' && !['host', 'admin'].includes(user.role)) {
         const allowedEmails = new Set((quiz.allowedEmails || []).map((email) => String(email || '').trim().toLowerCase()));
         const email = String(user?.email || '').trim().toLowerCase();
         if (!email || !allowedEmails.has(email)) {
@@ -305,7 +308,7 @@ const joinRoom = async ({ io, socket, roomCode, sessionId }) => {
         }
     }
 
-    if (quiz?.isPaid && !['organizer', 'admin'].includes(user.role)) {
+    if (quiz?.isPaid && !['host', 'admin'].includes(user.role)) {
         let hasPaidAccess = false;
         try {
             hasPaidAccess = await ensureParticipantHasPaidAccess(token, quiz._id);
@@ -317,6 +320,7 @@ const joinRoom = async ({ io, socket, roomCode, sessionId }) => {
     }
 
     socket.join(socketRoom);
+    socket.data.roomCode = socketRoom;
     if (sessionId && roomCode && socketRoom === sessionId) {
         socket.leave(roomCode);
     }
@@ -339,7 +343,7 @@ const joinRoom = async ({ io, socket, roomCode, sessionId }) => {
         }
     }
 
-    if (user.role === 'organizer') {
+    if (user.role === 'host' || user.role === 'organizer') {
         try {
             const subscription = await mongoose.connection.db.collection('subscriptions').findOne({
                 hostId: new mongoose.Types.ObjectId(user._id),
@@ -353,7 +357,7 @@ const joinRoom = async ({ io, socket, roomCode, sessionId }) => {
         }
     }
 
-    if (user.role !== 'organizer') {
+    if (user.role !== 'host' && user.role !== 'organizer') {
         const currentCount = Object.keys(session.participants || {}).length;
         if (!session.participants[user._id] && currentCount >= (session.participantLimit || 50)) {
             return { error: 'Upgrade your plan' };
@@ -385,7 +389,7 @@ const joinRoom = async ({ io, socket, roomCode, sessionId }) => {
 const startQuizSession = async ({ io, quizId, roomCode, sessionId, user }) => {
     const context = quizId
         ? await resolveQuizActionContext({ user, quizId, sessionCode: roomCode, sessionId })
-        : await findQuizAndActiveSession(roomCode, sessionId);
+        : await findQuizAndActiveSession(String(roomCode || '').toUpperCase(), sessionId);
 
     if (context.error) return context;
 
@@ -395,8 +399,11 @@ const startQuizSession = async ({ io, quizId, roomCode, sessionId, user }) => {
 
     const quizStatus = normalizeSessionStatus(quiz.status);
 
-    if (user?.role !== 'admin' && user?._id && quiz.organizerId?.toString?.() !== user._id.toString()) {
-        return { error: 'Forbidden', statusCode: 403 };
+    if (user?.role !== 'admin' && user?._id && String(quiz.hostId || '') !== String(user._id)) {
+        // Double check for legacy organizer role just in case
+        if (user.role !== 'host' && user.role !== 'organizer' && user.role !== 'admin') {
+            return { error: 'Forbidden', statusCode: 403 };
+        }
     }
 
     const session = liveSession
@@ -431,24 +438,37 @@ const startQuizSession = async ({ io, quizId, roomCode, sessionId, user }) => {
 
     const socketRoom = session.sessionCode;
     const snapshotQuestions = session.templateSnapshot?.questions || quiz.questions || [];
+    const existingState = await sessionStore.getSession(socketRoom);
     const sessionState = {
         status: SESSION_STATUS.LIVE,
         mode: (quiz.mode === 'teaching' || quiz.mode === 'tutor') ? 'tutor' : 'auto',
         isPaused: false,
         currentQuestionIndex: 0,
-        participants: {},
-        leaderboard: {},
+        participants: existingState?.participants || {},
+        leaderboard: existingState?.leaderboard || {},
         quizId: quiz._id.toString(),
         sessionId: session._id.toString(),
         waitingRoomCode: quiz.roomCode || null,
         subjectRoom: quiz.parentId ? `subject_${quiz.parentId.toString()}` : null,
         questions: snapshotQuestions.map((question) => ({ ...question.toObject?.() ?? question })),
         lastActivity: Date.now(),
-        participantLimit: 50,
+        participantLimit: existingState?.participantLimit || 50,
         interQuestionDelay: (quiz.interQuestionDelay ?? 5) * 1000,
     };
 
     await sessionStore.setSession(socketRoom, sessionState);
+
+    // If we have a permanent waiting room, notify everyone to move to the new active session room
+    if (quiz.roomCode && socketRoom !== quiz.roomCode) {
+        io.to(quiz.roomCode).emit('session_redirect', { roomCode: socketRoom, sessionId: session._id.toString() });
+    }
+
+    // Give participants a moment to receive session_redirect and join the new room
+    setTimeout(() => {
+        broadcastQuestionEnhanced(io, socketRoom).catch(err => {
+            logger.error('Initial broadcast failed', { roomCode: socketRoom, error: err.message });
+        });
+    }, 500);
 
     return {
         roomCode: socketRoom,
@@ -477,20 +497,20 @@ const submitAnswer = async ({ io, socket, roomCode, sessionId, questionId, selec
 
     const currentQuestionIndex = session.currentQuestionIndex;
     let question = session.questions?.[currentQuestionIndex];
-    
+
     if (!question) {
-      // If current question not found, it could be due to advancement after window close
-      if (windowClosed) {
-        return { error: 'Answer window has closed' };
-      }
-      return { error: 'Question not found' };
+        // If current question not found, it could be due to advancement after window close
+        if (windowClosed) {
+            return { error: 'Answer window has closed' };
+        }
+        return { error: 'Question not found' };
     }
 
     // Secondary check: verify question ID match if provided
     if (questionId && questionId.toString() !== question._id.toString()) {
         // This could also indicate a late submission to a previous question
         if (windowClosed) {
-          return { error: 'Answer window has closed' };
+            return { error: 'Answer window has closed' };
         }
         return { error: 'Question mismatch' };
     }
@@ -582,6 +602,7 @@ const submitAnswer = async ({ io, socket, roomCode, sessionId, questionId, selec
     return {
         room: socketRoom,
         isCorrect,
+        correctAnswer: question.options[question.correctOption || 0],
         score,
         totalScore: userStats.score,
         streak: userStats.streak,
@@ -653,7 +674,7 @@ const advanceQuizQuestion = async ({ io, quizId, sessionCode, user }) => {
 
     session.currentQuestionIndex += 1;
     await sessionStore.setSession(roomCode, session);
-    
+
     // STEP 7: Use enhanced broadcasting that handles tutor mode
     await broadcastQuestionEnhanced(io, roomCode);
     return { roomCode, message: 'Advanced to next question' };
@@ -819,7 +840,7 @@ const broadcastQuestionEnhanced = async (io, roomCode) => {
 
 // STEP 6: Reveal correct answer for tutor mode
 const revealAnswer = async ({ io, roomCode, user }) => {
-    if (user?.role !== 'organizer' && user?.role !== 'admin') {
+    if (user?.role !== 'host' && user?.role !== 'admin') {
         return { error: 'Unauthorized' };
     }
 
@@ -844,7 +865,7 @@ const revealAnswer = async ({ io, roomCode, user }) => {
 
 // STEP 8: End quiz session
 const endQuizSession = async ({ io, quizId, sessionCode, user }) => {
-    if (user?.role !== 'organizer' && user?.role !== 'admin') {
+    if (user?.role !== 'host' && user?.role !== 'admin') {
         return { error: 'Unauthorized', statusCode: 403 };
     }
 
@@ -853,7 +874,7 @@ const endQuizSession = async ({ io, quizId, sessionCode, user }) => {
 
     const { quiz, roomCode } = context;
     const session = await sessionStore.getSession(roomCode);
-    
+
     if (session) {
         if (!canTransition(session.status, SESSION_STATUS.COMPLETED)) {
             return { error: `Invalid session state transition: ${session.status} -> ${SESSION_STATUS.COMPLETED}`, statusCode: 409 };
@@ -895,6 +916,23 @@ const endQuizSession = async ({ io, quizId, sessionCode, user }) => {
 };
 
 // STEP 5: Calculate answer stats with detailed breakdown
+const leaveRoom = async ({ io, socket }) => {
+    const user = socket.data.user;
+    const roomCode = socket.data.roomCode;
+    if (!user || !roomCode) return;
+
+    const session = await sessionStore.getSession(roomCode);
+    if (!session || !session.participants) return;
+
+    if (session.participants[user._id]) {
+        delete session.participants[user._id];
+        await sessionStore.setSession(roomCode, session);
+        
+        const participants = Object.values(session.participants);
+        io.to(roomCode).emit('participants_update', participants);
+    }
+};
+
 const calculateAnswerStats = async (roomCode, questionIndex) => {
     const session = await sessionStore.getSession(roomCode);
     if (!session) return null;
@@ -924,7 +962,7 @@ module.exports = {
     ALLOWED_QUIZ_CATEGORIES,
     abortQuizSession,
     advanceQuizQuestion,
-    buildOrganizerScopeQuery,
+    buildhostScopeQuery,
     buildQuizAccessQuery,
     broadcastQuestion,
     broadcastQuestionEnhanced,
@@ -935,6 +973,7 @@ module.exports = {
     formatQuestion,
     getSubjectLeaderboardData,
     joinRoom,
+    leaveRoom,
     mergeParticipantMaps,
     pauseQuizSession,
     rebootQuizzes,
@@ -942,4 +981,5 @@ module.exports = {
     revealAnswer,
     startQuizSession,
     submitAnswer,
+    startDistributedTimerWorker,
 };

@@ -96,7 +96,7 @@ Dry run is recommended before apply.
 - `/api/analytics/*`
 - `/api/ai/*`
 
-Lifecycle endpoints (organizer/admin + ownership required):
+Lifecycle endpoints (host/admin + ownership required):
 - `POST /api/quiz/:id/start`
 - `POST /api/quiz/:id/start-live`
 - `POST /api/quiz/:id/schedule`
@@ -133,7 +133,7 @@ AI quiz generation notes:
 
 Security guard stack for lifecycle routes:
 - `protect`
-- `authorize('organizer', 'admin')`
+- `authorize('host', 'admin')`
 - `requireQuizOwnership`
 
 ## Testing

@@ -25,15 +25,15 @@ const printStep = (label, details) => {
         const app = express();
         app.use(express.json());
         app.set('io', {
-            to: () => ({ emit: () => {} }),
-            in: () => ({ socketsLeave: () => {} }),
-            emit: () => {},
+            to: () => ({ emit: () => { } }),
+            in: () => ({ socketsLeave: () => { } }),
+            emit: () => { },
         });
         app.use('/api/quiz', quizRoutes);
 
-        const organizerId = new mongoose.Types.ObjectId();
+        const hostId = new mongoose.Types.ObjectId();
         const token = jwt.sign(
-            { id: organizerId.toString(), role: 'organizer' },
+            { id: hostId.toString(), role: 'host' },
             process.env.JWT_SECRET,
             { expiresIn: '1h' }
         );
@@ -91,15 +91,15 @@ const printStep = (label, details) => {
         process.exitCode = 1;
     } finally {
         await Promise.all([
-            Submission.deleteMany({}).catch(() => {}),
-            QuizSession.deleteMany({}).catch(() => {}),
-            Quiz.deleteMany({}).catch(() => {}),
+            Submission.deleteMany({}).catch(() => { }),
+            QuizSession.deleteMany({}).catch(() => { }),
+            Quiz.deleteMany({}).catch(() => { }),
         ]);
         if (mongoose.connection.readyState !== 0) {
-            await mongoose.disconnect().catch(() => {});
+            await mongoose.disconnect().catch(() => { });
         }
         if (mongod) {
-            await mongod.stop().catch(() => {});
+            await mongod.stop().catch(() => { });
         }
     }
 })();

@@ -66,8 +66,8 @@ const SessionHistoryDetailPage = () => {
     useEffect(() => {
         let active = true;
 
-        const loadOrganizerDetails = async () => {
-            if (!selectedQuiz || user?.role !== 'organizer') return;
+        const loadhostDetails = async () => {
+            if (!selectedQuiz || user?.role !== 'host') return;
 
             const qId = selectedQuiz.quizId || selectedQuiz._id;
             if (!qId) return;
@@ -99,7 +99,7 @@ const SessionHistoryDetailPage = () => {
             }
         };
 
-        loadOrganizerDetails();
+        loadhostDetails();
 
         return () => {
             active = false;
@@ -136,10 +136,10 @@ const SessionHistoryDetailPage = () => {
                 : 'bg-gray-100 text-gray-600';
 
     const exportToCSV = (record) => {
-        const isOrganizer = user.role === 'organizer';
+        const ishost = user.role === 'host';
         let csvContent = '';
 
-        if (isOrganizer) {
+        if (ishost) {
             csvContent = 'Quiz Title,Room Code,Date,Participants,Total Answers\n';
             csvContent += `"${record.title}",${record.roomCode},${new Date(record.createdAt).toLocaleDateString()},${record.participantCount},${record.totalAnswers}\n`;
         } else {

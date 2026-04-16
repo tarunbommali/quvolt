@@ -42,7 +42,7 @@ const registerUser = async (req, res) => {
             return res.status(400).json({ message: 'Name, email, and password are required' });
         }
 
-        const safeRole = role === 'organizer' ? 'organizer' : 'participant';
+        const safeRole = role === 'host' ? 'host' : 'participant';
         const normalizedEmail = String(email || '').trim().toLowerCase();
         const userExists = await User.findOne({ email: normalizedEmail });
 
@@ -203,7 +203,7 @@ const updateMyProfile = async (req, res) => {
             };
         }
 
-        if ((user.role === 'organizer' || user.role === 'admin') && hostProfile && typeof hostProfile === 'object') {
+        if ((user.role === 'host' || user.role === 'admin') && hostProfile && typeof hostProfile === 'object') {
             user.hostProfile = {
                 ...(user.hostProfile || {}),
                 ...(typeof hostProfile.institutionName === 'string' ? { institutionName: hostProfile.institutionName.trim() } : {}),

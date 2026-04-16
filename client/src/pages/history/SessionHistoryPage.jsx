@@ -95,11 +95,11 @@ const SessionHistoryPage = () => {
     };
 
     const prefetchHistoryNavigation = useCallback((record) => {
-        prefetchHistoryDetailRoute().catch(() => {});
-        useQuizStore.getState().prefetchHistoryForRole(user.role).catch(() => {});
+        prefetchHistoryDetailRoute().catch(() => { });
+        useQuizStore.getState().prefetchHistoryForRole(user.role).catch(() => { });
         const qId = record?.quizId || record?.quiz?._id || record?._id;
         if (qId) {
-            useQuizStore.getState().prefetchQuizLeaderboard(qId).catch(() => {});
+            useQuizStore.getState().prefetchQuizLeaderboard(qId).catch(() => { });
         }
     }, [user?.role]);
 
@@ -155,15 +155,15 @@ const SessionHistoryPage = () => {
         <div className="app-page space-y-8 animate-in fade-in duration-500">
             <SubHeader
                 title="History"
-                subtitle={user.role === 'organizer' ? 'Archive of your conducted sessions' : 'Recap of your quiz performances'}
-                breadcrumbs={[{ label: 'Dashboard', href: user.role === 'organizer' ? '/studio' : '/join' }, { label: 'History' }]}
+                subtitle={user.role === 'host' ? 'Archive of your conducted sessions' : 'Recap of your quiz performances'}
+                breadcrumbs={[{ label: 'Dashboard', href: user.role === 'host' ? '/studio' : '/join' }, { label: 'History' }]}
                 actions={(
-                <SearchBar
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search by title or code..."
-                    className="w-full md:w-96"
-                />
+                    <SearchBar
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search by title or code..."
+                        className="w-full md:w-96"
+                    />
                 )}
             />
 

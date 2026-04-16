@@ -1,0 +1,155 @@
+const INR_SYMBOL = '\u20B9';
+
+const CreateTemplatePanel = ({
+    showCreate,
+    currentSubject,
+    quizType,
+    onQuizTypeChange,
+    accessType,
+    onAccessTypeChange,
+    allowedEmailsText,
+    onAllowedEmailsTextChange,
+    quizMode,
+    onQuizModeChange,
+    newQuizTitle,
+    onTitleChange,
+    onCreate,
+    isPaid,
+    onPaidToggle,
+    quizPrice,
+    onPriceChange,
+    subscriptionEntitlements,
+    quizTemplateCount,
+}) => {
+    if (!showCreate) return null;
+
+    const canUsePrivateHosting = subscriptionEntitlements?.canUsePrivateHosting;
+    const canCreatePaidQuiz = subscriptionEntitlements?.canCreatePaidQuiz;
+    const maxQuizTemplates = subscriptionEntitlements?.maxQuizTemplates || 5;
+    const plan = subscriptionEntitlements?.plan || 'FREE';
+
+    return (
+        <div className="theme-surface p-8 space-y-6 mt-12 animate-in slide-in-from-bottom duration-300 border theme-border rounded-3xl shadow-sm">
+            <div className="flex justify-between items-center">
+                <h3 className="text-2xl font-black theme-text-primary uppercase">
+                    {currentSubject ? `New Template in ${currentSubject.title}` : 'New Template Configuration'}
+                </h3>
+                <div className="flex theme-surface-soft p-1 rounded-xl border theme-border">
+                    <button
+                        onClick={() => onQuizTypeChange('quiz')}
+                        className={`px-6 py-2 rounded-xl text-xs font-bold uppercase tracking-widest theme-interactive ${quizType === 'quiz' ? 'bg-(--qb-primary) text-white shadow-sm' : 'theme-text-muted hover:theme-text-primary'}`}
+                    >
+                        Quiz File
+                    </button>
+                    <button
+                        onClick={() => onQuizTypeChange('subject')}
+                        className={`px-6 py-2 rounded-xl text-xs font-bold uppercase tracking-widest theme-interactive ${quizType === 'subject' ? 'theme-status-caution shadow-sm' : 'theme-text-muted hover:theme-text-primary'}`}
+                    >
+                        Folder
+                    </button>
+                </div>
+            </div>
+            <div className="flex gap-4">
+                <input
+                    className="w-full flex-1 bg-gray-50 border border-gray-200 text-slate-900 rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500 transition-colors placeholder:text-gray-400"
+                    placeholder={quizType === 'quiz' ? 'e.g. JavaScript Core Deep Dive' : "e.g. Master's in Web Development Subject"}
+                    value={newQuizTitle}
+                    onChange={(event) => onTitleChange(event.target.value)}
+                    onKeyDown={(event) => event.key === 'Enter' && onCreate()}
+                />
+                <button onClick={onCreate} className="btn-premium px-12">Initialize</button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                    <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">Template Access</label>
+                    <select
+                        value={accessType}
+                        onChange={(event) => onAccessTypeChange(event.target.value)}
+                        className="w-full bg-gray-50 border border-gray-200 text-slate-900 rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500 transition-colors"
+                    >
+                        <option value="public">Public</option>
+                        <option value="private" disabled={!canUsePrivateHosting}>Private (Creator+)</option>
+                    </select>
+                    {!canUsePrivateHosting ? (
+                        <p className="mt-2 text-[11px] font-semibold theme-status-warning inline-flex rounded-full border px-2 py-1 uppercase tracking-widest">
+                            Private hosting requires Creator or Teams plan.
+                        </p>
+                    ) : null}
+                </div>
+
+                {quizType === 'quiz' && (
+                    <div>
+                        <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">Quiz Flow</label>
+                        <select
+                            value={quizMode}
+                            onChange={(event) => onQuizModeChange(event.target.value)}
+                            className="w-full bg-gray-50 border border-gray-200 text-slate-900 rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500 transition-colors"
+                        >
+                            <option value="auto">AutoTime</option>
+                            <option value="tutor">Tutor</option>
+                        </select>
+                    </div>
+                )}
+            </div>
+
+            {accessType === 'private' && (
+                <div>
+                    <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">Allowed Emails (comma or new line)</label>
+                    <textarea
+                        rows={3}
+                        value={allowedEmailsText}
+                        onChange={(event) => onAllowedEmailsTextChange(event.target.value)}
+                        placeholder="student1@example.com, student2@example.com"
+                        className="w-full bg-gray-50 border border-gray-200 text-slate-900 rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500 transition-colors placeholder:text-gray-400"
+                    />
+                    <p className="mt-2 text-[11px] font-semibold text-slate-500 uppercase tracking-widest">Only these emails can join private quizzes from this template.</p>
+                </div>
+            )}
+
+            {quizType === 'quiz' && (
+                <div className="flex items-center gap-6">
+                    <label className="flex items-center gap-3 cursor-pointer select-none">
+                        <div
+                            onClick={onPaidToggle}
+                            className={`relative w-12 h-6 rounded-full transition-colors border ${isPaid ? 'bg-emerald-500 border-emerald-500' : 'bg-gray-200 border-gray-300'}`}
+                        >
+                            <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${isPaid ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                        </div>
+                        <span className="text-xs font-bold uppercase tracking-widest text-slate-400">Paid Quiz</span>
+                    </label>
+                    {!canCreatePaidQuiz ? (
+                        <p className="text-[11px] font-semibold theme-status-warning inline-flex rounded-full border px-2 py-1 uppercase tracking-widest">
+                            Paid quizzes require Creator or Teams plan.
+                        </p>
+                    ) : null}
+                    {isPaid && (
+                        <div className="flex items-center gap-2">
+                            <span className="text-primary font-black text-lg">{INR_SYMBOL}</span>
+                            <input
+                                type="number"
+                                min="1"
+                                className="w-32 bg-gray-50 border border-gray-200 text-slate-900 text-center py-2 px-4 rounded-xl focus:outline-none focus:border-indigo-500 transition-colors"
+                                placeholder="Price"
+                                value={quizPrice}
+                                onChange={(event) => onPriceChange(event.target.value)}
+                            />
+                        </div>
+                    )}
+                </div>
+            )}
+
+            <p className="text-xs font-bold text-slate-500 uppercase">
+                {quizType === 'quiz'
+                    ? 'Creates a standalone high-speed competitive template with autotime or tutor flow.'
+                    : 'Creates a collaborative folder template to group multiple quizzes with a cumulative leaderboard.'}
+            </p>
+
+            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest">
+                Plan {plan}: {quizTemplateCount}/{maxQuizTemplates} quizzes used.
+            </p>
+        </div>
+    );
+};
+
+export default CreateTemplatePanel;

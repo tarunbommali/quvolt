@@ -9,7 +9,7 @@ const {
     normalizeQuestions,
     saveQuestionsToQuiz,
     validateGenerateInput,
-} = require('../services/ai.service');
+} = require('../services/ai/ai.service');
 const { resolveHostSubscriptionEntitlements } = require('../utils/subscriptionEntitlements');
 
 const router = express.Router();
@@ -27,7 +27,7 @@ const isDistributionStep = (value) => Number.isFinite(Number(value)) && Number(v
 router.post(
     '/generate-quiz',
     aiGenerateLimiter,
-    requireRole(['organizer', 'admin']),
+    requireRole(['host', 'admin']),
     [
         body('topic').optional({ nullable: true }).isString().trim(),
         body('difficulty').optional({ nullable: true }).isIn(['easy', 'medium', 'hard']),

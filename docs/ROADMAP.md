@@ -10,14 +10,14 @@ Updated: 2026-04
 - Add migration dry-run checks in CI for status enum consistency.
 
 2. Product and UX
-- Expand analytics dashboards with organizer trend drill-downs.
+- Expand analytics dashboards with host trend drill-downs.
 - Improve participant live-room resilience and reconnect UX.
 - Refine quiz authoring and AI insertion validation UX.
 
 3. Monetization and Operations
 - Run payment webhook replay simulation in staging.
 - Add payout reconciliation dashboards and alerting.
-- Improve plan-limit enforcement visibility in organizer billing.
+- Improve plan-limit enforcement visibility in host billing.
 
 4. Scale and Platform
 - Load test high fanout rooms and leaderboard churn.

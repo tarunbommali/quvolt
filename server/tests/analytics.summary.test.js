@@ -3,13 +3,13 @@ const assert = require('node:assert/strict');
 
 const Submission = require('../models/Submission');
 const Quiz = require('../models/Quiz');
-const { getOrganizerAnalyticsSummary } = require('../services/analytics.service');
+const { gethostAnalyticsSummary } = require('../services/analytics/analytics.service');
 
 const ORG_ID = '64b1f8f9d4c3a2b1c0d9e901';
 const QUIZ_A = '64b1f8f9d4c3a2b1c0d9e902';
 const QUIZ_B = '64b1f8f9d4c3a2b1c0d9e903';
 
-test('getOrganizerAnalyticsSummary returns aggregated organizer metrics', async () => {
+test('gethostAnalyticsSummary returns aggregated host metrics', async () => {
     const originalQuizFind = Quiz.find;
     const originalSubmissionAggregate = Submission.aggregate;
 
@@ -50,7 +50,7 @@ test('getOrganizerAnalyticsSummary returns aggregated organizer metrics', async 
     ]);
 
     try {
-        const result = await getOrganizerAnalyticsSummary(ORG_ID);
+        const result = await gethostAnalyticsSummary(ORG_ID);
 
         assert.equal(result.totals.totalQuizzesCreated, 2);
         assert.equal(result.totals.activeQuizzes, 1);

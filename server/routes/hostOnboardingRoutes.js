@@ -28,9 +28,9 @@ router.post('/register', [
     validate,
 ], registerHost);
 
-router.get('/me', requireRole(['organizer', 'admin']), getMyHostProfile);
+router.get('/me', requireRole(['host', 'admin']), getMyHostProfile);
 
-router.put('/me', requireRole(['organizer', 'admin']), [
+router.put('/me', requireRole(['host', 'admin']), [
     body('domains').optional().isArray(),
     validate,
 ], upsertMyHostProfile);

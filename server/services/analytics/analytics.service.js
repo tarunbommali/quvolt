@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
-const Submission = require('../models/Submission');
-const Quiz = require('../models/Quiz');
-const Analytics = require('../models/Analytics');
+const Submission = require('../../models/Submission');
+const Quiz = require('../../models/Quiz');
+const Analytics = require('../../models/Analytics');
 
 const toObjectId = (id) => {
     if (!id || !mongoose.Types.ObjectId.isValid(id)) return null;
@@ -408,11 +408,11 @@ const getUserAnalytics = async (userId) => {
     return payload;
 };
 
-const getOrganizerAnalyticsSummary = async (organizerId) => {
-    const organizerObjectId = toObjectId(organizerId);
-    if (!organizerObjectId) throw new Error('Invalid organizerId');
+const gethostAnalyticsSummary = async (hostId) => {
+    const hostObjectId = toObjectId(hostId);
+    if (!hostObjectId) throw new Error('Invalid hostId');
 
-    const quizzes = await Quiz.find({ organizerId: organizerObjectId, type: { $ne: 'subject' } })
+    const quizzes = await Quiz.find({ hostId: hostObjectId, type: { $ne: 'subject' } })
         .select('_id title status joinedParticipants')
         .lean();
 
@@ -532,5 +532,5 @@ const getOrganizerAnalyticsSummary = async (organizerId) => {
 module.exports = {
     getQuizAnalytics,
     getUserAnalytics,
-    getOrganizerAnalyticsSummary,
+    gethostAnalyticsSummary,
 };

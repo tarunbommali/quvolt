@@ -52,7 +52,7 @@ const Navbar = () => {
     const isProfileMenuOpenRef = useRef(isProfileMenuOpen);
     isProfileMenuOpenRef.current = isProfileMenuOpen;
     const role = user?.role || 'guest';
-    const isHost = role === 'organizer' || role === 'admin';
+    const isHost = role === 'host' || role === 'admin';
     const isParticipant = Boolean(user) && !isHost;
 
     const primaryCta = isHost

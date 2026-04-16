@@ -46,11 +46,11 @@ if (typeof jest !== 'undefined') {
         });
 
         test('authMiddleware accepts valid token and sets req.user', () => {
-            const token = jwt.sign({ id: '507f1f77bcf86cd799439011', role: 'organizer' }, process.env.JWT_SECRET, { expiresIn: '1h' });
+            const token = jwt.sign({ id: '507f1f77bcf86cd799439011', role: 'host' }, process.env.JWT_SECRET, { expiresIn: '1h' });
             const { req, res, next } = runProtect(`Bearer ${token}`);
             expect(next).toHaveBeenCalledTimes(1);
             expect(res.body).toBeNull();
-            expect(req.user).toEqual(expect.objectContaining({ role: 'organizer' }));
+            expect(req.user).toEqual(expect.objectContaining({ role: 'host' }));
         });
 
         test('roleMiddleware denies forbidden role with contract', () => {
@@ -69,7 +69,7 @@ if (typeof jest !== 'undefined') {
             };
             const next = jest.fn();
 
-            authorize('organizer', 'admin')(req, res, next);
+            authorize('host', 'admin')(req, res, next);
 
             expect(next).not.toHaveBeenCalled();
             expect(res.statusCode).toBe(403);
@@ -77,12 +77,12 @@ if (typeof jest !== 'undefined') {
             expect(typeof res.body.message).toBe('string');
         });
 
-        test('roleMiddleware allows organizer role', () => {
-            const req = { user: { _id: 'u1', role: 'organizer' } };
+        test('roleMiddleware allows host role', () => {
+            const req = { user: { _id: 'u1', role: 'host' } };
             const res = { status: () => res, json: () => res };
             const next = jest.fn();
 
-            authorize('organizer', 'admin')(req, res, next);
+            authorize('host', 'admin')(req, res, next);
             expect(next).toHaveBeenCalledTimes(1);
         });
     });

@@ -20,7 +20,7 @@ const UserProfilePage = ({ initialMode = 'view' }) => {
     const setProfileCached = useQuizStore((state) => state.setProfileCached);
     const { toast, showToast, clearToast } = useToast();
 
-    const isHost = user?.role === 'organizer' || user?.role === 'admin';
+    const isHost = user?.role === 'host' || user?.role === 'admin';
     const [name, setName] = useState(user?.name || '');
     const [profilePhoto, setProfilePhoto] = useState(user?.profilePhoto || '');
     const [participantPhone, setParticipantPhone] = useState(user?.participantProfile?.phone || '');

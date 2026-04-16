@@ -4,8 +4,8 @@ import EditorLayout from './EditorLayout';
 import SlidePanel from './SlidePanel';
 import CanvasView from './CanvasView';
 import ConfigSidebar from './ConfigSidebar';
-import OrganizerEditHeader from './OrganizerEditHeader';
-import OrganizerEditOverlays from './OrganizerEditOverlays';
+import hostEditHeader from './hostEditHeader';
+import hostEditOverlays from './hostEditOverlays';
 import EditorCommandPalette from './EditorCommandPalette';
 import { components } from '../../styles/components';
 import { cx } from '../../styles/theme';
@@ -23,10 +23,10 @@ const snapshotKey = (snapshot) => JSON.stringify({
 });
 
 /**
- * Full organizer editor view that composes the editor chrome and modal states.
+ * Full host editor view that composes the editor chrome and modal states.
  * @param {{ editor: object }} props
  */
-const OrganizerEditView = ({ editor }) => {
+const hostEditView = ({ editor }) => {
     const [mobileTab, setMobileTab] = useState('slides');
     const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
     const [isCanvasEditing, setIsCanvasEditing] = useState(false);
@@ -219,15 +219,15 @@ const OrganizerEditView = ({ editor }) => {
     };
 
     const mobileShell = (
-        <section className={components.organizer.mobileShellContainer}>
+        <section className={components.host.mobileShellContainer}>
             {/* Simple Header */}
-            <div className={components.organizer.mobileHeader}>
-                <h2 className={components.organizer.mobileHeaderTitle}>{activeQuiz.title}</h2>
-                <span className={components.organizer.mobileHeaderMeta}>Q{activeQuestionIndex + 1} / {orderedSlides.length}</span>
+            <div className={components.host.mobileHeader}>
+                <h2 className={components.host.mobileHeaderTitle}>{activeQuiz.title}</h2>
+                <span className={components.host.mobileHeaderMeta}>Q{activeQuestionIndex + 1} / {orderedSlides.length}</span>
             </div>
 
             {/* Canvas Full Focus */}
-            <div className={components.organizer.mobileCanvasWrapper}>
+            <div className={components.host.mobileCanvasWrapper}>
                 <CanvasView
                     activeQuestion={activeQuestion}
                     activeQuestionIndex={activeQuestionIndex}
@@ -241,15 +241,15 @@ const OrganizerEditView = ({ editor }) => {
             </div>
 
             {/* Fixed Bottom Navigation */}
-            <div className={components.organizer.mobileBottomNav} role="tablist" aria-label="Editor sections">
+            <div className={components.host.mobileBottomNav} role="tablist" aria-label="Editor sections">
                 <button
                     type="button"
                     role="tab"
                     aria-selected={mobileTab === 'slides'}
                     onClick={() => setMobileTab(prev => prev === 'slides' ? null : 'slides')}
                     className={cx(
-                        components.organizer.mobileNavBtn,
-                        mobileTab === 'slides' ? components.organizer.mobileNavBtnActive : '',
+                        components.host.mobileNavBtn,
+                        mobileTab === 'slides' ? components.host.mobileNavBtnActive : '',
                     )}
                 >
                     <List size={16} />
@@ -261,8 +261,8 @@ const OrganizerEditView = ({ editor }) => {
                     aria-selected={mobileTab === 'settings'}
                     onClick={() => setMobileTab(prev => prev === 'settings' ? null : 'settings')}
                     className={cx(
-                        components.organizer.mobileNavBtn,
-                        mobileTab === 'settings' ? components.organizer.mobileNavBtnActive : '',
+                        components.host.mobileNavBtn,
+                        mobileTab === 'settings' ? components.host.mobileNavBtnActive : '',
                     )}
                 >
                     <SlidersHorizontal size={16} />
@@ -272,7 +272,7 @@ const OrganizerEditView = ({ editor }) => {
 
             {/* Bottom Drawer */}
             {mobileTab && (
-                <div className={components.organizer.mobileDrawer}>
+                <div className={components.host.mobileDrawer}>
                     {mobileTab === 'slides' ? (
                         <SlidePanel
                             mobile
@@ -304,12 +304,12 @@ const OrganizerEditView = ({ editor }) => {
 
     return (
         <>
-            <OrganizerEditOverlays editor={editor} />
+            <hostEditOverlays editor={editor} />
 
             <EditorLayout
                 mobileShell={mobileShell}
                 header={(
-                    <OrganizerEditHeader
+                    <hostEditHeader
                         title={activeQuiz.title}
                         isSaving={isSaving}
                         onOpenCommandPalette={() => setCommandPaletteOpen(true)}
@@ -375,4 +375,4 @@ const OrganizerEditView = ({ editor }) => {
     );
 };
 
-export default OrganizerEditView;
+export default hostEditView;

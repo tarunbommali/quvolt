@@ -13,6 +13,11 @@ export const useSocketStore = create((set, get) => ({
     lastEventByName: {},
 
     shouldProcessEvent: (eventName, payload) => {
+        // ALWAYS process mission-critical state updates to avoid sync holes
+        if (['participants_update', 'room_state', 'new_question'].includes(eventName)) {
+            return true;
+        }
+
         const now = Date.now();
         const fingerprint = `${eventName}:${JSON.stringify(payload || {})}`;
         const previous = get().lastEventByName[eventName];
@@ -103,6 +108,9 @@ export const useSocketStore = create((set, get) => ({
             useQuizStore.getState().setLeaderboard(leaderboard);
         });
         socket.on('quiz_finished', () => {
+            useQuizStore.getState().applyQuizFinished();
+        });
+        socket.on('quiz_ended_by_host', () => {
             useQuizStore.getState().applyQuizFinished();
         });
         socket.on('quiz_aborted', ({ message }) => {

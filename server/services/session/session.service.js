@@ -1,4 +1,4 @@
-const { getRedisClient } = require('../config/redis');
+const { getRedisClient } = require('../../config/redis');
 
 let redisClient = null;
 const memSessions = new Map();
@@ -66,11 +66,15 @@ const acquireAnswerLock = async (roomCode, questionIndex, userId) => {
     return true;
 };
 
+const memTimers = new Map();
+
 const registerDistributedTimer = async (roomCode, executeAtMs) => {
     const client = getRedisClientSafe();
     if (client) {
         await client.zAdd(zsetKey, { score: executeAtMs, value: roomCode });
+        return;
     }
+    memTimers.set(roomCode, executeAtMs);
 };
 
 const clearDistributedTimer = async (roomCode) => {
@@ -78,6 +82,7 @@ const clearDistributedTimer = async (roomCode) => {
     if (client) {
         await client.zRem(zsetKey, roomCode);
     }
+    memTimers.delete(roomCode);
 };
 
 const getExpiredDistributedTimers = async (currentTimeMs) => {
@@ -85,17 +90,31 @@ const getExpiredDistributedTimers = async (currentTimeMs) => {
     if (client) {
         return await client.zRangeByScore(zsetKey, 0, currentTimeMs);
     }
-    return [];
+    
+    const expired = [];
+    for (const [roomCode, executeAtMs] of memTimers.entries()) {
+        if (executeAtMs <= currentTimeMs) {
+            expired.push(roomCode);
+        }
+    }
+    return expired;
 };
 
+const memTimerLocks = new Map();
+
 const acquireTimerLock = async (roomCode, timestampMs) => {
+    const key = `quiz:lock:timer:${roomCode}:${timestampMs}`;
     const client = getRedisClientSafe();
     if (client) {
-        const key = `quiz:lock:timer:${roomCode}:${timestampMs}`;
         const result = await client.set(key, '1', { NX: true, EX: 30 });
         return result === 'OK';
     }
-    return false;
+
+    if (memTimerLocks.has(key)) return false;
+    memTimerLocks.set(key, true);
+    // Cleanup old locks after 30s
+    setTimeout(() => memTimerLocks.delete(key), 30000).unref();
+    return true;
 };
 
 module.exports = {

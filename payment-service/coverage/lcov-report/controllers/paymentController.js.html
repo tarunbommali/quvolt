@@ -1522,7 +1522,7 @@ const paymentError = <span class="fstat-no" title="function not covered" >(r</sp
 &nbsp;
 const getQuizForPayment = async (quizId) =&gt; {
   <span class="missing-if-branch" title="if path not taken" >I</span>if (!mongoose.Types.ObjectId.isValid(quizId)) <span class="cstat-no" title="statement not covered" >return null;</span>
-  return QuizSnapshot.findById(quizId).select('organizerId title isPaid price').lean();
+  return QuizSnapshot.findById(quizId).select('hostId title isPaid price').lean();
 };
 &nbsp;
 // Updated computeSplit to accept commission percent
@@ -1602,18 +1602,18 @@ const createOrder = async (req, res) =&gt; {
     }
 &nbsp;
     const hostAccount = await HostAccount.findOne({
-      hostUserId: quiz.organizerId,
+      hostUserId: quiz.hostId,
     }).lean();
 &nbsp;
     // Get host's current plan (from subscription, defaults to FREE)
-    const hostPlan = await getHostCurrentPlan(quiz.organizerId);
+    const hostPlan = await getHostCurrentPlan(quiz.hostId);
     const commissionPercent = getCommissionForPlan(hostPlan);
 &nbsp;
     const split = computeSplit(quiz.price, commissionPercent);
     const notes = {
       quizId: String(quizId),
       userId: String(userId),
-      hostUserId: String(quiz.organizerId),
+      hostUserId: String(quiz.hostId),
       hostPlan: hostPlan,
       platformFeePercent: String(commissionPercent),
     };
@@ -1639,7 +1639,7 @@ const createOrder = async (req, res) =&gt; {
               currency: 'INR',
               notes: {
                 quizId: String(quizId),
-                hostUserId: String(quiz.organizerId),
+                hostUserId: String(quiz.hostId),
                 orderId: options.receipt,
               },
               on_hold: hostAccount.settlementMode !== 'instant',
@@ -1696,7 +1696,7 @@ const createOrder = async (req, res) =&gt; {
       grossAmount: split.grossAmount,
       platformFeeAmount: split.platformFeeAmount,
       hostAmount: split.hostAmount,
-      hostUserId: quiz.organizerId,
+      hostUserId: quiz.hostId,
       hostLinkedAccountId: hostAccount?.linkedAccountId || <span class="branch-1 cbranch-no" title="branch not covered" >null,</span>
       payoutMode,
       payoutStatus,

@@ -169,7 +169,7 @@ export const components = {
         searchInput: 'h-9 w-full max-w-md rounded-xl border theme-border theme-surface px-3.5 py-2 text-sm theme-text-primary outline-none transition-all placeholder:theme-text-muted focus:border-[var(--qb-primary)] focus:shadow-[0_0_0_3px_color-mix(in_srgb,var(--qb-primary)_22%,white)] sm:px-4',
         newBtn: 'inline-flex h-9 items-center gap-2 rounded-xl bg-(--qb-primary) px-3.5 text-sm font-medium text-white shadow-sm theme-interactive hover:bg-[var(--qb-primary-strong)] sm:px-4',
     },
-    organizer: {
+    host: {
         loading: 'min-h-screen bg-[linear-gradient(180deg,var(--qb-surface-1)_0%,var(--qb-surface-2)_100%)] flex flex-col items-center justify-center theme-text-muted',
         header: 'sticky top-0 z-30 min-h-18 border-b theme-border theme-surface/85 backdrop-blur-xl flex items-center justify-between gap-3 px-4 py-3 shadow-sm shrink-0 md:px-6',
         headerLeft: 'flex min-w-0 items-center gap-3 md:gap-4',

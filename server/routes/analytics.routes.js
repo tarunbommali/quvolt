@@ -1,16 +1,20 @@
 const express = require('express');
 const requireRole = require('../middleware/requireRole');
-const { getQuizAnalytics, getUserAnalytics, getOrganizerAnalyticsSummary } = require('../services/analytics.service');
+const { 
+    getQuizAnalytics, 
+    getUserAnalytics, 
+    gethostAnalyticsSummary 
+} = require('../services/analytics/analytics.service');
 const Quiz = require('../models/Quiz');
 
 const router = express.Router();
 
-router.get('/quiz/:quizId', requireRole(['organizer', 'admin']), async (req, res) => {
+router.get('/quiz/:quizId', requireRole(['host', 'admin']), async (req, res) => {
     try {
         const { quizId } = req.params;
 
         if (req.user.role !== 'admin') {
-            const ownedQuiz = await Quiz.findOne({ _id: quizId, organizerId: req.user._id }).select('_id').lean();
+            const ownedQuiz = await Quiz.findOne({ _id: quizId, hostId: req.user._id }).select('_id').lean();
             if (!ownedQuiz) {
                 return res.status(403).json({ message: 'Not authorized to view this quiz analytics' });
             }
@@ -24,7 +28,7 @@ router.get('/quiz/:quizId', requireRole(['organizer', 'admin']), async (req, res
     }
 });
 
-router.get('/user', requireRole(['participant', 'organizer', 'admin']), async (req, res) => {
+router.get('/user', requireRole(['participant', 'host', 'admin']), async (req, res) => {
     try {
         const data = await getUserAnalytics(req.user._id);
         return res.json(data);
@@ -33,7 +37,7 @@ router.get('/user', requireRole(['participant', 'organizer', 'admin']), async (r
     }
 });
 
-router.get('/user/:userId', requireRole(['organizer', 'admin']), async (req, res) => {
+router.get('/user/:userId', requireRole(['host', 'admin']), async (req, res) => {
     try {
         const data = await getUserAnalytics(req.params.userId);
         return res.json(data);
@@ -42,16 +46,16 @@ router.get('/user/:userId', requireRole(['organizer', 'admin']), async (req, res
     }
 });
 
-router.get('/summary', requireRole(['organizer', 'admin']), async (req, res) => {
+router.get('/summary', requireRole(['host', 'admin']), async (req, res) => {
     try {
         const targetUserId = req.user.role === 'admin' && req.query.userId
             ? req.query.userId
             : req.user._id;
 
-        const data = await getOrganizerAnalyticsSummary(targetUserId);
+        const data = await gethostAnalyticsSummary(targetUserId);
         return res.json(data);
     } catch (error) {
-        return res.status(400).json({ message: error.message || 'Failed to load organizer analytics summary' });
+        return res.status(400).json({ message: error.message || 'Failed to load host analytics summary' });
     }
 });
 

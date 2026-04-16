@@ -14,7 +14,7 @@ const { connectRedis, getRedisClient } = require('./config/redis');
 const config = require('./config/env');
 const User = require('./models/User');
 const registerQuizSocket = require('./sockets/quiz.socket');
-const { rebootQuizzes } = require('./services/quiz.service');
+const { rebootQuizzes, startDistributedTimerWorker } = require('./services/quiz/quiz.service');
 const logger = require('./utils/logger');
 const requestContext = require('./middleware/requestContext');
 const {

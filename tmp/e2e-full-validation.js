@@ -56,28 +56,28 @@ async function waitFor(pred, ms = 20000) {
 (async () => {
   const out = [];
   const suffix = crypto.randomUUID().slice(0, 8);
-  const organizerEmail = `full_org_${suffix}@example.com`;
+  const hostEmail = `full_org_${suffix}@example.com`;
   const p1Email = `full_p1_${suffix}@example.com`;
   const p2Email = `full_p2_${suffix}@example.com`;
 
   const check = (name, cond, extra = '') => out.push({ name, pass: !!cond, extra });
 
-  const orgReg = await req('/api/auth/register', { method: 'POST', body: { name: 'Full Org', email: organizerEmail, password: 'Password123!', role: 'organizer' } });
+  const orgReg = await req('/api/auth/register', { method: 'POST', body: { name: 'Full Org', email: hostEmail, password: 'Password123!', role: 'host' } });
   const p1Reg = await req('/api/auth/register', { method: 'POST', body: { name: 'Full P1', email: p1Email, password: 'Password123!', role: 'participant' } });
   const p2Reg = await req('/api/auth/register', { method: 'POST', body: { name: 'Full P2', email: p2Email, password: 'Password123!', role: 'participant' } });
   check('Register users', orgReg.ok && p1Reg.ok && p2Reg.ok);
 
-  const orgLogin = await req('/api/auth/login', { method: 'POST', body: { email: organizerEmail, password: 'Password123!' } });
-  check('Login organizer', orgLogin.ok && !!orgLogin.data?.token);
+  const orgLogin = await req('/api/auth/login', { method: 'POST', body: { email: hostEmail, password: 'Password123!' } });
+  check('Login host', orgLogin.ok && !!orgLogin.data?.token);
 
   const anonymous = await req('/api/quiz/my-quizzes');
-  check('Protected route blocks anonymous', !anonymous.ok && [401,403].includes(anonymous.status), String(anonymous.status));
+  check('Protected route blocks anonymous', !anonymous.ok && [401, 403].includes(anonymous.status), String(anonymous.status));
 
   const badToken = await req('/api/quiz/my-quizzes', { token: `${orgLogin.data.token}corrupt` });
-  check('JWT validation blocks tampered token', !badToken.ok && [401,403].includes(badToken.status), String(badToken.status));
+  check('JWT validation blocks tampered token', !badToken.ok && [401, 403].includes(badToken.status), String(badToken.status));
 
   const roleBlock = await req('/api/quiz/my-quizzes', { token: p1Reg.data.token });
-  check('Role-based guard blocks participant organizer route', !roleBlock.ok && [401,403].includes(roleBlock.status), String(roleBlock.status));
+  check('Role-based guard blocks participant host route', !roleBlock.ok && [401, 403].includes(roleBlock.status), String(roleBlock.status));
 
   const quiz = await req('/api/quiz', {
     method: 'POST', token: orgReg.data.token,
@@ -87,20 +87,20 @@ async function waitFor(pred, ms = 20000) {
 
   const addQ1 = await req(`/api/quiz/${quiz.data._id}/questions`, {
     method: 'POST', token: orgReg.data.token,
-    body: { text: 'Q1: select A', options: ['A','B','C','D'], correctOption: 0, timeLimit: 5, shuffleOptions: false },
+    body: { text: 'Q1: select A', options: ['A', 'B', 'C', 'D'], correctOption: 0, timeLimit: 5, shuffleOptions: false },
   });
   const q1Id = addQ1.data?.questions?.[0]?._id;
   check('Add question', addQ1.ok && !!q1Id);
 
   const updateQ1 = await req(`/api/quiz/${quiz.data._id}/questions/${q1Id}`, {
     method: 'PUT', token: orgReg.data.token,
-    body: { text: 'Q1: select A updated', options: ['A','B','C','D'], correctOption: 0, timeLimit: 5, shuffleOptions: false },
+    body: { text: 'Q1: select A updated', options: ['A', 'B', 'C', 'D'], correctOption: 0, timeLimit: 5, shuffleOptions: false },
   });
   check('Edit question', updateQ1.ok);
 
   const addQ2 = await req(`/api/quiz/${quiz.data._id}/questions`, {
     method: 'POST', token: orgReg.data.token,
-    body: { text: 'Q2: select B', options: ['A','B','C','D'], correctOption: 1, timeLimit: 5, shuffleOptions: false },
+    body: { text: 'Q2: select B', options: ['A', 'B', 'C', 'D'], correctOption: 1, timeLimit: 5, shuffleOptions: false },
   });
   const q2Id = addQ2.data?.questions?.find((q) => q.text === 'Q2: select B')?._id || addQ2.data?.questions?.[1]?._id;
   check('Add second question', addQ2.ok && !!q2Id);
@@ -110,7 +110,7 @@ async function waitFor(pred, ms = 20000) {
 
   const reAddQ2 = await req(`/api/quiz/${quiz.data._id}/questions`, {
     method: 'POST', token: orgReg.data.token,
-    body: { text: 'Q2: select B final', options: ['A','B','C','D'], correctOption: 1, timeLimit: 5, shuffleOptions: false },
+    body: { text: 'Q2: select B final', options: ['A', 'B', 'C', 'D'], correctOption: 1, timeLimit: 5, shuffleOptions: false },
   });
   const q2Final = reAddQ2.data?.questions?.find((q) => q.text === 'Q2: select B final')?._id;
   check('Re-add question', reAddQ2.ok && !!q2Final);
@@ -182,7 +182,7 @@ async function waitFor(pred, ms = 20000) {
   });
   const aiUsable = aiValid.ok
     ? Array.isArray(aiValid.data?.questions) && aiValid.data.questions.every((q) => Array.isArray(q.options) && q.options.length === 4 && !!q.correctAnswer)
-    : [400,500].includes(aiValid.status);
+    : [400, 500].includes(aiValid.status);
   check('AI success or graceful upstream failure', aiUsable, `status=${aiValid.status}`);
 
   const p1After = await req('/api/gamification/profile/me', { token: p1Reg.data.token });
@@ -201,7 +201,7 @@ async function waitFor(pred, ms = 20000) {
     body: { title: `Paid ${suffix}`, type: 'quiz', quizCategory: 'regular', isPaid: true, price: 111 },
   });
   const paymentCreate = await req('/api/payment/create-order', { method: 'POST', token: p1Reg.data.token, body: { quizId: paidQuiz.data?._id } });
-  check('Payment create order endpoint', paymentCreate.ok && [200,201].includes(paymentCreate.status), String(paymentCreate.status));
+  check('Payment create order endpoint', paymentCreate.ok && [200, 201].includes(paymentCreate.status), String(paymentCreate.status));
 
   const logout = await req('/api/auth/logout', { method: 'POST', token: orgReg.data.token });
   check('Logout flow', logout.ok);

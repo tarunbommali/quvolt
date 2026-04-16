@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getOrganizerAnalyticsSummary, getUserAnalytics } from '../../services/api';
+import { gethostAnalyticsSummary, getUserAnalytics } from '../../services/api';
 import { useAuthStore } from '../../stores/useAuthStore';
 import MetricsCards from '../../components/analytics/MetricsCards';
 import ChartsSection from '../../components/analytics/ChartsSection';
@@ -12,7 +12,7 @@ import { components } from '../../styles/components';
 
 const AnalyticsDashboardPage = () => {
     const user = useAuthStore((state) => state.user);
-    const isOrganizer = user?.role === 'organizer' || user?.role === 'admin';
+    const ishost = user?.role === 'host' || user?.role === 'admin';
 
     const userAnalyticsQuery = useQuery({
         queryKey: ['analytics-user', user?._id || 'anon'],
@@ -20,15 +20,15 @@ const AnalyticsDashboardPage = () => {
         staleTime: 60_000,
     });
 
-    const organizerSummaryQuery = useQuery({
+    const hostSummaryQuery = useQuery({
         queryKey: ['analytics-summary', user?._id || 'anon'],
-        queryFn: () => getOrganizerAnalyticsSummary(),
-        enabled: isOrganizer,
+        queryFn: () => gethostAnalyticsSummary(),
+        enabled: ishost,
         staleTime: 60_000,
     });
 
     const userData = userAnalyticsQuery.data;
-    const summary = organizerSummaryQuery.data;
+    const summary = hostSummaryQuery.data;
 
     const summaryMetrics = useMemo(() => {
         if (!userData?.summary) return [];
@@ -49,9 +49,9 @@ const AnalyticsDashboardPage = () => {
         { label: 'Total Participants', value: Number(summary?.totals?.totalParticipantsInvited || 0).toLocaleString() },
     ]), [summary]);
 
-    const isLoading = userAnalyticsQuery.isLoading || (isOrganizer && organizerSummaryQuery.isLoading);
-    const hasError = userAnalyticsQuery.error || organizerSummaryQuery.error;
-    const dashboardHref = isOrganizer ? '/studio' : '/join';
+    const isLoading = userAnalyticsQuery.isLoading || (ishost && hostSummaryQuery.isLoading);
+    const hasError = userAnalyticsQuery.error || hostSummaryQuery.error;
+    const dashboardHref = ishost ? '/studio' : '/join';
     const participantRows = useMemo(() => (
         (userData?.quizBreakdown || []).map((row) => ({
             quizId: row.quizId,
@@ -76,7 +76,7 @@ const AnalyticsDashboardPage = () => {
                     message={hasError?.response?.data?.message || hasError?.message || 'Something went wrong while loading analytics.'}
                     onAction={() => {
                         userAnalyticsQuery.refetch();
-                        organizerSummaryQuery.refetch();
+                        hostSummaryQuery.refetch();
                     }}
                 />
             ) : null}
@@ -89,7 +89,7 @@ const AnalyticsDashboardPage = () => {
 
             {!isLoading && userData ? (
                 <>
-                    {isOrganizer && summary ? (
+                    {ishost && summary ? (
                         <MetricsSection
                             primaryMetrics={primaryMetrics}
                             performance={summary.performance || {}}
@@ -102,7 +102,7 @@ const AnalyticsDashboardPage = () => {
                         questionStats={userData.questionStats || []}
                     />
 
-                    {isOrganizer && summary ? (
+                    {ishost && summary ? (
                         <TableSection rows={summary.topQuizzes || []} />
                     ) : (
                         <TableSection rows={participantRows} />

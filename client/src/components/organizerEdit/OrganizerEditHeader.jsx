@@ -9,7 +9,7 @@ import { cx } from '../../styles/theme';
  * Editor header with navigation and primary actions.
  * @param {{ title: string, isSaving: boolean, onBack: () => void, onOpenImport: () => void, onOpenAI: () => void, onOpenResults: () => void, onSave: () => void, onLaunch: () => void, onOpenCommandPalette?: () => void }} props
  */
-const OrganizerEditHeader = ({
+const hostEditHeader = ({
     title,
     isSaving,
     onBack,
@@ -46,34 +46,34 @@ const OrganizerEditHeader = ({
     }, [mobileMenuOpen]);
 
     return (
-        <header className={components.organizer.header}>
-            <div className={components.organizer.headerLeft}>
-                <button type="button" onClick={onBack} className={cx(buttonStyles.icon, components.organizer.navBack)}>
+        <header className={components.host.header}>
+            <div className={components.host.headerLeft}>
+                <button type="button" onClick={onBack} className={cx(buttonStyles.icon, components.host.navBack)}>
                     <ChevronLeft size={20} />
                 </button>
                 <div className="min-w-0">
-                    <p className={components.organizer.headerEyebrow}>Quiz editor</p>
-                    <h1 className={cx(textTokens.title, components.organizer.titleClamp)}>{title}</h1>
+                    <p className={components.host.headerEyebrow}>Quiz editor</p>
+                    <h1 className={cx(textTokens.title, components.host.titleClamp)}>{title}</h1>
                 </div>
             </div>
 
-            <div className={components.organizer.headerActions}>
-                <div className={components.organizer.tabShell}>
-                    <button type="button" className={cx(buttonStyles.primary, components.organizer.tabActive)}>
+            <div className={components.host.headerActions}>
+                <div className={components.host.tabShell}>
+                    <button type="button" className={cx(buttonStyles.primary, components.host.tabActive)}>
                         Edit
                     </button>
-                    <button type="button" onClick={onOpenImport} className={components.organizer.tabBtn}>
+                    <button type="button" onClick={onOpenImport} className={components.host.tabBtn}>
                         Insert JSON
                     </button>
-                    <button type="button" onClick={onOpenAI} className={components.organizer.tabBtnWithIcon}>
+                    <button type="button" onClick={onOpenAI} className={components.host.tabBtnWithIcon}>
                         <Sparkles size={12} /> AI Generate
                     </button>
-                    <button type="button" onClick={onOpenResults} className={components.organizer.tabBtn}>
+                    <button type="button" onClick={onOpenResults} className={components.host.tabBtn}>
                         Results
                     </button>
                 </div>
 
-                <button type="button" onClick={onSave} className={cx(buttonStyles.secondary, components.organizer.saveBtn)}>
+                <button type="button" onClick={onSave} className={cx(buttonStyles.secondary, components.host.saveBtn)}>
                     <Save size={14} /> {isSaving ? 'SAVING' : 'SAVE'}
                 </button>
 
@@ -86,17 +86,17 @@ const OrganizerEditHeader = ({
                     <MonitorCog size={14} /> Ctrl+K
                 </button>
 
-                <button type="button" onClick={onLaunch} className={cx(buttonStyles.primary, components.organizer.launchBtn)}>
+                <button type="button" onClick={onLaunch} className={cx(buttonStyles.primary, components.host.launchBtn)}>
                     <Play size={14} fill="currentColor" /> INVITE ROOM
                 </button>
             </div>
 
-            <div className={components.organizer.headerActionsMobile} ref={menuRef}>
-                <button type="button" onClick={onSave} className={cx(buttonStyles.secondary, components.organizer.saveBtn)}>
+            <div className={components.host.headerActionsMobile} ref={menuRef}>
+                <button type="button" onClick={onSave} className={cx(buttonStyles.secondary, components.host.saveBtn)}>
                     <Save size={14} /> {isSaving ? 'SAVING' : 'SAVE'}
                 </button>
 
-                <div className={components.organizer.mobileMenuWrap}>
+                <div className={components.host.mobileMenuWrap}>
                     <button
                         type="button"
                         onClick={() => setMobileMenuOpen((prev) => !prev)}
@@ -108,18 +108,18 @@ const OrganizerEditHeader = ({
                     </button>
 
                     {mobileMenuOpen && (
-                        <div className={components.organizer.mobileMenuPanel}>
-                            <button type="button" onClick={() => { setMobileMenuOpen(false); onOpenImport(); }} className={components.organizer.mobileMenuItem}>
+                        <div className={components.host.mobileMenuPanel}>
+                            <button type="button" onClick={() => { setMobileMenuOpen(false); onOpenImport(); }} className={components.host.mobileMenuItem}>
                                 <FileJson size={14} /> Insert JSON
                             </button>
-                            <button type="button" onClick={() => { setMobileMenuOpen(false); onOpenAI(); }} className={components.organizer.mobileMenuItem}>
+                            <button type="button" onClick={() => { setMobileMenuOpen(false); onOpenAI(); }} className={components.host.mobileMenuItem}>
                                 <Sparkles size={14} /> AI Generate
                             </button>
-                            <div className={components.organizer.mobileMenuDivider} />
-                            <button type="button" onClick={() => { setMobileMenuOpen(false); onOpenResults(); }} className={components.organizer.mobileMenuItem}>
+                            <div className={components.host.mobileMenuDivider} />
+                            <button type="button" onClick={() => { setMobileMenuOpen(false); onOpenResults(); }} className={components.host.mobileMenuItem}>
                                 <BarChart3 size={14} /> Results
                             </button>
-                            <button type="button" onClick={() => { setMobileMenuOpen(false); onLaunch(); }} className={components.organizer.mobileMenuItem}>
+                            <button type="button" onClick={() => { setMobileMenuOpen(false); onLaunch(); }} className={components.host.mobileMenuItem}>
                                 <Play size={14} /> Invite Room
                             </button>
                         </div>
@@ -130,4 +130,4 @@ const OrganizerEditHeader = ({
     );
 };
 
-export default OrganizerEditHeader;
+export default hostEditHeader;

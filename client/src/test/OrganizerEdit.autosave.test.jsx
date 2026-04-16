@@ -67,12 +67,12 @@ jest.mock('framer-motion', () => ({
 
 jest.mock('../components/common/ConfirmationDialog', () => () => null);
 jest.mock('../components/common/Toast', () => () => null);
-jest.mock('../components/organizerEdit/ImportSlidesModal', () => () => null);
-jest.mock('../components/organizerEdit/AIGeneratorModal', () => () => null);
-jest.mock('../components/organizerEdit/SlidePanel', () => () => null);
-jest.mock('../components/organizerEdit/CanvasView', () => () => null);
-jest.mock('../components/organizerEdit/ConfigSidebar', () => () => null);
-jest.mock('../components/organizerEdit/EditorLayout', () => ({ header }) => <div>{header}</div>);
+jest.mock('../components/hostEdit/ImportSlidesModal', () => () => null);
+jest.mock('../components/hostEdit/AIGeneratorModal', () => () => null);
+jest.mock('../components/hostEdit/SlidePanel', () => () => null);
+jest.mock('../components/hostEdit/CanvasView', () => () => null);
+jest.mock('../components/hostEdit/ConfigSidebar', () => () => null);
+jest.mock('../components/hostEdit/EditorLayout', () => ({ header }) => <div>{header}</div>);
 
 import QuizEditorPage from '../pages/studio/QuizEditorPage';
 

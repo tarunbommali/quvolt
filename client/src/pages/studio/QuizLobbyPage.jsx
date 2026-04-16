@@ -5,8 +5,8 @@ import api from '../../services/api';
 import { startLiveSession } from '../../services/api';
 import Toast from '../../components/common/Toast';
 import useToast from '../../hooks/useToast';
-import LiveLoading from '../../components/organizerLive/LiveLoading';
-import LiveLobby from '../../components/organizerLive/LiveLobby';
+import LiveLoading from '../../components/hostLive/LiveLoading';
+import LiveLobby from '../../components/hostLive/LiveLobby';
 import { useQuizStore } from '../../stores/useQuizStore';
 import { useSocketStore } from '../../stores/useSocketStore';
 import { resolveSessionRoute } from '../../utils/sessionRouteResolver';
@@ -71,7 +71,7 @@ const QuizLobbyPage = () => {
                     : (normalizedStatus || 'waiting');
                 const hasStatusChanged = String(quiz.status) !== nextStatus;
                 const hasCodeDiff = !quiz.sessionCode && nextCode;
-                
+
                 if (hasStatusChanged || hasCodeDiff) {
                     const nextQuiz = {
                         ...quiz,
@@ -131,22 +131,22 @@ const QuizLobbyPage = () => {
         try {
             if (activeQuiz) {
                 await api.post(`/quiz/${activeQuiz._id}/abort`, { sessionCode });
-                
+
                 // Clear state so returning to this quiz won't try to reuse the session
-                const resetQuiz = { 
-                    ...activeQuiz, 
-                    status: 'aborted', 
-                    sessionCode: null, 
-                    activeSessionCode: null 
+                const resetQuiz = {
+                    ...activeQuiz,
+                    status: 'aborted',
+                    sessionCode: null,
+                    activeSessionCode: null
                 };
                 setActiveQuiz(resetQuiz);
                 setSessionCode(null);
                 setStatus('aborted');
 
                 // Force refresh the studio items in the background
-                useQuizStore.getState().getQuizzesForParent('none', { force: true }).catch(() => {});
+                useQuizStore.getState().getQuizzesForParent('none', { force: true }).catch(() => { });
                 if (activeQuiz.parentId) {
-                    useQuizStore.getState().getQuizzesForParent(activeQuiz.parentId, { force: true }).catch(() => {});
+                    useQuizStore.getState().getQuizzesForParent(activeQuiz.parentId, { force: true }).catch(() => { });
                 }
             }
         } catch {

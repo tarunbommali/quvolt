@@ -70,8 +70,8 @@ export default defineConfig([
     files: [
       'src/pages/Profile.jsx',
       'src/pages/StudioDashboard.jsx',
-      'src/pages/OrganizerEdit.jsx',
-      'src/components/organizerEdit/*.jsx',
+      'src/pages/hostEdit.jsx',
+      'src/components/hostEdit/*.jsx',
       'src/components/profile/ProfileDashboardTabs.jsx',
       'src/components/ui/InputField.jsx',
       'src/components/ui/SearchBar.jsx',

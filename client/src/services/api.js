@@ -48,15 +48,11 @@ const api = axios.create({
 // Attach the auth token from Zustand to every request automatically
 api.interceptors.request.use((config) => {
     // Always get latest token from Zustand
-    try {
-        // This works because Zustand store is a singleton
-        // eslint-disable-next-line import/no-mutable-exports
-        const { token } = require('../stores/useAuthStore').useAuthStore.getState();
-        if (token) {
-            config.headers = config.headers || {};
-            config.headers.Authorization = `Bearer ${token}`;
-        }
-    } catch {}
+    const { token } = useAuthStore.getState();
+    if (token) {
+        config.headers = config.headers || {};
+        config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
 });
 
@@ -72,14 +68,29 @@ api.interceptors.response.use(
         if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url?.includes('/auth/refresh')) {
             originalRequest._retry = true;
             try {
+                // Perform the refresh
                 const { data } = await axios.post(`${BASE_URL}/auth/refresh`, {}, { withCredentials: true });
-                setAccessToken(data.token);
-                originalRequest.headers['Authorization'] = `Bearer ${data.token}`;
+                const newToken = data.token;
+                
+                // CRITICAL: Update the Zustand store so the request interceptor sees the new token
+                const authState = useAuthStore.getState();
+                if (authState.setAuthData && authState.user) {
+                    authState.setAuthData({ user: authState.user, token: newToken });
+                }
+
+                // Update local axios defaults for good measure
+                setAccessToken(newToken);
+                
+                // Retry the original request with the new token
+                originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
                 return api(originalRequest);
             } catch (err) {
+                // Clear store and redirect on total failure
+                const authState = useAuthStore.getState();
+                if (authState.clearAuth) authState.clearAuth();
+                
                 setAccessToken(null);
-                localStorage.removeItem('Quvolt_user');
-                // Redirect to login so the user isn't left on a locked page
+                
                 if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
                     window.location.replace('/login');
                 }
@@ -115,15 +126,15 @@ api.interceptors.response.use(
 );
 
 // ─── Auth ────────────────────────────────────────────────────────────────────
-
+ 
 export const loginUser = (email, password) =>
-    api.post('/auth/login', { email, password }, { withCredentials: true }).then(r => r.data);
-
+    api.post('auth/login', { email, password }, { withCredentials: true }).then(r => r.data);
+ 
 export const registerUser = (name, email, password, role) =>
-    api.post('/auth/register', { name, email, password, role }, { withCredentials: true }).then(r => r.data);
-
+    api.post('auth/register', { name, email, password, role }, { withCredentials: true }).then(r => r.data);
+ 
 export const logoutUser = () =>
-    api.post('/auth/logout', {}, { withCredentials: true }).then(() => {
+    api.post('auth/logout', {}, { withCredentials: true }).then(() => {
         setAccessToken(null);
         localStorage.removeItem('Quvolt_user');
     });
@@ -136,10 +147,10 @@ export const refreshAccessToken = () =>
     });
 
 export const getMyProfile = () =>
-    api.get('/auth/me').then(r => r.data);
-
+    api.get('auth/me').then(r => r.data);
+ 
 export const updateMyProfile = (payload) =>
-    api.put('/auth/me', payload).then(r => r.data);
+    api.put('auth/me', payload).then(r => r.data);
 
 const unwrapApiBody = (response) => {
     const body = response?.data;
@@ -152,10 +163,10 @@ const unwrapApiBody = (response) => {
 // ─── Quiz ────────────────────────────────────────────────────────────────────
 
 export const getMyQuizzes = (parentId) =>
-    api.get('/quiz/templates', { params: { parentId } }).then(r => r.data);
-
+    api.get('quiz/templates', { params: { parentId } }).then(r => r.data);
+ 
 export const getQuizByCode = (roomCode) =>
-    api.get(`/quiz/${roomCode}`).then(r => r.data);
+    api.get(`quiz/${roomCode}`).then(r => r.data);
 
 export const createQuiz = (title, type, parentId, isPaid, price, options = {}) =>
     api.post('/quiz/templates/new', {
@@ -198,11 +209,11 @@ export const deleteQuiz = (id) =>
 
 // Participant: register for a scheduled session
 export const joinScheduledSession = (roomCode) =>
-    api.post(`/quiz/join-scheduled/${roomCode}`).then(r => r.data);
-
+    api.post(`quiz/join-scheduled/${roomCode}`).then(r => r.data);
+ 
 // Participant: get all scheduled sessions joined
 export const getMyScheduledJoins = () =>
-    api.get('/quiz/user/scheduled-joins').then(r => r.data);
+    api.get('quiz/user/scheduled-joins').then(r => r.data);
 
 // ─── Questions ───────────────────────────────────────────────────────────────
 
@@ -226,8 +237,8 @@ export const getSubjectLeaderboard = (subjectId) =>
 export const getUserHistory = () =>
     api.get('/quiz/user/history').then(r => r.data);
 
-export const getOrganizerHistory = () =>
-    api.get('/quiz/organizer/history').then(r => r.data);
+export const gethostHistory = () =>
+    api.get('/quiz/host/history').then(r => r.data);
 
 export const getSessionParticipants = (sessionCode) =>
     api.get(`/quiz/session/${sessionCode}/participants`).then(r => r.data);
@@ -240,7 +251,7 @@ export const getQuizAnalytics = (quizId) =>
 export const getUserAnalytics = (userId) =>
     api.get(userId ? `/analytics/user/${userId}` : '/analytics/user').then(r => r.data);
 
-export const getOrganizerAnalyticsSummary = (userId) =>
+export const gethostAnalyticsSummary = (userId) =>
     api.get('/analytics/summary', { params: userId ? { userId } : undefined }).then(r => r.data);
 
 // ─── AI Quiz Generator ───────────────────────────────────────────────────────

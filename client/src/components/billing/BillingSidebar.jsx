@@ -1,7 +1,7 @@
 import { CircleAlert, ShieldCheck, Zap } from 'lucide-react';
 import Card from '../ui/Card';
 
-const BillingSidebar = ({ limitJoin, hostAccount, isOrganizer }) => (
+const BillingSidebar = ({ limitJoin, hostAccount, ishost }) => (
     <div className="space-y-6">
         <Card className="relative overflow-hidden rounded-2xl border border-gray-200 bg-slate-900 p-4 md:p-6 text-white">
             <div className="absolute top-0 right-0 p-8 opacity-10">
@@ -17,7 +17,7 @@ const BillingSidebar = ({ limitJoin, hostAccount, isOrganizer }) => (
             </div>
         </Card>
 
-        {isOrganizer && (
+        {ishost && (
             <Card className="space-y-4 rounded-2xl border border-gray-200 bg-white p-4 md:p-6 shadow-sm">
                 <div className="flex items-center gap-3">
                     {hostAccount?.accountStatus === 'active' ? (

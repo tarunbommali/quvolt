@@ -59,7 +59,7 @@ async function sanitizeUsers(db) {
       update.profilePhoto = cleanPhoto;
     }
 
-    const allowedRoles = ['admin', 'organizer', 'participant'];
+    const allowedRoles = ['admin', 'host', 'participant'];
     if (!allowedRoles.includes(doc.role)) {
       update.role = 'participant';
     }
@@ -273,7 +273,7 @@ async function syncIndexesAndValidators(db) {
     users.createIndex({ email: 1 }, { unique: true, name: 'email_1' }),
     users.createIndex({ role: 1 }, { name: 'role_1' }),
     quizzes.createIndex({ roomCode: 1 }, { unique: true, sparse: true, name: 'roomCode_1' }),
-    quizzes.createIndex({ organizerId: 1, createdAt: -1 }, { name: 'organizerId_1_createdAt_-1' }),
+    quizzes.createIndex({ hostId: 1, createdAt: -1 }, { name: 'hostId_1_createdAt_-1' }),
     quizzes.createIndex({ parentId: 1, createdAt: -1 }, { name: 'parentId_1_createdAt_-1' }),
     quizzes.createIndex({ status: 1, updatedAt: -1 }, { name: 'status_1_updatedAt_-1' }),
     submissions.createIndex({ quizId: 1, userId: 1 }, { name: 'quizId_1_userId_1' }),
@@ -303,7 +303,7 @@ async function syncIndexesAndValidators(db) {
               pattern: '^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$',
               description: 'must be valid email format',
             },
-            role: { enum: ['admin', 'organizer', 'participant'] },
+            role: { enum: ['admin', 'host', 'participant'] },
           },
         },
       },

@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const Submission = require('../models/Submission');
 const Quiz = require('../models/Quiz');
 const Analytics = require('../models/Analytics');
-const { getQuizAnalytics, getUserAnalytics } = require('../services/analytics.service');
+const { getQuizAnalytics, getUserAnalytics } = require('../services/analytics/analytics.service');
 
 const QUIZ_ID = '64b1f8f9d4c3a2b1c0d9e8f7';
 const USER_ID = '64b1f8f9d4c3a2b1c0d9e8f8';

@@ -19,13 +19,13 @@ router.post('/verify', protect, verifyPayment);
 router.get('/status/:quizId', protect, getPaymentStatus);
 router.post('/status/batch', protect, getBatchPaymentStatus);
 router.post('/webhook', handleWebhook); // Webhook usually uses signature, not JWT
-router.post('/host/account', protect, authorize('organizer', 'admin'), upsertHostAccount);
-router.get('/host/account', protect, authorize('organizer', 'admin'), getMyHostAccount);
-router.get('/host/payout-summary', protect, authorize('organizer', 'admin'), getHostPayoutSummary);
+router.post('/host/account', protect, authorize('host', 'admin'), upsertHostAccount);
+router.get('/host/account', protect, authorize('host', 'admin'), getMyHostAccount);
+router.get('/host/payout-summary', protect, authorize('host', 'admin'), getHostPayoutSummary);
 
 // Revenue routes
-router.post('/revenue/total', protect, authorize('organizer', 'admin'), revenueController.getTotalRevenue);
-router.post('/revenue/by-quiz', protect, authorize('organizer', 'admin'), revenueController.getRevenueByQuiz);
-router.post('/revenue/by-period', protect, authorize('organizer', 'admin'), revenueController.getRevenueByPeriod);
+router.post('/revenue/total', protect, authorize('host', 'admin'), revenueController.getTotalRevenue);
+router.post('/revenue/by-quiz', protect, authorize('host', 'admin'), revenueController.getRevenueByQuiz);
+router.post('/revenue/by-period', protect, authorize('host', 'admin'), revenueController.getRevenueByPeriod);
 
 module.exports = router;

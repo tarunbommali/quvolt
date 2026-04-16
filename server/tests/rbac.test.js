@@ -26,7 +26,7 @@ const createToken = (id, role) => jwt.sign({ id, role }, process.env.JWT_SECRET,
 const createExpiredToken = (id, role) => jwt.sign({ id, role }, process.env.JWT_SECRET, { expiresIn: '-1h' });
 
 test('RBAC Middleware Tests', async (t) => {
-    
+
     await t.test('protect() -> passes valid token', (t) => {
         const token = createToken('user123', 'participant');
         const req = { headers: { authorization: `Bearer ${token}` } };
@@ -65,8 +65,8 @@ test('RBAC Middleware Tests', async (t) => {
         const req = { user: { role: 'admin' } };
         const res = mockRes();
         const next = mockNext();
-        
-        const authMw = authorize('admin', 'organizer');
+
+        const authMw = authorize('admin', 'host');
         authMw(req, res, next);
 
         assert.strictEqual(next.wasCalled(), true);
@@ -76,8 +76,8 @@ test('RBAC Middleware Tests', async (t) => {
         const req = { user: { role: 'participant' } };
         const res = mockRes();
         const next = mockNext();
-        
-        const authMw = authorize('admin', 'organizer');
+
+        const authMw = authorize('admin', 'host');
         authMw(req, res, next);
 
         assert.strictEqual(next.wasCalled(), false);
@@ -85,7 +85,7 @@ test('RBAC Middleware Tests', async (t) => {
     });
 
     await t.test('requireRole() [Consolidated] -> returns [protect, authorize]', (t) => {
-        const middlewareArray = requireRole(['organizer']);
+        const middlewareArray = requireRole(['host']);
         assert.strictEqual(Array.isArray(middlewareArray), true);
         assert.strictEqual(middlewareArray.length, 2);
     });

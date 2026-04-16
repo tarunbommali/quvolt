@@ -9,7 +9,7 @@ router.post('/register', [
     body('email').isEmail().withMessage('Enter a valid email'),
     body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
     body('name').notEmpty().withMessage('Name is required'),
-    body('role').optional().isIn(['participant', 'organizer']).withMessage('Invalid role'),
+    body('role').optional().isIn(['participant', 'host']).withMessage('Invalid role'),
     validate
 ], registerUser);
 

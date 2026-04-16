@@ -7,10 +7,10 @@ import AIGeneratorModal from './AIGeneratorModal';
 import { components } from '../../styles/components';
 
 /**
- * Overlay stack for the organizer editor.
+ * Overlay stack for the host editor.
  * @param {{ editor: object }} props
  */
-const OrganizerEditOverlays = ({ editor }) => {
+const hostEditOverlays = ({ editor }) => {
     const {
         activeQuiz,
         toast,
@@ -72,7 +72,7 @@ const OrganizerEditOverlays = ({ editor }) => {
                 onSave={handleAISave}
             />
 
-            <div className={components.organizer.errorWrap}>
+            <div className={components.host.errorWrap}>
                 {saveError ? (
                     <ErrorState
                         title={saveError.title || 'Failed to save'}
@@ -85,4 +85,4 @@ const OrganizerEditOverlays = ({ editor }) => {
     );
 };
 
-export default OrganizerEditOverlays;
+export default hostEditOverlays;

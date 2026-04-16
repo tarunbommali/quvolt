@@ -1,6 +1,6 @@
 # QuizBolt
 
-QuizBolt is a real-time quiz platform with organizer and participant flows, live session orchestration, analytics, payment support, and AI-assisted quiz generation.
+QuizBolt is a real-time quiz platform with host and participant flows, live session orchestration, analytics, payment support, and AI-assisted quiz generation.
 
 ## Repository Layout
 
@@ -13,7 +13,7 @@ QuizBolt is a real-time quiz platform with organizer and participant flows, live
 
 Implemented and active:
 - backend-owned session lifecycle state machine with guarded transitions
-- resolver-based organizer routing by session status
+- resolver-based host routing by session status
 - realtime session orchestration over Socket.IO
 - payment order/verify/webhook flow with idempotent handling
 - host onboarding and payout state support
@@ -39,7 +39,7 @@ Session states:
 - completed
 - aborted
 
-Organizer route mapping:
+host route mapping:
 - draft -> /launch/:id
 - scheduled or waiting -> /invite/:id
 - live -> /live/:id

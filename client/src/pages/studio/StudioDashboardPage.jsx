@@ -1,5 +1,5 @@
 import useStudioDashboardController from '../../hooks/useStudioDashboardController';
-import StudioDashboardView from '../../components/organizerDashboard/StudioDashboardView';
+import StudioDashboardView from '../../components/hostDashboard/StudioDashboardView';
 
 const StudioDashboardPage = () => {
     const dashboard = useStudioDashboardController();

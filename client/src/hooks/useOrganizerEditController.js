@@ -57,10 +57,10 @@ const categorizeSaveError = (error) => {
 };
 
 /**
- * Controller for the organizer editor page.
+ * Controller for the host editor page.
  * Returns state, derived data, and editor action handlers.
  */
-const useOrganizerEditController = () => {
+const usehostEditController = () => {
     const { templateId, quizId, id } = useParams();
     const routeQuizId = templateId || quizId || id;
     const navigate = useNavigate();
@@ -358,4 +358,4 @@ const useOrganizerEditController = () => {
     };
 };
 
-export default useOrganizerEditController;
+export default usehostEditController;
