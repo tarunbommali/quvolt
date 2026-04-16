@@ -1,9 +1,13 @@
-import { useState } from 'react';
+/* eslint-disable no-unused-vars */
+/* eslint-disable no-restricted-syntax */
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, AlertCircle, Eye, EyeOff, Loader2 } from 'lucide-react';
-import InputField from '../../components/ui/InputField';
-import Button from '../../components/ui/Button';
-import { useAuthStore } from '../../stores/useAuthStore';
+import InputField from '../../../components/ui/InputField';
+import Button from '../../../components/ui/Button';
+import { useAuthStore } from '../../../stores/useAuthStore';
+import { login as loginService } from '../../../services/authService';
+import { ROLE_ROUTES } from '../../../routes/roleConfig';
 
 const AuthLoginPage = () => {
     const [email, setEmail] = useState('test@gmail.com');
@@ -11,7 +15,8 @@ const AuthLoginPage = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const login = useAuthStore((state) => state.login);
+    const setAuthData = useAuthStore((state) => state.setAuthData);
+    const { isAuthenticated, user, loading: authLoading } = useAuthStore();
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
@@ -19,15 +24,30 @@ const AuthLoginPage = () => {
         setError('');
         setLoading(true);
         try {
-            const user = await login(email, password);
-            if (user.role === 'organizer') navigate('/studio');
-            else navigate('/join');
+            const data = await loginService(email, password);
+            setAuthData(data);
+            const userPayload = data?.user || data;
+            if (userPayload?.role && ROLE_ROUTES[userPayload.role]) {
+                navigate(ROLE_ROUTES[userPayload.role]);
+            } else {
+                navigate('/');
+            }
         } catch {
             setError('Invalid email or password. Please try again.');
         } finally {
             setLoading(false);
         }
     };
+
+
+    // If already authenticated, redirect to dashboard (useEffect to avoid infinite loop)
+    useEffect(() => {
+        if (isAuthenticated && user?.role && ROLE_ROUTES[user.role]) {
+            navigate(ROLE_ROUTES[user.role]);
+        }
+    }, [isAuthenticated, user, navigate]);
+
+    if (authLoading) return null; // or a spinner
 
     return (
         <div className="auth-page">

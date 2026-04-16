@@ -1,7 +1,7 @@
 const express = require('express');
 const axios = require('axios');
 const rateLimit = require('express-rate-limit');
-const { protect, authorize } = require('../middleware/auth');
+const requireRole = require('../middleware/requireRole');
 const logger = require('../utils/logger');
 
 const router = express.Router();
@@ -50,8 +50,8 @@ const proxy = async (req, res, method, path, data, queryParams) => {
 };
 
 router.get('/plans', (req, res) => proxy(req, res, 'get', '/subscription/plans'));
-router.get('/status', protect, authorize('organizer', 'admin'), (req, res) => proxy(req, res, 'get', '/subscription/status'));
-router.post('/create', subscriptionLimiter, protect, authorize('organizer', 'admin'), (req, res) => {
+router.get('/status', requireRole(['organizer', 'admin']), (req, res) => proxy(req, res, 'get', '/subscription/status'));
+router.post('/create', subscriptionLimiter, requireRole(['organizer', 'admin']), (req, res) => {
     logger.audit('subscription.create.requested', {
         requestId: req.requestId,
         userId: req.user?._id,
@@ -60,7 +60,7 @@ router.post('/create', subscriptionLimiter, protect, authorize('organizer', 'adm
     proxy(req, res, 'post', '/subscription/create', { planId: req.body.planId });
 });
 
-router.post('/verify', subscriptionLimiter, protect, authorize('organizer', 'admin'), (req, res) => {
+router.post('/verify', subscriptionLimiter, requireRole(['organizer', 'admin']), (req, res) => {
     logger.audit('subscription.verify.requested', {
         requestId: req.requestId,
         userId: req.user?._id,
@@ -70,7 +70,7 @@ router.post('/verify', subscriptionLimiter, protect, authorize('organizer', 'adm
     proxy(req, res, 'post', '/subscription/verify', req.body);
 });
 
-router.post('/cancel', subscriptionLimiter, protect, authorize('organizer', 'admin'), (req, res) => {
+router.post('/cancel', subscriptionLimiter, requireRole(['organizer', 'admin']), (req, res) => {
     logger.audit('subscription.cancel.requested', {
         requestId: req.requestId,
         userId: req.user?._id,

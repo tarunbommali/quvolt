@@ -13,8 +13,7 @@ const { SESSION_STATUS, assertWaitingSessionExists, canTransition, normalizeSess
 const PAYMENT_SERVICE_URL = process.env.PAYMENT_SERVICE_URL || 'http://localhost:5001';
 const ALLOWED_QUIZ_CATEGORIES = ['regular', 'internal', 'external', 'subject-syllabus', 'hackathon', 'interview'];
 
-const activeTimers = new Map();
-const activeTickTimers = new Map();
+
 
 const buildQuizAccessQuery = (user, id, extra = {}) => (
     user.role === 'admin'
@@ -180,65 +179,55 @@ const mergeParticipantMaps = (primary = {}, secondary = {}) => ({
     ...primary,
 });
 
-const clearTimers = (roomCode) => {
-    if (activeTimers.has(roomCode)) {
-        clearTimeout(activeTimers.get(roomCode));
-        activeTimers.delete(roomCode);
-    }
-
-    const delayKey = `${roomCode}:delay`;
-    if (activeTimers.has(delayKey)) {
-        clearTimeout(activeTimers.get(delayKey));
-        activeTimers.delete(delayKey);
-    }
-
-    const tickKey = `${roomCode}:tick`;
-    if (activeTickTimers.has(tickKey)) {
-        clearInterval(activeTickTimers.get(tickKey));
-        activeTickTimers.delete(tickKey);
-    }
+const clearTimers = async (roomCode) => {
+    await sessionStore.clearDistributedTimer(`${roomCode}:advance`);
+    await sessionStore.clearDistributedTimer(`${roomCode}:broadcast`);
 };
 
-const clearTickTimer = (roomCode) => {
-    const tickKey = `${roomCode}:tick`;
-    if (activeTickTimers.has(tickKey)) {
-        clearInterval(activeTickTimers.get(tickKey));
-        activeTickTimers.delete(tickKey);
-    }
-};
+// Tick timers are inherently distributed to the frontend, so we no longer push 'timer_tick'
+const clearTickTimer = () => {};
+const emitTimerTick = async () => {};
+const startTimerTicks = async () => {};
 
-const emitTimerTick = async (io, roomCode) => {
-    const session = await sessionStore.getSession(roomCode);
-    if (!session || !session.questionExpiry) return null;
+const startDistributedTimerWorker = (io) => {
+    setInterval(async () => {
+        try {
+            const now = Date.now();
+            const expired = await sessionStore.getExpiredDistributedTimers(now);
+            for (const item of expired) {
+                // Determine action type
+                const [roomCode, action] = item.split(':');
+                if (!roomCode || !action) continue;
 
-    const timeLeft = Math.max(0, Math.floor((session.questionExpiry - Date.now()) / 1000));
-    io.to(roomCode).emit('timer_tick', timeLeft);
-    return timeLeft;
-};
+                // Acquire distinct distributed lock to prevent multiple cluster nodes running it
+                const locked = await sessionStore.acquireTimerLock(roomCode, now);
+                if (!locked) continue;
 
-const startTimerTicks = async (io, roomCode) => {
-    const tickKey = `${roomCode}:tick`;
-    if (activeTickTimers.has(tickKey)) {
-        clearInterval(activeTickTimers.get(tickKey));
-        activeTickTimers.delete(tickKey);
-    }
+                await sessionStore.clearDistributedTimer(item);
 
-    const pushTick = async () => {
-        const timeLeft = await emitTimerTick(io, roomCode);
-        if (timeLeft === null || timeLeft <= 0) {
-            clearTickTimer(roomCode);
+                const session = await sessionStore.getSession(roomCode);
+                if (!session || session.isPaused) continue;
+
+                if (action === 'advance') {
+                    session.currentQuestionIndex += 1;
+                    await sessionStore.setSession(roomCode, session);
+                    await sessionStore.registerDistributedTimer(`${roomCode}:broadcast`, Date.now() + (session.interQuestionDelay || 5000));
+                } else if (action === 'broadcast') {
+                    await broadcastQuestionEnhanced(io, roomCode).catch(err => {
+                        logger.error('Worker broadcast failed', { roomCode, error: err.message });
+                    });
+                } else if (action === 'tutor_review') {
+                    if ([SESSION_STATUS.WAITING, SESSION_STATUS.LIVE].includes(session.status)) {
+                        session.questionState = 'review';
+                        await sessionStore.setSession(roomCode, session);
+                        io.to(roomCode).emit('question_review_mode', { message: 'Answer phase ended, host will decide next step' });
+                    }
+                }
+            }
+        } catch (error) {
+            logger.error('Worker loop failed', { error: error.message });
         }
-    };
-
-    await pushTick();
-
-    const interval = setInterval(() => {
-        pushTick().catch((error) => {
-            logger.warn('Timer tick emission failed', { roomCode, error: error.message });
-        });
     }, 1000);
-
-    activeTickTimers.set(tickKey, interval);
 };
 
 const resolveSessionRoomCode = async (roomCode, sessionId) => {
@@ -377,7 +366,10 @@ const joinRoom = async ({ io, socket, roomCode, sessionId }) => {
     session.quizId = session.quizId || quiz._id?.toString?.() || quiz._id;
     session.sessionId = session.sessionId || liveSession?._id?.toString?.() || null;
     session.subjectRoom = session.subjectRoom || (quiz.parentId ? `subject_${quiz.parentId.toString()}` : null);
-    session.questions = session.questions || quiz.questions || [];
+    session.questions = session.questions
+        || liveSession?.templateSnapshot?.questions
+        || quiz.questions
+        || [];
 
     await sessionStore.setSession(socketRoom, session);
 
@@ -438,9 +430,10 @@ const startQuizSession = async ({ io, quizId, roomCode, sessionId, user }) => {
     await Quiz.findByIdAndUpdate(quiz._id, { status: SESSION_STATUS.LIVE, lastSessionCode: session.sessionCode });
 
     const socketRoom = session.sessionCode;
+    const snapshotQuestions = session.templateSnapshot?.questions || quiz.questions || [];
     const sessionState = {
         status: SESSION_STATUS.LIVE,
-        mode: quiz.mode || 'auto',
+        mode: (quiz.mode === 'teaching' || quiz.mode === 'tutor') ? 'tutor' : 'auto',
         isPaused: false,
         currentQuestionIndex: 0,
         participants: {},
@@ -449,7 +442,7 @@ const startQuizSession = async ({ io, quizId, roomCode, sessionId, user }) => {
         sessionId: session._id.toString(),
         waitingRoomCode: quiz.roomCode || null,
         subjectRoom: quiz.parentId ? `subject_${quiz.parentId.toString()}` : null,
-        questions: quiz.questions.map((question) => ({ ...question.toObject?.() ?? question })),
+        questions: snapshotQuestions.map((question) => ({ ...question.toObject?.() ?? question })),
         lastActivity: Date.now(),
         participantLimit: 50,
         interQuestionDelay: (quiz.interQuestionDelay ?? 5) * 1000,
@@ -609,7 +602,7 @@ const pauseQuizSession = async ({ io, quizId, sessionCode, user }) => {
         session.isPaused = true;
         session.pausedAt = Date.now();
         session.timeLeftOnPause = (session.questionExpiry || 0) - Date.now();
-        clearTimers(roomCode);
+        await clearTimers(roomCode);
         await sessionStore.setSession(roomCode, session);
     }
 
@@ -639,20 +632,7 @@ const resumeQuizSession = async ({ io, quizId, sessionCode, user }) => {
 
         if (session.mode === 'auto' && session.status === SESSION_STATUS.LIVE) {
             const remaining = Math.max(0, session.timeLeftOnPause || 0);
-            const timeout = setTimeout(async () => {
-                const fresh = await sessionStore.getSession(roomCode);
-                if (fresh && !fresh.isPaused) {
-                    fresh.currentQuestionIndex += 1;
-                    await sessionStore.setSession(roomCode, fresh);
-                    const delayTimer = setTimeout(() => broadcastQuestion(io, roomCode), fresh.interQuestionDelay || 5000);
-                    activeTimers.set(`${roomCode}:delay`, delayTimer);
-                }
-            }, remaining);
-            activeTimers.set(roomCode, timeout);
-        }
-
-        if (session.questionExpiry) {
-            await startTimerTicks(io, roomCode);
+            await sessionStore.registerDistributedTimer(`${roomCode}:advance`, Date.now() + remaining);
         }
     }
 
@@ -747,20 +727,11 @@ const rebootQuizzes = async (io) => {
 
                 const timeLeft = session.questionExpiry - now;
                 if (timeLeft > 0) {
-                    const timeout = setTimeout(async () => {
-                        const fresh = await sessionStore.getSession(quizSession.sessionCode);
-                        if (fresh) {
-                            fresh.currentQuestionIndex += 1;
-                            await sessionStore.setSession(quizSession.sessionCode, fresh);
-                            const delay = fresh.interQuestionDelay ?? 5000;
-                            setTimeout(() => broadcastQuestion(io, quizSession.sessionCode), delay);
-                        }
-                    }, timeLeft);
-                    activeTimers.set(quizSession.sessionCode, timeout);
+                    await sessionStore.registerDistributedTimer(`${quizSession.sessionCode}:advance`, Date.now() + timeLeft);
                 } else {
                     session.currentQuestionIndex += 1;
                     await sessionStore.setSession(quizSession.sessionCode, session);
-                    broadcastQuestion(io, quizSession.sessionCode);
+                    await broadcastQuestion(io, quizSession.sessionCode);
                 }
             } else {
                 quizSession.status = 'aborted';
@@ -779,7 +750,7 @@ const broadcastQuestionEnhanced = async (io, roomCode) => {
     if (!session) return;
 
     const questions = session.questions || [];
-    clearTimers(roomCode);
+    await clearTimers(roomCode);
 
     if (session.currentQuestionIndex >= questions.length) {
         session.status = SESSION_STATUS.COMPLETED;
@@ -818,9 +789,19 @@ const broadcastQuestionEnhanced = async (io, roomCode) => {
 
     const question = questions[session.currentQuestionIndex];
     session.questionStartTime = Date.now();
-    session.questionExpiry = Date.now() + (question.timeLimit * 1000);
     session.currentQuestionStats = createQuestionStats(question);
-    session.questionState = 'live';  // STEP 1: Set question state to live
+    session.questionState = 'live';
+
+    const isTutorMode = session.mode === 'tutor' || session.mode === 'teaching';
+
+    // In tutor mode, we still track the time limit for scoring purposes,
+    // but we do NOT expose questionExpiry to participants — the host advances manually.
+    if (isTutorMode) {
+        session.questionExpiry = null; // No visible countdown for participants
+    } else {
+        session.questionExpiry = Date.now() + (question.timeLimit * 1000);
+    }
+
     await sessionStore.setSession(roomCode, session);
 
     io.to(roomCode).emit('new_question', formatQuestion(question, session.currentQuestionIndex, questions.length, session.questionExpiry));
@@ -828,33 +809,12 @@ const broadcastQuestionEnhanced = async (io, roomCode) => {
     io.to(roomCode).emit('fastest_user', null);
     await startTimerTicks(io, roomCode);
 
-    const delay = session.interQuestionDelay ?? 5000;
-    
-    // STEP 4: Tutor mode - DO NOT auto-advance
-    if (session.mode === 'auto' && !session.isPaused) {
-        const timeout = setTimeout(async () => {
-            const fresh = await sessionStore.getSession(roomCode);
-            if (fresh && !fresh.isPaused && [SESSION_STATUS.WAITING, SESSION_STATUS.LIVE].includes(fresh.status)) {
-                fresh.currentQuestionIndex += 1;
-                await sessionStore.setSession(roomCode, fresh);
-                const delayTimer = setTimeout(() => broadcastQuestionEnhanced(io, roomCode), delay);
-                activeTimers.set(`${roomCode}:delay`, delayTimer);
-            }
-        }, question.timeLimit * 1000);
-
-        activeTimers.set(roomCode, timeout);
-    } else if (session.mode === 'tutor' || session.mode === 'teaching') {
-        // TUTOR MODE: Set state to review after timer, wait for host action
-        const timeout = setTimeout(async () => {
-            const fresh = await sessionStore.getSession(roomCode);
-            if (fresh && [SESSION_STATUS.WAITING, SESSION_STATUS.LIVE].includes(fresh.status)) {
-                fresh.questionState = 'review';  // STEP 4: Set question state to review
-                await sessionStore.setSession(roomCode, fresh);
-                io.to(roomCode).emit('question_review_mode', { message: 'Answer phase ended, host will decide next step' });
-            }
-        }, question.timeLimit * 1000);
-        activeTimers.set(roomCode, timeout);
+    // Auto mode: register distributed timer to automatically advance after timeLimit
+    if (!isTutorMode) {
+        const timeLimitMs = question.timeLimit * 1000;
+        await sessionStore.registerDistributedTimer(`${roomCode}:advance`, Date.now() + timeLimitMs);
     }
+    // Tutor mode: no auto-advance — host must click Next
 };
 
 // STEP 6: Reveal correct answer for tutor mode

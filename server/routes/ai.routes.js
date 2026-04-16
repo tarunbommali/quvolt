@@ -2,7 +2,7 @@ const express = require('express');
 const rateLimit = require('express-rate-limit');
 const { body } = require('express-validator');
 const validate = require('../middleware/validate');
-const { protect, authorize } = require('../middleware/auth');
+const requireRole = require('../middleware/requireRole');
 const {
     AI_MAX_COUNT,
     generateWithDistribution,
@@ -27,8 +27,7 @@ const isDistributionStep = (value) => Number.isFinite(Number(value)) && Number(v
 router.post(
     '/generate-quiz',
     aiGenerateLimiter,
-    protect,
-    authorize('organizer', 'admin'),
+    requireRole(['organizer', 'admin']),
     [
         body('topic').optional({ nullable: true }).isString().trim(),
         body('difficulty').optional({ nullable: true }).isIn(['easy', 'medium', 'hard']),

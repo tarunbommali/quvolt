@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
 const { body } = require('express-validator');
 const rateLimit = require('express-rate-limit');
@@ -34,7 +34,9 @@ const {
     getQuizSessions,
     updateQuizFullState,
 } = require('../controllers/quizController');
-const { protect, authorize, requireQuizOwnership } = require('../middleware/auth');
+
+const requireRole = require('../middleware/requireRole');
+const { requireQuizOwnership } = require('../middleware/auth');
 
 const joinLimiter = rateLimit({
     windowMs: 60 * 1000,
@@ -44,9 +46,8 @@ const joinLimiter = rateLimit({
     message: { message: 'Too many join attempts. Please try again shortly.' },
 });
 
-router.post('/', [
-    protect,
-    authorize('organizer', 'admin'),
+const createQuizValidators = [
+    requireRole(['organizer', 'admin']),
     body('title').trim().notEmpty().withMessage('Title is required'),
     body('type').isIn(['quiz', 'subject']).withMessage('Invalid quiz type'),
     body('mode').optional().isIn(['auto', 'teaching', 'tutor']).withMessage('Invalid quiz mode'),
@@ -61,52 +62,57 @@ router.post('/', [
         return true;
     }),
     validate
-], createQuiz);
-router.get('/my-quizzes', protect, authorize('organizer', 'admin'), getMyQuizzes);
-router.get('/subject/:subjectId/leaderboard', protect, getSubjectLeaderboard);
-router.get('/organizer/history', protect, authorize('organizer', 'admin'), getOrganizerStats);
-router.get('/user/history', protect, getUserHistory);
+];
 
-// Participant scheduled-session routes (specific paths before /:id/* wildcard)
-router.get('/user/scheduled-joins', protect, getMyScheduledJoins);
-router.post('/join-scheduled/:roomCode', joinLimiter, protect, joinScheduledSession);
 
-// Session results (must be before /:id/* to avoid Express matching 'session' as :id)
-router.get('/session/:sessionCode/results', protect, authorize('organizer', 'admin'), getSessionResults);
-router.get('/session/:sessionCode/participants', protect, authorize('organizer', 'admin'), getSessionParticipants);
-router.get('/session/:sessionCode/participants/export', protect, authorize('organizer', 'admin'), exportSessionParticipants);
-router.get('/session/:sessionCode/stats', protect, getAnswerStats);
+router.post('/templates/new', createQuizValidators, createQuiz);
+router.post('/', createQuizValidators, createQuiz);
+router.get('/templates', requireRole(['organizer', 'admin']), getMyQuizzes);
+router.get('/subject/:subjectId/leaderboard', requireRole(['organizer', 'admin', 'participant']), getSubjectLeaderboard);
+router.get('/organizer/history', requireRole(['organizer', 'admin']), getOrganizerStats);
+router.get('/user/history', requireRole(['participant', 'organizer', 'admin']), getUserHistory);
 
-// Quiz CRUD (wildcard /:id routes — must be after all specific prefixed routes)
-router.put('/:id', protect, authorize('organizer', 'admin'), updateQuiz);
-router.put('/:id/full-state', protect, authorize('organizer', 'admin'), updateQuizFullState);
-router.post('/:id/start', protect, authorize('organizer', 'admin'), requireQuizOwnership, startQuizSession);
-router.post('/:id/start-live', protect, authorize('organizer', 'admin'), requireQuizOwnership, startLiveSession);
-router.post('/:id/abort', protect, authorize('organizer', 'admin'), requireQuizOwnership, abortSession);
-router.post('/:id/pause', protect, authorize('organizer', 'admin'), requireQuizOwnership, pauseSession);
-router.post('/:id/resume', protect, authorize('organizer', 'admin'), requireQuizOwnership, resumeSession);
-router.post('/:id/next-question', protect, authorize('organizer', 'admin'), requireQuizOwnership, nextQuestion);
-router.post('/:id/reveal-answer', protect, authorize('organizer', 'admin'), requireQuizOwnership, revealAnswer);
-router.post('/:id/end', protect, authorize('organizer', 'admin'), requireQuizOwnership, endQuizSession);
-router.post('/:id/complete', protect, authorize('organizer', 'admin'), requireQuizOwnership, endQuizSession);
-router.post('/:id/schedule', protect, authorize('organizer', 'admin'), requireQuizOwnership, scheduleQuiz);
-router.get('/:id/sessions', protect, authorize('organizer', 'admin'), requireQuizOwnership, getQuizSessions);
-router.delete('/:id', protect, authorize('organizer', 'admin'), requireQuizOwnership, deleteQuiz);
+// Participant scheduled-session routes
+router.get('/user/scheduled-joins', requireRole(['participant', 'organizer', 'admin']), getMyScheduledJoins);
+router.post('/join-scheduled/:roomCode', joinLimiter, requireRole(['participant', 'organizer', 'admin']), joinScheduledSession);
+
+// Session results
+router.get('/session/:sessionCode/results', requireRole(['organizer', 'admin']), getSessionResults);
+router.get('/session/:sessionCode/participants', requireRole(['organizer', 'admin']), getSessionParticipants);
+router.get('/session/:sessionCode/participants/export', requireRole(['organizer', 'admin']), exportSessionParticipants);
+router.get('/session/:sessionCode/stats', requireRole(['organizer', 'admin', 'participant']), getAnswerStats);
+router.get('/templates/:templateId/sessions', requireRole(['organizer', 'admin']), requireQuizOwnership, getQuizSessions);
+router.post('/templates/:templateId/session', requireRole(['organizer', 'admin']), requireQuizOwnership, startQuizSession);
+
+// Quiz CRUD
+router.put('/:id', requireRole(['organizer', 'admin']), updateQuiz);
+router.put('/:id/full-state', requireRole(['organizer', 'ad min']), updateQuizFullState);
+router.post('/:id/start', requireRole(['organizer', 'admin']), requireQuizOwnership, startQuizSession);
+router.post('/:id/start-live', requireRole(['organizer', 'admin']), requireQuizOwnership, startLiveSession);
+router.post('/:id/abort', requireRole(['organizer', 'admin']), requireQuizOwnership, abortSession);
+router.post('/:id/pause', requireRole(['organizer', 'admin']), requireQuizOwnership, pauseSession);
+router.post('/:id/resume', requireRole(['organizer', 'admin']), requireQuizOwnership, resumeSession);
+router.post('/:id/next-question', requireRole(['organizer', 'admin']), requireQuizOwnership, nextQuestion);
+router.post('/:id/reveal-answer', requireRole(['organizer', 'admin']), requireQuizOwnership, revealAnswer);
+router.post('/:id/end', requireRole(['organizer', 'admin']), requireQuizOwnership, endQuizSession);
+router.post('/:id/complete', requireRole(['organizer', 'admin']), requireQuizOwnership, endQuizSession);
+router.post('/:id/schedule', requireRole(['organizer', 'admin']), requireQuizOwnership, scheduleQuiz);
+router.get('/:id/sessions', requireRole(['organizer', 'admin']), requireQuizOwnership, getQuizSessions);
+router.delete('/:id', requireRole(['organizer', 'admin']), requireQuizOwnership, deleteQuiz);
 
 router.post('/:id/questions', [
-    protect,
-    authorize('organizer', 'admin'),
+    requireRole(['organizer', 'admin']),
     body('text').trim().notEmpty().withMessage('Question text is required'),
     body('options').isArray({ min: 4, max: 4 }).withMessage('Exactly 4 options are required'),
     body('correctOption').isInt({ min: 0, max: 3 }).withMessage('Correct option must be between 0 and 3'),
     validate
 ], addQuestion);
-router.put('/:quizId/questions/:questionId', protect, authorize('organizer', 'admin'), updateQuestion);
-router.delete('/:quizId/questions/:questionId', protect, authorize('organizer', 'admin'), deleteQuestion);
+router.put('/:quizId/questions/:questionId', requireRole(['organizer', 'admin']), updateQuestion);
+router.delete('/:quizId/questions/:questionId', requireRole(['organizer', 'admin']), deleteQuestion);
 
-router.get('/:id/leaderboard', protect, getQuizLeaderboard);
+router.get('/:id/leaderboard', requireRole(['organizer', 'admin', 'participant']), getQuizLeaderboard);
 
-// Room code lookup — last wildcard (catch-all for participant join flow)
-router.get('/:roomCode', protect, getQuizByCode);
+// Room code lookup
+router.get('/:roomCode', requireRole(['organizer', 'admin', 'participant']), getQuizByCode);
 
 module.exports = router;

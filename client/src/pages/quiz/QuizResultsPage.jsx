@@ -9,7 +9,8 @@ import { prefetchHistoryDetailRoute } from '../../utils/routePrefetch';
 import { textStyles } from '../../styles/commonStyles';
 
 const QuizResultsPage = () => {
-    const { quizId } = useParams();
+    const { templateId, quizId } = useParams();
+    const routeTemplateId = templateId || quizId;
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -27,7 +28,7 @@ const QuizResultsPage = () => {
                 setLoading(true);
                 setError('');
                 const data = await getHistoryForRole('organizer');
-                const filtered = data.filter((record) => String(record.quizId) === String(quizId));
+                const filtered = data.filter((record) => String(record.quizId) === String(routeTemplateId));
                 setRecords(filtered);
             } catch (err) {
                 setError(
@@ -41,7 +42,7 @@ const QuizResultsPage = () => {
         };
 
         fetchResults();
-    }, [quizId, getHistoryForRole]);
+    }, [routeTemplateId, getHistoryForRole]);
 
     const filteredRecords = useMemo(() => {
         return records.filter((record) => {
@@ -61,7 +62,7 @@ const QuizResultsPage = () => {
         <div className="app-page space-y-8 animate-in fade-in duration-500">
             <div className="flex items-center justify-between gap-4 flex-wrap">
                 <button
-                    onClick={() => navigate(`/edit/${quizId}`)}
+                    onClick={() => navigate(`/quiz/templates/${routeTemplateId}`)}
                     className="flex items-center gap-2 font-semibold text-slate-500 transition-colors hover:text-indigo-600"
                 >
                     <ArrowLeft size={18} /> Back to Edit
@@ -132,7 +133,7 @@ const QuizResultsPage = () => {
                         {filteredRecords.map((record) => (
                             <ViewportPrefetch key={record.roomCode} onPrefetch={() => prefetchHistoryDetailRoute().catch(() => {})}>
                             <button
-                                onClick={() => navigate(`/history/${record.quizId || record.roomCode || record._id}`, { state: { record } })}
+                                onClick={() => navigate(`/quiz/templates/${routeTemplateId}/sessions/${record._id || record.roomCode || record.quizId}`, { state: { record } })}
                                 onMouseEnter={() => prefetchHistoryDetailRoute().catch(() => {})}
                                 onFocus={() => prefetchHistoryDetailRoute().catch(() => {})}
                                 className="text-left bg-gray-50 hover:bg-white border border-gray-100 hover:border-indigo-200 rounded-3xl p-5 shadow-sm hover:shadow-md transition-all"

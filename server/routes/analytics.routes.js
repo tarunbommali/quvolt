@@ -1,11 +1,11 @@
 const express = require('express');
-const { protect, authorize } = require('../middleware/auth');
+const requireRole = require('../middleware/requireRole');
 const { getQuizAnalytics, getUserAnalytics, getOrganizerAnalyticsSummary } = require('../services/analytics.service');
 const Quiz = require('../models/Quiz');
 
 const router = express.Router();
 
-router.get('/quiz/:quizId', protect, authorize('organizer', 'admin'), async (req, res) => {
+router.get('/quiz/:quizId', requireRole(['organizer', 'admin']), async (req, res) => {
     try {
         const { quizId } = req.params;
 
@@ -24,7 +24,7 @@ router.get('/quiz/:quizId', protect, authorize('organizer', 'admin'), async (req
     }
 });
 
-router.get('/user', protect, async (req, res) => {
+router.get('/user', requireRole(['participant', 'organizer', 'admin']), async (req, res) => {
     try {
         const data = await getUserAnalytics(req.user._id);
         return res.json(data);
@@ -33,7 +33,7 @@ router.get('/user', protect, async (req, res) => {
     }
 });
 
-router.get('/user/:userId', protect, authorize('organizer', 'admin'), async (req, res) => {
+router.get('/user/:userId', requireRole(['organizer', 'admin']), async (req, res) => {
     try {
         const data = await getUserAnalytics(req.params.userId);
         return res.json(data);
@@ -42,7 +42,7 @@ router.get('/user/:userId', protect, authorize('organizer', 'admin'), async (req
     }
 });
 
-router.get('/summary', protect, authorize('organizer', 'admin'), async (req, res) => {
+router.get('/summary', requireRole(['organizer', 'admin']), async (req, res) => {
     try {
         const targetUserId = req.user.role === 'admin' && req.query.userId
             ? req.query.userId

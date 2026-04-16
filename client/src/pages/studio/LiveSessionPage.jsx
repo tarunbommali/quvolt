@@ -25,6 +25,7 @@ const LiveSessionPage = () => {
 
     const activeQuiz = useQuizStore((state) => state.activeQuiz);
     const view = useQuizStore((state) => state.view);
+    const sessionMode = useQuizStore((state) => state.sessionMode);
     const participants = useQuizStore((state) => state.participants);
     const leaderboard = useQuizStore((state) => state.leaderboard);
     const currentQuestion = useQuizStore((state) => state.currentQuestion);
@@ -191,6 +192,7 @@ const LiveSessionPage = () => {
                 </AnimatePresence>
                 <LiveView
                     activeQuiz={activeQuiz}
+                    sessionMode={sessionMode}
                     joinCode={effectiveJoinCode}
                     currentQuestion={currentQuestion}
                     timeLeft={timeLeft}

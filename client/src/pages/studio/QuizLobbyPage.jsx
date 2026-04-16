@@ -69,20 +69,26 @@ const QuizLobbyPage = () => {
                 const nextStatus = nextCode && normalizedStatus !== 'live'
                     ? 'waiting'
                     : (normalizedStatus || 'waiting');
-                const nextQuiz = {
-                    ...quiz,
-                    status: nextStatus,
-                    ...(nextCode ? { sessionCode: nextCode } : {}),
-                };
+                const hasStatusChanged = String(quiz.status) !== nextStatus;
+                const hasCodeDiff = !quiz.sessionCode && nextCode;
+                
+                if (hasStatusChanged || hasCodeDiff) {
+                    const nextQuiz = {
+                        ...quiz,
+                        status: nextStatus,
+                        ...(nextCode ? { sessionCode: nextCode } : {}),
+                    };
+                    setActiveQuiz(nextQuiz);
+                }
 
-                if (nextCode) setSessionCode(nextCode);
-                setActiveQuiz(nextQuiz);
+                if (nextCode && sessionCode !== nextCode) setSessionCode(nextCode);
                 setStatus(nextStatus);
 
                 setLoading(false);
-            } catch {
+            } catch (error) {
                 if (!active) return;
-                showToast('Failed to load invite room');
+                console.error('[QuizLobbyPage] init error:', error);
+                showToast(`Invite room error: ${error?.message || 'Unknown'}`);
                 navigate('/studio');
             }
         };
@@ -125,6 +131,23 @@ const QuizLobbyPage = () => {
         try {
             if (activeQuiz) {
                 await api.post(`/quiz/${activeQuiz._id}/abort`, { sessionCode });
+                
+                // Clear state so returning to this quiz won't try to reuse the session
+                const resetQuiz = { 
+                    ...activeQuiz, 
+                    status: 'aborted', 
+                    sessionCode: null, 
+                    activeSessionCode: null 
+                };
+                setActiveQuiz(resetQuiz);
+                setSessionCode(null);
+                setStatus('aborted');
+
+                // Force refresh the studio items in the background
+                useQuizStore.getState().getQuizzesForParent('none', { force: true }).catch(() => {});
+                if (activeQuiz.parentId) {
+                    useQuizStore.getState().getQuizzesForParent(activeQuiz.parentId, { force: true }).catch(() => {});
+                }
             }
         } catch {
             // best-effort abort

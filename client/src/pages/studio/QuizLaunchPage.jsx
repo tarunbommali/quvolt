@@ -90,7 +90,7 @@ const QuizLaunchPage = () => {
         }
 
         if (status === 'waiting' || status === 'scheduled') {
-            const nextQuiz = { ...activeQuiz, sessionCode: activeQuiz.sessionCode || activeQuiz.activeSessionCode || activeQuiz.roomCode, status };
+            const nextQuiz = { ...activeQuiz, _id: activeQuiz._id, status, sessionCode: activeQuiz.sessionCode || activeQuiz.activeSessionCode || activeQuiz.roomCode };
             navigate(resolveSessionRoute(nextQuiz), { replace: true, state: { quiz: nextQuiz, forceLaunch: true } });
             return;
         }
@@ -98,13 +98,20 @@ const QuizLaunchPage = () => {
         try {
             const freshQuiz = await apiStartQuizSession(activeQuiz._id);
             const liveCode = freshQuiz.sessionCode || freshQuiz.roomCode;
-            if (!liveCode || !freshQuiz?._id) {
+            // Ensure _id and status are present for resolveSessionRoute
+            const nextQuiz = {
+                ...activeQuiz,
+                ...freshQuiz,
+                _id: freshQuiz._id || activeQuiz._id,
+                status: freshQuiz.status || 'waiting',
+                sessionCode: liveCode,
+            };
+            if (!nextQuiz._id || !nextQuiz.status) {
                 throw new Error('Session payload incomplete');
             }
-            const nextQuiz = { ...freshQuiz, sessionCode: liveCode, status: freshQuiz.status || 'waiting' };
             setSessionCode(liveCode);
             setActiveQuiz(nextQuiz);
-            setStatus('waiting');
+            setStatus(nextQuiz.status);
             navigate(resolveSessionRoute(nextQuiz), { replace: true, state: { quiz: nextQuiz, forceLaunch: true } });
         } catch (error) {
             showToast(error?.response?.data?.message || error?.message || 'Failed to start session');

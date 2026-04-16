@@ -1,4 +1,4 @@
-﻿import { create } from 'zustand';
+import { create } from 'zustand';
 import { io } from 'socket.io-client';
 import { getAccessToken, getSocketUrl } from '../services/api';
 import { useQuizStore } from './useQuizStore';
@@ -108,12 +108,16 @@ export const useSocketStore = create((set, get) => ({
         socket.on('quiz_aborted', ({ message }) => {
             useQuizStore.getState().applyQuizAborted(message);
         });
-        socket.on('start_quiz', ({ roomCode, sessionId }) => {
+        socket.on('start_quiz', ({ roomCode, sessionId, mode }) => {
             if (roomCode) {
                 useQuizStore.getState().setSessionCode(roomCode);
             }
             if (sessionId) {
                 useQuizStore.getState().setSessionId(sessionId);
+            }
+            // Store the authoritative session mode from the server
+            if (mode) {
+                useQuizStore.getState().setSessionMode(mode);
             }
             useQuizStore.getState().setStatus('live');
             useQuizStore.getState().setView('live');

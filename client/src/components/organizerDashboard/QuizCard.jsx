@@ -141,6 +141,9 @@ const QuizCard = ({ quiz, view = 'grid', cloning, onEdit, onDelete, onClone, onG
                             {String(quiz.status || '').toLowerCase() === 'waiting' && (
                                 <span className={`${tagStyles.base} ${tagStyles.upcoming}`}>Waiting</span>
                             )}
+                            {String(quiz.status || '').toLowerCase() === 'live' && (
+                                <span className={`${tagStyles.base} bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border border-red-200 dark:border-red-800`}>Live</span>
+                            )}
                         </div>
 
                         <div className="flex items-center gap-2 md:ml-auto md:shrink-0">
@@ -288,6 +291,9 @@ const QuizCard = ({ quiz, view = 'grid', cloning, onEdit, onDelete, onClone, onG
                         <span className={getModeTag(quiz.mode)}>{quiz.mode === 'tutor' ? 'Tutor' : 'AutoTime'}</span>
                         {String(quiz.status || '').toLowerCase() === 'waiting' && (
                             <span className={`${tagStyles.base} ${tagStyles.upcoming}`}>Waiting</span>
+                        )}
+                        {String(quiz.status || '').toLowerCase() === 'live' && (
+                            <span className={`${tagStyles.base} bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border border-red-200 dark:border-red-800`}>Live</span>
                         )}
                     </div>
 

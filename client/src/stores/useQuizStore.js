@@ -1,4 +1,4 @@
-﻿import { create } from 'zustand';
+import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import {
     getMyProfile,
@@ -56,6 +56,7 @@ const setCache = (cacheMap, key, value) => ({
 const createEmptyRealtimeState = () => ({
     status: 'waiting',
     mode: 'waiting',
+    sessionMode: null,  // server-authoritative runtime mode: 'auto' | 'tutor'
     currentQuestion: null,
     participants: [],
     answerStats: null,
@@ -121,6 +122,7 @@ export const useQuizStore = create()(devtools((set, get) => ({
         // Obsolete stub
     },
 
+    setSessionMode: (sessionMode) => set({ sessionMode }),
     setView: (view) => set({ view, mode: view }),
     setActiveQuiz: (activeQuiz) => set({ activeQuiz }),
     setSessionCode: (sessionCode) => set({ sessionCode }),

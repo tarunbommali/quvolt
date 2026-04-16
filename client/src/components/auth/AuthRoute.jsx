@@ -11,8 +11,10 @@ const AuthRoute = ({ children }) => {
     const loading = useAuthStore((state) => state.loading);
     if (loading) return <LoadingScreen />;
     if (user) {
+        if (user.role === 'participant') return <Navigate to="/join" />;
         if (user.role === 'organizer') return <Navigate to="/studio" />;
-        return <Navigate to="/join" />;
+        if (user.role === 'admin') return <Navigate to="/dashboard" />;
+        return <Navigate to="/" />;
     }
     return children;
 };

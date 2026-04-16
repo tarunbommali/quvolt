@@ -7,8 +7,12 @@ import { buttonStyles } from '../../styles/buttonStyles';
 import ErrorState from '../common/ErrorState';
 import { motionTokens } from '../../design';
 
-const LiveView = ({ activeQuiz, joinCode, currentQuestion, timeLeft, answerStats, fastestUser, participants, leaderboard, isPaused, realtimeError, onPause, onResume, onNext, onAbort }) => {
-    const isManual = activeQuiz?.mode === 'teaching' || activeQuiz?.mode === 'tutor';
+const LiveView = ({ activeQuiz, sessionMode, joinCode, currentQuestion, timeLeft, answerStats, fastestUser, participants, leaderboard, isPaused, realtimeError, onPause, onResume, onNext, onAbort }) => {
+    // sessionMode is the server-authoritative mode ('auto' | 'tutor').
+    // Fall back to activeQuiz.mode for backward compatibility.
+    const resolvedMode = sessionMode || activeQuiz?.mode || 'auto';
+    const isManual = resolvedMode === 'tutor' || resolvedMode === 'teaching';
+    const modeLabel = isManual ? 'Tutor (Manual)' : 'Auto Time';
     const currentIndex = (currentQuestion?.index || 0) + 1;
     const totalQuestions = activeQuiz?.questions?.length || 0;
     const progressPercent = totalQuestions > 0 ? Math.min(100, Math.max(0, (currentIndex / totalQuestions) * 100)) : 0;
@@ -81,7 +85,7 @@ const LiveView = ({ activeQuiz, joinCode, currentQuestion, timeLeft, answerStats
                     className="rounded-xl theme-surface px-4 py-3"
                 >
                     <p className="text-[11px] font-bold theme-text-muted">Mode</p>
-                    <p className="mt-1 text-sm font-black tracking-wider theme-text-primary">{activeQuiz?.mode || 'auto'}</p>
+                    <p className="mt-1 text-sm font-black tracking-wider theme-text-primary">{modeLabel}</p>
                 </Motion.div>
                 <Motion.div
                     initial={motionTokens.fadeUp.hidden}
@@ -117,6 +121,8 @@ const LiveView = ({ activeQuiz, joinCode, currentQuestion, timeLeft, answerStats
                     </div>
 
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        {/* Time remaining — only shown in auto mode */}
+                        {!isManual && (
                         <div className="rounded-xl theme-surface p-4">
                             <div className="mb-2 flex items-center justify-between">
                                 <p className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wider theme-text-muted">
@@ -128,6 +134,17 @@ const LiveView = ({ activeQuiz, joinCode, currentQuestion, timeLeft, answerStats
                                 <div className="h-full bg-(--qb-primary) transition-all duration-700" style={{ width: `${timePercent}%` }} />
                             </div>
                         </div>
+                        )}
+
+                        {/* In tutor mode, show a message instead */}
+                        {isManual && (
+                        <div className="rounded-xl theme-surface p-4 flex items-center gap-2">
+                            <ChevronRight size={16} className="text-(--qb-primary) shrink-0" />
+                            <p className="text-xs font-semibold theme-text-secondary">
+                                Click <span className="font-bold theme-text-primary">Next</span> in the toolbar to advance to the next question.
+                            </p>
+                        </div>
+                        )}
 
                         <div className="rounded-xl theme-surface p-4">
                             <div className="mb-2 flex items-center justify-between">

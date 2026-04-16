@@ -22,47 +22,12 @@ const snapshotKey = (snapshot) => JSON.stringify({
     config: snapshot.config,
 });
 
-const THEME_PRESETS = {
-    light: {
-        className: 'bg-[linear-gradient(180deg,#eff3ff_0%,#f8fafc_100%)]',
-        style: {
-            '--qb-primary': '#4f46e5',
-            '--qb-primary-strong': '#4338ca',
-            '--qb-surface-1': '#f8fafc',
-            '--qb-surface-2': '#e9eefc',
-            '--qb-text-1': '#0f172a',
-            '--qb-text-2': '#334155',
-            '--qb-border': '#cbd5e1',
-        },
-    },
-    dark: {
-        className: 'bg-[radial-gradient(circle_at_top,#1d2a4d_0%,#0b1024_62%)]',
-        style: {
-            '--qb-primary': '#6366f1',
-            '--qb-primary-strong': '#4f46e5',
-        },
-    },
-    presentation: {
-        className: 'bg-[radial-gradient(circle_at_top,#2a2533_0%,#0a0a0a_65%)]',
-        style: {
-            '--qb-primary': '#f59e0b',
-            '--qb-primary-strong': '#d97706',
-            '--qb-text-1': '#ffffff',
-            '--qb-text-2': '#f8fafc',
-            '--qb-border': '#f59e0b',
-            '--qb-surface-1': '#0b0b0d',
-            '--qb-surface-2': '#1a1a22',
-        },
-    },
-};
-
 /**
  * Full organizer editor view that composes the editor chrome and modal states.
  * @param {{ editor: object }} props
  */
 const OrganizerEditView = ({ editor }) => {
     const [mobileTab, setMobileTab] = useState('slides');
-    const [themeMode, setThemeMode] = useState('dark');
     const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
     const [isCanvasEditing, setIsCanvasEditing] = useState(false);
 
@@ -244,7 +209,6 @@ const OrganizerEditView = ({ editor }) => {
         setActiveSlideByIndex,
     ]);
 
-    const themePreset = THEME_PRESETS[themeMode] || THEME_PRESETS.dark;
     const openSessionRoom = () => {
         const nextQuiz = {
             ...activeQuiz,
@@ -348,13 +312,11 @@ const OrganizerEditView = ({ editor }) => {
                     <OrganizerEditHeader
                         title={activeQuiz.title}
                         isSaving={isSaving}
-                        themeMode={themeMode}
-                        onThemeModeChange={setThemeMode}
                         onOpenCommandPalette={() => setCommandPaletteOpen(true)}
                         onBack={() => navigate('/studio')}
                         onOpenImport={() => setImportDialogOpen(true)}
                         onOpenAI={handleOpenAIDialog}
-                        onOpenResults={() => navigate(`/results/${activeQuiz._id}`, { state: { quiz: activeQuiz } })}
+                        onOpenResults={() => navigate(`/quiz/templates/${activeQuiz._id}/sessions`, { state: { quiz: activeQuiz } })}
                         onSave={() => persistFullState()}
                         onLaunch={openSessionRoom}
                     />
@@ -397,8 +359,6 @@ const OrganizerEditView = ({ editor }) => {
                         }}
                     />
                 )}
-                rootClassName={themePreset.className}
-                rootStyle={themePreset.style}
             />
 
             <EditorCommandPalette

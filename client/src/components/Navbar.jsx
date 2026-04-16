@@ -3,6 +3,7 @@ import { Link, NavLink } from 'react-router-dom';
 import { ChevronDown, LogOut, Menu, X } from 'lucide-react';
 import { AnimatePresence, motion as Motion } from 'framer-motion';
 import { useAuthStore } from '../stores/useAuthStore';
+import { logout as logoutService } from '../services/authService';
 import { useSocketStore } from '../stores/useSocketStore';
 import ThemeToggle from './ui/ThemeToggle';
 import { navbar } from '../styles/navbar';
@@ -43,11 +44,13 @@ const mobileItemVariants = {
 
 const Navbar = () => {
     const user = useAuthStore((state) => state.user);
-    const logout = useAuthStore((state) => state.logout);
+    const clearAuth = useAuthStore((state) => state.clearAuth);
     const connectionState = useSocketStore((state) => state.connectionState);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
     const profileMenuRef = useRef(null);
+    const isProfileMenuOpenRef = useRef(isProfileMenuOpen);
+    isProfileMenuOpenRef.current = isProfileMenuOpen;
     const role = user?.role || 'guest';
     const isHost = role === 'organizer' || role === 'admin';
     const isParticipant = Boolean(user) && !isHost;
@@ -77,24 +80,20 @@ const Navbar = () => {
             ? [
                 { label: 'Home', to: '/', end: true },
                 { label: 'Join', to: '/join' },
-                { label: 'Analytics', to: '/analytics' },
-                { label: 'History', to: '/history' },
+                { label: 'History', to: '/p/history' },
             ]
             : [
                 { label: 'Home', to: '/', end: true },
                 { label: 'Join', to: '/join' },
             ];
 
-    const accountItems = isHost
-        ? [
-            { label: 'Profile', to: '/profile' },
-            { label: 'Billing', to: '/billing' },
-            { label: 'Settings', to: '/profile/edit' },
-        ]
-        : [
-            { label: 'Profile', to: '/profile' },
-            { label: 'Settings', to: '/profile/edit' },
-        ];
+    // Profile dropdown items — same for every authenticated role.
+    // /profile and /profile/edit are registered for all roles in AppRoutes.
+    const accountItems = [
+        { label: 'Profile', to: '/profile' },
+        { label: 'Settings', to: '/profile/edit' },
+    ];
+
 
     const closeAllMenus = () => {
         setIsMobileMenuOpen(false);
@@ -114,25 +113,32 @@ const Navbar = () => {
         };
     }, [isMobileMenuOpen]);
 
+    // Single stable outside-click listener (mounted once, never toggled).
+    // stopPropagation on the trigger button ensures the toggle is
+    // always handled exclusively by the button's onClick.
     useEffect(() => {
-        if (!isProfileMenuOpen) {
-            return undefined;
-        }
-
         const handleOutsideClick = (event) => {
-            if (!profileMenuRef.current?.contains(event.target)) {
+            if (
+                isProfileMenuOpenRef.current &&
+                profileMenuRef.current &&
+                !profileMenuRef.current.contains(event.target)
+            ) {
                 setIsProfileMenuOpen(false);
             }
         };
-
         document.addEventListener('mousedown', handleOutsideClick);
         return () => document.removeEventListener('mousedown', handleOutsideClick);
-    }, [isProfileMenuOpen]);
+    }, []); // empty deps — listener lives for component lifetime
 
     const handleMobilePanelClick = (event) => {
         if (event.target === event.currentTarget) {
             closeAllMenus();
         }
+    };
+
+    const handleLogout = async () => {
+        await logoutService();
+        clearAuth();
     };
 
     return (
@@ -166,60 +172,76 @@ const Navbar = () => {
 
                     <ThemeToggle className={navbar.iconButton} />
 
-                    <Link to={primaryCta.to} className={navbar.primaryButton} onClick={closeAllMenus}>
-                        {primaryCta.label}
-                    </Link>
 
+                    {/* Removed Open Studio button as requested */}
+
+                    {/* Logged out: Log in link */}
                     {!user ? (
                         <Link to="/login" className={navbar.secondaryButton} onClick={closeAllMenus}>
                             Log in
                         </Link>
                     ) : null}
 
+                    {/* Logged in: avatar dropdown + inline logout button */}
                     {user ? (
-                        <div ref={profileMenuRef} className={navbar.profileMenuWrap}>
-                            <button
-                                type="button"
-                                className={navbar.avatarTrigger}
-                                aria-label="Open account menu"
-                                aria-expanded={isProfileMenuOpen}
-                                onClick={() => setIsProfileMenuOpen((prev) => !prev)}
-                            >
-                                <span className={navbar.avatar}>
-                                    {user.profilePhoto ? (
-                                        <img src={user.profilePhoto} alt="Profile" className={navbar.avatarImage} />
-                                    ) : (
-                                        <span>{initials}</span>
-                                    )}
-                                </span>
-                                <ChevronDown size={16} className={navbar.avatarCaret} />
-                            </button>
+                        <>
+                            <div ref={profileMenuRef} className={navbar.profileMenuWrap}>
+                                <button
+                                    type="button"
+                                    className={navbar.avatarTrigger}
+                                    aria-label="Open account menu"
+                                    aria-expanded={isProfileMenuOpen}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setIsProfileMenuOpen((prev) => !prev);
+                                    }}
+                                >
+                                    <span className={navbar.avatar}>
+                                        {user.profilePhoto ? (
+                                            <img src={user.profilePhoto} alt="Profile" className={navbar.avatarImage} />
+                                        ) : (
+                                            <span>{initials}</span>
+                                        )}
+                                    </span>
+                                    <ChevronDown size={16} className={navbar.avatarCaret} />
+                                </button>
 
-                            {isProfileMenuOpen ? (
-                                <div className={navbar.dropdown} role="menu" aria-label="Account menu">
-                                    {accountItems.map(({ label, to }) => (
-                                        <Link
-                                            key={label}
-                                            to={to}
-                                            className={navbar.dropdownItem}
-                                            role="menuitem"
-                                            onClick={closeAllMenus}
-                                        >
-                                            {label}
-                                        </Link>
-                                    ))}
-                                    <button
-                                        type="button"
-                                        onClick={logout}
-                                        className={cx(navbar.dropdownItem, navbar.dropdownDanger)}
-                                        role="menuitem"
-                                    >
-                                        <LogOut size={16} />
-                                        Logout
-                                    </button>
-                                </div>
-                            ) : null}
-                        </div>
+                                {isProfileMenuOpen ? (
+                                    <div className={navbar.dropdown} role="menu" aria-label="Account menu">
+                                        {/* User identity header */}
+                                        <div className="px-3 py-2 border-b theme-border mb-1">
+                                            <p className="text-sm font-semibold theme-text-primary truncate">{user.name || 'User'}</p>
+                                            <p className="text-xs theme-text-muted truncate">{user.email}</p>
+                                            <span className="mt-1 inline-block text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-[color-mix(in_srgb,var(--qb-primary)_14%,var(--qb-surface-1))] text-[var(--qb-primary)]">
+                                                {user.role}
+                                            </span>
+                                        </div>
+                                        {accountItems.map(({ label, to }) => (
+                                            <Link
+                                                key={label}
+                                                to={to}
+                                                className={navbar.dropdownItem}
+                                                role="menuitem"
+                                                onClick={closeAllMenus}
+                                            >
+                                                {label}
+                                            </Link>
+                                        ))}
+                                        <div className="border-t theme-border mt-1 pt-1">
+                                            <button
+                                                type="button"
+                                                onClick={handleLogout}
+                                                className={cx(navbar.dropdownItem, navbar.dropdownDanger)}
+                                                role="menuitem"
+                                            >
+                                                <LogOut size={16} />
+                                                Logout
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : null}
+                            </div>
+                        </>
                     ) : null}
                 </div>
 
@@ -313,7 +335,7 @@ const Navbar = () => {
                                 ) : null}
 
                                 {user ? (
-                                    <button type="button" onClick={logout} className={navbar.mobileLogoutButton}>
+                                    <button type="button" onClick={handleLogout} className={navbar.mobileLogoutButton}>
                                         <LogOut size={16} />
                                         Logout
                                     </button>

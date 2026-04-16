@@ -183,7 +183,7 @@ const SessionHistoryPage = () => {
                 <HistoryGrid
                     records={filteredHistory}
                     userRole={user.role}
-                    onNavigate={(record) => navigate(`/history/template_id/${record.quizId || record._id}`, { state: { record } })}
+                    onNavigate={(record) => navigate(`/quiz/sessions/${record._id || record.roomCode || record.quizId}`, { state: { record } })}
                     onOpenLeaderboard={openLeaderboard}
                     onPrefetch={prefetchHistoryNavigation}
                 />

@@ -1,7 +1,7 @@
 const express = require('express');
 const { body } = require('express-validator');
 const validate = require('../middleware/validate');
-const { protect, authorize } = require('../middleware/auth');
+const requireRole = require('../middleware/requireRole');
 const {
     registerHost,
     getMyHostProfile,
@@ -28,14 +28,14 @@ router.post('/register', [
     validate,
 ], registerHost);
 
-router.get('/me', protect, authorize('organizer', 'admin'), getMyHostProfile);
+router.get('/me', requireRole(['organizer', 'admin']), getMyHostProfile);
 
-router.put('/me', protect, authorize('organizer', 'admin'), [
+router.put('/me', requireRole(['organizer', 'admin']), [
     body('domains').optional().isArray(),
     validate,
 ], upsertMyHostProfile);
 
-router.get('/admin/insights', protect, authorize('admin'), getAdminHostInsights);
-router.get('/admin/list', protect, authorize('admin'), getAdminHosts);
+router.get('/admin/insights', requireRole(['admin']), getAdminHostInsights);
+router.get('/admin/list', requireRole(['admin']), getAdminHosts);
 
 module.exports = router;

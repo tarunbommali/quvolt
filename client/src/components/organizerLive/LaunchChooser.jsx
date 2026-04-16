@@ -17,15 +17,15 @@ const LaunchChooser = ({ activeQuiz, navigate, onGoLiveNow, onSchedule, showToas
     const [submittingAction, setSubmittingAction] = useState('');
     const status = getQuizStatus(activeQuiz);
     const primaryLabel = status === 'live'
-        ? 'Open Live'
+        ? 'Join Now'
         : status === 'waiting'
-            ? 'Open Invite Room'
-            : 'Go Live';
+            ? 'Join Now'
+            : 'Join Now';
     const instantDescription = status === 'live'
-        ? 'Your quiz is already live. Open the live room.'
+        ? 'Your quiz is already live. Join the live room.'
         : status === 'waiting'
-            ? 'A waiting room already exists. Open invite room.'
-            : 'Start immediately with a live room';
+            ? 'A waiting room already exists. Join the live room.'
+            : 'Start immediately and join the live room';
 
     const minDatetime = new Date(Date.now() + 5 * 60 * 1000)
         .toISOString()

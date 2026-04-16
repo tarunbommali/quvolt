@@ -1,4 +1,4 @@
-﻿import axios from 'axios';
+import axios from 'axios';
 
 const BASE_URL = import.meta.env.VITE_API_URL || '/api';
 const API_TIMEOUT_MS = Number(import.meta.env.VITE_API_TIMEOUT_MS || 12000);
@@ -38,25 +38,29 @@ export const setAccessToken = (token) => {
 
 export const getAccessToken = () => accessToken;
 
+import { useAuthStore } from '../stores/useAuthStore';
+
 const api = axios.create({
     baseURL: BASE_URL,
     timeout: API_TIMEOUT_MS,
 });
 
-// Attach the auth token to every request automatically
+// Attach the auth token from Zustand to every request automatically
 api.interceptors.request.use((config) => {
-    if (accessToken) {
-        config.headers.Authorization = `Bearer ${accessToken}`;
-    }
-
-    if (!config.headers) {
-        config.headers = {};
-    }
-
+    // Always get latest token from Zustand
+    try {
+        // This works because Zustand store is a singleton
+        // eslint-disable-next-line import/no-mutable-exports
+        const { token } = require('../stores/useAuthStore').useAuthStore.getState();
+        if (token) {
+            config.headers = config.headers || {};
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+    } catch {}
     return config;
 });
 
-// Handle Token Refresh on 401
+// Handle Token Refresh on 401 and global logout
 api.interceptors.response.use(
     (response) => response,
     async (error) => {
@@ -148,13 +152,13 @@ const unwrapApiBody = (response) => {
 // ─── Quiz ────────────────────────────────────────────────────────────────────
 
 export const getMyQuizzes = (parentId) =>
-    api.get('/quiz/my-quizzes', { params: { parentId } }).then(r => r.data);
+    api.get('/quiz/templates', { params: { parentId } }).then(r => r.data);
 
 export const getQuizByCode = (roomCode) =>
     api.get(`/quiz/${roomCode}`).then(r => r.data);
 
 export const createQuiz = (title, type, parentId, isPaid, price, options = {}) =>
-    api.post('/quiz', {
+    api.post('/quiz/templates/new', {
         title,
         type,
         parentId,
@@ -171,8 +175,8 @@ export const updateQuiz = (id, payload) =>
 export const saveQuizFullState = (id, payload) =>
     api.put(`/quiz/${id}/full-state`, payload).then(r => r.data);
 
-export const startQuizSession = (id) =>
-    api.post(`/quiz/${id}/start`).then(unwrapApiBody);
+export const startQuizSession = (templateId) =>
+    api.post(`/quiz/templates/${templateId}/session`).then(unwrapApiBody);
 
 export const startLiveSession = (id) =>
     api.post(`/quiz/${id}/start-live`).then(unwrapApiBody);

@@ -76,9 +76,13 @@ const authorize = (...roles) => {
 const requireQuizOwnership = async (req, res, next) => {
     try {
         const Quiz = require('../models/Quiz');
-        const quizId = req.params.id || req.params.quizId;
+        const quizId = req.params.id || req.params.quizId || req.params.templateId;
         if (!quizId) {
             return res.status(400).json({ success: false, data: null, message: 'Quiz id is required' });
+        }
+
+        if (req.user?.role === 'admin') {
+            return next();
         }
 
         const quiz = await Quiz.findById(quizId).select('organizerId').lean();
@@ -86,7 +90,7 @@ const requireQuizOwnership = async (req, res, next) => {
             return res.status(404).json({ success: false, data: null, message: 'Quiz not found' });
         }
 
-        if (req.user?.role !== 'admin' && String(quiz.organizerId) !== String(req.user?._id)) {
+        if (String(quiz.organizerId) !== String(req.user?._id)) {
             return res.status(403).json({ success: false, data: null, message: 'Forbidden' });
         }
 

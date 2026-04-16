@@ -258,7 +258,8 @@ const useStudioDashboardController = () => {
 
             try {
                 const parentId = currentSubject ? currentSubject._id : 'none';
-                const data = await withTimeout(useQuizStore.getState().getQuizzesForParent(parentId));
+                // Force a fresh request so that the latest session status ('waiting', 'live', etc.) is accurately displayed
+                const data = await withTimeout(useQuizStore.getState().getQuizzesForParent(parentId, { force: true }));
                 if (!active) return;
                 setQuizzes(data);
             } catch {
@@ -396,7 +397,7 @@ const useStudioDashboardController = () => {
             setQuizMode('auto');
             if (data.type === 'quiz') {
                 setActiveQuiz(data);
-                navigateRef.current(`/edit/${data._id}`);
+                navigateRef.current(`/quiz/templates/${data._id}`);
             }
         } catch (error) {
             setQuizzes(previousQuizzes);
@@ -505,7 +506,7 @@ const useStudioDashboardController = () => {
     const onEditQuiz = useCallback((quiz) => {
         if (!quiz?._id) return;
         prefetchOrganizerEditRoute().catch(() => {});
-        navigateRef.current(`/edit/${quiz._id}`, { state: { quiz } });
+        navigateRef.current(`/quiz/templates/${quiz._id}`, { state: { quiz } });
     }, []);
 
     const onGoLive = useCallback((quiz) => {
@@ -525,7 +526,7 @@ const useStudioDashboardController = () => {
             return;
         }
 
-        navigateRef.current(`/launch/${quiz._id}`, {
+        navigateRef.current(`/launch/quiz/${quiz._id}`, {
             state: { quiz, forceLaunch: true },
         });
     }, [onOpenSubject]);

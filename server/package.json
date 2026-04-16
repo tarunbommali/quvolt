@@ -7,8 +7,9 @@
     "dev": "nodemon server.js",
     "migrate:schema:dry": "node scripts/migrate-schema-v2.js --dry-run",
     "migrate:schema:apply": "node scripts/migrate-schema-v2.js --apply",
-    "test": "node --test tests",
-    "test:integration": "jest tests/sessionLifecycle.test.js tests/sessionAuth.test.js tests/middlewareContract.test.js --runInBand"
+    "test:unit": "node --test tests/scoring.test.js tests/validateMiddleware.test.js tests/analytics.service.test.js",
+    "test:integration": "jest tests/sessionLifecycle.test.js tests/sessionAuth.test.js tests/middlewareContract.test.js --runInBand",
+    "test": "npm run test:unit && npm run test:integration"
   },
   "keywords": [],
   "author": "",

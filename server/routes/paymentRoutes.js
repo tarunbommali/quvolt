@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 const rateLimit = require('express-rate-limit');
+const requireRole = require('../middleware/requireRole');
 const { protect, authorize } = require('../middleware/auth');
 const { paymentFailuresTotal } = require('../observability/metrics');
 const logger = require('../utils/logger');
@@ -49,7 +50,7 @@ const proxy = async (req, res, method, path, data, queryParams) => {
         const response = await axios(config);
         res.status(response.status).json(response.data);
     } catch (error) {
-        console.error(`[Proxy Error] ${error.code || 'UNKNOWN'} - ${PAYMENT_URL}${path}`, {
+        logger.error(`[Proxy Error] ${error.code || 'UNKNOWN'} - ${PAYMENT_URL}${path}`, {
             message: error.message,
             status: error.response?.status,
             url: PAYMENT_URL,
@@ -81,7 +82,7 @@ const proxy = async (req, res, method, path, data, queryParams) => {
 
 // @route   POST /api/payment/create-order
 // @desc    Create a Razorpay order (authed user)
-router.post('/create-order', paymentWriteLimiter, protect, (req, res) => {
+router.post('/create-order', paymentWriteLimiter, requireRole(['organizer', 'admin', 'participant']), (req, res) => {
     const { quizId, amount } = req.body;
     logger.audit('payment.create_order.requested', {
         requestId: req.requestId,
@@ -97,7 +98,7 @@ router.post('/create-order', paymentWriteLimiter, protect, (req, res) => {
 
 // @route   POST /api/payment/verify
 // @desc    Verify a completed payment
-router.post('/verify', paymentWriteLimiter, protect, (req, res) => {
+router.post('/verify', paymentWriteLimiter, requireRole(['organizer', 'admin', 'participant']), (req, res) => {
     const { orderId, paymentId, signature, quizId } = req.body;
     logger.audit('payment.verify.requested', {
         requestId: req.requestId,
@@ -116,13 +117,14 @@ router.post('/verify', paymentWriteLimiter, protect, (req, res) => {
 
 // @route   GET /api/payment/status/:quizId
 // @desc    Check if current user paid for a quiz
-router.get('/status/:quizId', paymentReadLimiter, protect, (req, res) => {
+router.get('/status/:quizId', paymentReadLimiter, requireRole(['organizer', 'admin', 'participant']), (req, res) => {
     proxy(req, res, 'get', `/payment/status/${req.params.quizId}`);
 });
 
 // @route   POST /api/payment/status/batch
 // @desc    Batch check payment status for multiple quizzes
-router.post('/status/batch', paymentReadLimiter, protect, (req, res) => {
+
+router.post('/status/batch', paymentReadLimiter, requireRole(['organizer', 'admin', 'participant']), (req, res) => {
     const { quizIds } = req.body;
     proxy(req, res, 'post', '/payment/status/batch', {
         quizIds,
@@ -131,31 +133,36 @@ router.post('/status/batch', paymentReadLimiter, protect, (req, res) => {
 
 // @route   POST /api/payment/host/account
 // @desc    Upsert host Razorpay linked account profile
-router.post('/host/account', protect, authorize('organizer', 'admin'), (req, res) => {
+
+router.post('/host/account', requireRole(['organizer', 'admin']), (req, res) => {
     proxy(req, res, 'post', '/payment/host/account', req.body);
 });
 
 // @route   GET /api/payment/host/account
 // @desc    Get current host linked account profile
-router.get('/host/account', protect, authorize('organizer', 'admin'), (req, res) => {
+
+router.get('/host/account', requireRole(['organizer', 'admin']), (req, res) => {
     proxy(req, res, 'get', '/payment/host/account');
 });
 
 // @route   GET /api/payment/host/payout-summary
 // @desc    Get host payout summary
-router.get('/host/payout-summary', protect, authorize('organizer', 'admin'), (req, res) => {
+
+router.get('/host/payout-summary', requireRole(['organizer', 'admin']), (req, res) => {
     proxy(req, res, 'get', '/payment/host/payout-summary');
 });
 
 // @route   POST /api/payment/revenue/total
 // @desc    Get total organizer revenue
-router.post('/revenue/total', protect, authorize('organizer', 'admin'), (req, res) => {
+
+router.post('/revenue/total', requireRole(['organizer', 'admin']), (req, res) => {
     proxy(req, res, 'post', '/payment/revenue/total', req.body);
 });
 
 // @route   POST /api/payment/revenue/by-quiz
 // @desc    Get revenue breakdown per quiz
-router.post('/revenue/by-quiz', protect, authorize('organizer', 'admin'), (req, res) => {
+
+router.post('/revenue/by-quiz', requireRole(['organizer', 'admin']), (req, res) => {
     proxy(req, res, 'post', '/payment/revenue/by-quiz', req.body);
 });
 

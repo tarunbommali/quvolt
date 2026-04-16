@@ -1,4 +1,4 @@
-﻿const mongoose = require('mongoose');
+const mongoose = require('mongoose');
 const Quiz = require('../models/Quiz');
 const QuizSession = require('../models/QuizSession');
 const Submission = require('../models/Submission');
@@ -31,6 +31,43 @@ const sendSuccess = (res, data, message = 'OK', status = 200) => (
 const sendError = (res, status, message) => (
     res.status(status).json({ success: false, data: null, message })
 );
+
+const resolveTemplateIdParam = (params = {}) => params.templateId || params.quizId || params.id;
+
+const normalizeSessionMode = (mode) => {
+    if (mode === 'teaching') return 'tutor';
+    if (mode === 'tutor' || mode === 'auto') return mode;
+    return 'auto';
+};
+
+const buildTemplateSnapshot = (quiz) => ({
+    title: quiz?.title || '',
+    mode: normalizeSessionMode(quiz?.mode),
+    accessType: quiz?.accessType || 'public',
+    shuffleQuestions: Boolean(quiz?.shuffleQuestions),
+    questions: (quiz?.questions || []).map((question) => ({
+        _id: question?._id,
+        text: question?.text || '',
+        options: Array.isArray(question?.options) ? [...question.options] : [],
+        correctOption: Number.isInteger(question?.correctOption) ? question.correctOption : 0,
+        hashedCorrectAnswer: question?.hashedCorrectAnswer || '',
+        timeLimit: Number(question?.timeLimit) || 15,
+        shuffleOptions: Boolean(question?.shuffleOptions),
+        questionType: question?.questionType || 'multiple-choice',
+        mediaUrl: question?.mediaUrl || null,
+    })),
+});
+
+const findSessionByIdentifier = async ({ sessionId, sessionCode }) => {
+    if (sessionId && mongoose.Types.ObjectId.isValid(sessionId)) {
+        const byId = await QuizSession.findById(sessionId);
+        if (byId) return byId;
+    }
+
+    const normalizedCode = String(sessionCode || sessionId || '').trim().toUpperCase();
+    if (!normalizedCode) return null;
+    return QuizSession.findOne({ sessionCode: normalizedCode });
+};
 
 const getManagedQuizOrError = async (req, id) => {
     const quiz = await Quiz.findById(id);
@@ -673,8 +710,8 @@ const deleteQuestion = async (req, res) => {
 
 const startQuizSession = async (req, res) => {
     try {
-        const { id } = req.params;
-        const quizResult = await getManagedQuizOrError(req, id);
+        const templateId = resolveTemplateIdParam(req.params);
+        const quizResult = await getManagedQuizOrError(req, templateId);
         if (quizResult.error) return sendError(res, quizResult.statusCode, quizResult.error);
         const { quiz } = quizResult;
         const currentStatus = normalizeSessionStatus(quiz.status);
@@ -714,10 +751,12 @@ const startQuizSession = async (req, res) => {
             const sessionCode = generateCode();
             try {
                 session = await QuizSession.create({
+                    templateId: quiz._id,
                     quizId: quiz._id,
+                    templateSnapshot: buildTemplateSnapshot(quiz),
                     sessionCode,
                     status: SESSION_STATUS.WAITING,
-                    mode: quiz.mode || 'auto',
+                    mode: normalizeSessionMode(quiz.mode),
                     startedAt: new Date(),
                 });
             } catch (err) {
@@ -746,12 +785,12 @@ const startQuizSession = async (req, res) => {
 
 const startLiveSession = async (req, res) => {
     try {
-        const { id } = req.params;
+        const templateId = resolveTemplateIdParam(req.params);
         const io = req.app.get('io');
 
         const result = await quizService.startQuizSession({
             io,
-            quizId: id,
+            quizId: templateId,
             user: req.user,
         });
 
@@ -763,13 +802,14 @@ const startLiveSession = async (req, res) => {
         logger.audit('quiz.session.started_live', {
             requestId: req.requestId,
             userId: req.user?._id,
-            quizId: id,
+            quizId: templateId,
             sessionCode: result.roomCode,
             sessionId: result.sessionId,
         });
 
         return sendSuccess(res, {
-            quizId: id,
+            quizId: templateId,
+            templateId,
             status: 'live',
             sessionCode: result.roomCode,
             activeSessionId: result.sessionId,
@@ -864,37 +904,47 @@ const nextQuestion = async (req, res) => {
 // Per-question option distribution stats for a completed session
 const getSessionResults = async (req, res) => {
     try {
-        const { sessionCode } = req.params;
-
-        // Load the session to get quizId
-        const session = await QuizSession.findOne({ sessionCode });
+        const { sessionId, sessionCode } = req.params;
+        const session = await findSessionByIdentifier({ sessionId, sessionCode });
         if (!session) return res.status(404).json({ message: 'Session not found' });
 
-        // Load the quiz template (questions + correct answers)
-        const quiz = await Quiz.findById(session.quizId);
-        if (!quiz) return res.status(404).json({ message: 'Quiz not found' });
+        const template = await Quiz.findById(session.templateId || session.quizId).select('organizerId title questions mode accessType shuffleQuestions').lean();
+        if (!template) return res.status(404).json({ message: 'Template not found' });
+
+        const snapshot = session.templateSnapshot || buildTemplateSnapshot(template);
 
         // Authorization: only the quiz organizer or an admin can view session results
-        if (req.user.role !== 'admin' && quiz.organizerId.toString() !== req.user._id.toString()) {
+        if (req.user.role !== 'admin' && template.organizerId.toString() !== req.user._id.toString()) {
             return res.status(403).json({ message: 'Not authorized to view this session\'s results' });
         }
 
         // Get all submissions for this session
-        const submissions = await Submission.find({ roomCode: sessionCode });
+        const submissions = await Submission.find({
+            $or: [
+                { sessionId: session._id },
+                { roomCode: session.sessionCode },
+            ],
+        });
         const totalParticipants = new Set(submissions.map(s => s.userId.toString())).size;
 
         // Build per-question stats
-        const questionStats = quiz.questions.map(q => {
-            const qSubs = submissions.filter(s => s.questionId.toString() === q._id.toString());
+        const questionStats = (snapshot.questions || []).map((q, index) => {
+            const snapshotQuestionId = q._id ? String(q._id) : null;
+            const qSubs = submissions.filter((s) => {
+                if (!snapshotQuestionId) return false;
+                return String(s.questionId) === snapshotQuestionId;
+            });
             const optionCounts = {};
-            q.options.forEach(opt => { optionCounts[opt] = 0; });
-            qSubs.forEach(s => {
+            (q.options || []).forEach((opt) => {
+                optionCounts[opt] = 0;
+            });
+            qSubs.forEach((s) => {
                 if (optionCounts[s.selectedOption] !== undefined) {
                     optionCounts[s.selectedOption]++;
                 }
             });
-            const correctOption = q.options[q.correctOption];
-            const optionStats = q.options.map((opt, idx) => ({
+            const correctOption = (q.options || [])[q.correctOption];
+            const optionStats = (q.options || []).map((opt, idx) => ({
                 option: opt,
                 count: optionCounts[opt] || 0,
                 percentage: qSubs.length > 0
@@ -904,7 +954,7 @@ const getSessionResults = async (req, res) => {
             }));
 
             return {
-                questionId: q._id,
+                questionId: q._id || `snapshot-${index}`,
                 text: q.text,
                 totalAnswered: qSubs.length,
                 correctOption,
@@ -917,7 +967,7 @@ const getSessionResults = async (req, res) => {
 
         res.json({
             session,
-            quizTitle: quiz.title,
+            quizTitle: snapshot.title || template.title,
             totalParticipants,
             topWinners: session.topWinners,
             questionStats,
@@ -930,25 +980,24 @@ const getSessionResults = async (req, res) => {
 
 const getSessionParticipants = async (req, res) => {
     try {
-        const { sessionCode } = req.params;
-
-        const session = await QuizSession.findOne({ sessionCode }).lean();
+        const { sessionId, sessionCode } = req.params;
+        const session = await findSessionByIdentifier({ sessionId, sessionCode });
         if (!session) return res.status(404).json({ message: 'Session not found' });
 
-        const quiz = await Quiz.findById(session.quizId).select('title organizerId').lean();
-        if (!quiz) return res.status(404).json({ message: 'Quiz not found' });
+        const template = await Quiz.findById(session.templateId || session.quizId).select('title organizerId').lean();
+        if (!template) return res.status(404).json({ message: 'Template not found' });
 
-        if (req.user.role !== 'admin' && quiz.organizerId.toString() !== req.user._id.toString()) {
+        if (req.user.role !== 'admin' && template.organizerId.toString() !== req.user._id.toString()) {
             return res.status(403).json({ message: 'Not authorized to view this session' });
         }
 
         const participants = await Submission.aggregate([
             {
                 $match: {
-                    quizId: session.quizId,
+                    quizId: session.templateId || session.quizId,
                     $or: [
                         { sessionId: session._id },
-                        { roomCode: sessionCode }
+                        { roomCode: session.sessionCode }
                     ]
                 }
             },
@@ -992,8 +1041,8 @@ const getSessionParticipants = async (req, res) => {
         }));
 
         res.json({
-            quizTitle: quiz.title,
-            sessionCode,
+            quizTitle: template.title,
+            sessionCode: session.sessionCode,
             participantCount: rankedParticipants.length,
             participants: rankedParticipants,
         });
@@ -1011,25 +1060,24 @@ const escapeCsvValue = (value) => {
 
 const exportSessionParticipants = async (req, res) => {
     try {
-        const { sessionCode } = req.params;
-
-        const session = await QuizSession.findOne({ sessionCode }).lean();
+        const { sessionId, sessionCode } = req.params;
+        const session = await findSessionByIdentifier({ sessionId, sessionCode });
         if (!session) return res.status(404).json({ message: 'Session not found' });
 
-        const quiz = await Quiz.findById(session.quizId).select('title organizerId').lean();
-        if (!quiz) return res.status(404).json({ message: 'Quiz not found' });
+        const template = await Quiz.findById(session.templateId || session.quizId).select('title organizerId').lean();
+        if (!template) return res.status(404).json({ message: 'Template not found' });
 
-        if (req.user.role !== 'admin' && quiz.organizerId.toString() !== req.user._id.toString()) {
+        if (req.user.role !== 'admin' && template.organizerId.toString() !== req.user._id.toString()) {
             return res.status(403).json({ message: 'Not authorized to export this session' });
         }
 
         const participants = await Submission.aggregate([
             {
                 $match: {
-                    quizId: session.quizId,
+                    quizId: session.templateId || session.quizId,
                     $or: [
                         { sessionId: session._id },
-                        { roomCode: sessionCode }
+                        { roomCode: session.sessionCode }
                     ]
                 }
             },
@@ -1092,8 +1140,8 @@ const exportSessionParticipants = async (req, res) => {
             .map((row) => row.map(escapeCsvValue).join(','))
             .join('\n');
 
-        const safeTitle = quiz.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-        const filename = `${safeTitle || 'quiz'}_${sessionCode}_participants.csv`;
+        const safeTitle = template.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        const filename = `${safeTitle || 'quiz'}_${session.sessionCode}_participants.csv`;
 
         res.setHeader('Content-Type', 'text/csv; charset=utf-8');
         res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
@@ -1107,12 +1155,17 @@ const exportSessionParticipants = async (req, res) => {
 // All sessions run for a quiz template (organizer history per quiz)
 const getQuizSessions = async (req, res) => {
     try {
-        const { id } = req.params;
-        const quiz = await Quiz.findOne(buildQuizAccessQuery(req, id));
-        if (!quiz) return res.status(404).json({ message: 'Quiz not found' });
+        const templateId = resolveTemplateIdParam(req.params);
+        const template = await Quiz.findOne(buildQuizAccessQuery(req, templateId));
+        if (!template) return res.status(404).json({ message: 'Template not found' });
 
-        const sessions = await QuizSession.find({ quizId: id }).sort('-startedAt');
-        res.json({ quizTitle: quiz.title, sessions });
+        const sessions = await QuizSession.find({
+            $or: [
+                { templateId },
+                { quizId: templateId },
+            ],
+        }).sort('-startedAt');
+        res.json({ templateId, templateTitle: template.title, sessions });
     } catch (error) {
         logger.error('[Controller] getQuizSessions', { message: error.message, stack: error.stack });
         res.status(500).json({ message: 'Server Error' });
@@ -1162,10 +1215,12 @@ const scheduleQuiz = async (req, res) => {
                 attempts += 1;
                 try {
                     scheduledSession = await QuizSession.create({
+                        templateId: quiz._id,
                         quizId: quiz._id,
+                        templateSnapshot: buildTemplateSnapshot(quiz),
                         sessionCode: generateCode(),
                         status: SESSION_STATUS.SCHEDULED,
-                        mode: quiz.mode || 'auto',
+                        mode: normalizeSessionMode(quiz.mode),
                         startedAt: scheduled,
                     });
                 } catch (err) {

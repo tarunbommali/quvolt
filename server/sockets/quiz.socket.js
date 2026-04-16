@@ -32,10 +32,12 @@ const registerQuizSocket = (io, socket) => {
             io.to(result.roomCode).emit('start_quiz', { roomCode: result.roomCode, sessionId: result.sessionId, mode: result.session.mode });
             socket.emit('session_redirect', { roomCode: result.roomCode, sessionId: result.sessionId });
             
-            // STEP 2: Immediately broadcast first question using enhanced broadcasting
-            quizService.broadcastQuestionEnhanced(io, result.roomCode).catch((err) => {
-                logger.error('broadcastQuestionEnhanced failed on start', { roomCode: result.roomCode, error: err.message, stack: err.stack });
-            });
+            // STEP 2: Wait briefly to ensure participants have joined the new room before broadcasting
+            setTimeout(() => {
+                quizService.broadcastQuestionEnhanced(io, result.roomCode).catch((err) => {
+                    logger.error('broadcastQuestionEnhanced failed on start', { roomCode: result.roomCode, error: err.message, stack: err.stack });
+                });
+            }, 300);
         } catch (error) {
             logger.error('Socket start_quiz error', { roomCode, sessionId, error: error.message, stack: error.stack });
             socket.emit('error', 'Failed to start quiz');

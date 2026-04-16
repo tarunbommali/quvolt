@@ -37,7 +37,7 @@ export const navbar = {
     avatarCaret: 'theme-text-muted',
     avatar: 'h-9 w-9 overflow-hidden rounded-full border theme-border bg-[color-mix(in_srgb,var(--qb-primary)_14%,var(--qb-surface-1))] flex items-center justify-center text-sm font-medium text-[var(--qb-primary)]',
     avatarImage: 'h-full w-full object-cover',
-    dropdown: 'absolute right-6 top-[calc(100%-0.25rem)] z-60 min-w-52 rounded-xl border theme-border theme-surface p-1 shadow-lg',
+    dropdown: 'absolute right-0 top-full mt-2 z-[100] min-w-56 rounded-xl border theme-border theme-surface p-1 shadow-xl',
     dropdownItem: 'flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium theme-text-secondary transition-colors hover:theme-surface-soft hover:theme-text-primary',
     dropdownDanger: 'text-[var(--qb-danger-ink)] hover:bg-[var(--qb-danger-soft)]',
 };

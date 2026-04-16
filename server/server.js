@@ -141,6 +141,9 @@ const bootstrap = async () => {
         // Also initialize the shared Redis client for session storage
         await connectRedis();
 
+        // Start Stateless Distributed Quiz Telemetry Loop
+        startDistributedTimerWorker(io);
+
         // Resume any ongoing quizzes (Resilience)
         await rebootQuizzes(io);
     } catch (err) {
@@ -176,7 +179,11 @@ const bootstrap = async () => {
         });
     });
 
-    app.get('/api/metrics', async (req, res) => {
+    app.get('/api/metrics', (req, res, next) => {
+        const key = req.headers['x-metrics-key'];
+        if (key !== process.env.METRICS_SECRET) return res.status(401).end();
+        next();
+    }, async (req, res) => {
         res.set('Content-Type', metricsClient.register.contentType);
         const metrics = await metricsClient.register.metrics();
         res.status(200).send(metrics);

@@ -61,7 +61,8 @@ const categorizeSaveError = (error) => {
  * Returns state, derived data, and editor action handlers.
  */
 const useOrganizerEditController = () => {
-    const { id } = useParams();
+    const { templateId, quizId, id } = useParams();
+    const routeQuizId = templateId || quizId || id;
     const navigate = useNavigate();
     const location = useLocation();
     const getQuizzesForParent = useQuizStore((state) => state.getQuizzesForParent);
@@ -174,7 +175,7 @@ const useOrganizerEditController = () => {
             const fetchQuiz = async () => {
                 try {
                     const quizzes = await getQuizzesForParent('none', { force: true });
-                    const found = quizzes.find((quiz) => String(quiz._id) === String(id));
+                    const found = quizzes.find((quiz) => String(quiz._id) === String(routeQuizId));
                     if (!found) {
                         navigate('/studio');
                         return;
@@ -192,7 +193,7 @@ const useOrganizerEditController = () => {
 
         initializeFromQuiz(activeQuiz);
         setLoading(false);
-    }, [activeQuiz, getQuizzesForParent, id, initializeFromQuiz, navigate]);
+    }, [activeQuiz, getQuizzesForParent, routeQuizId, initializeFromQuiz, navigate]);
 
     useEffect(() => {
         if (!dirty || loading || !activeQuiz?._id) return;

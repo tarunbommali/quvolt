@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/useAuthStore';
+import { updateProfile as updateProfileService } from '../../services/authService';
 import { getMyProfile } from '../../services/api';
 import Button from '../../components/ui/Button';
 import ProfileDashboardTabs from '../../components/profile/ProfileDashboardTabs';
@@ -15,7 +16,7 @@ const UserProfilePage = ({ initialMode = 'view' }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const user = useAuthStore((state) => state.user);
-    const updateProfile = useAuthStore((state) => state.updateProfile);
+    const setAuthData = useAuthStore((state) => state.setAuthData);
     const setProfileCached = useQuizStore((state) => state.setProfileCached);
     const { toast, showToast, clearToast } = useToast();
 
@@ -164,8 +165,9 @@ const UserProfilePage = ({ initialMode = 'view' }) => {
 
         setSaving(true);
         try {
-            const updated = await updateProfile(payload);
-            setProfileCached(updated);
+            const data = await updateProfileService(payload);
+            setAuthData(data);
+            setProfileCached(data);
             showToast('Profile updated successfully.', 'success');
             navigate('/profile');
         } catch (err) {

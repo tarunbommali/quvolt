@@ -11,12 +11,12 @@ export function resolveSessionRoute(quiz) {
         case 'waiting':
         case 'scheduled':
         case 'lobby':
-            return `/invite/${quiz._id}`;
+            return `/quiz/templates/${quiz._id}/session`;
         case 'completed':
-            return `/results/${quiz._id}`;
+            return `/quiz/templates/${quiz._id}/sessions`;
         case 'aborted':
             return '/studio';
         default:
-            return `/launch/${quiz._id}`;
+            return `/launch/quiz/${quiz._id}`;
     }
 }

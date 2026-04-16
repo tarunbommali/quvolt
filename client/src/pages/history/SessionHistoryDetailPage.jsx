@@ -7,8 +7,8 @@ import { useQuizStore } from '../../stores/useQuizStore';
 import SubHeader from '../../components/layout/SubHeader';
 
 const SessionHistoryDetailPage = () => {
-    const { id, quizid } = useParams();
-    const routeId = quizid || id;
+    const { templateId, sessionId, id, quizid } = useParams();
+    const routeId = sessionId || quizid || id;
     const location = useLocation();
     const navigate = useNavigate();
     const user = useAuthStore((state) => state.user);
@@ -165,7 +165,13 @@ const SessionHistoryDetailPage = () => {
             <SubHeader
                 title={selectedQuiz.quizTitle || selectedQuiz.title || 'Session'}
                 subtitle="Session analytics and results"
-                breadcrumbs={[{ label: 'History', href: '/history' }, { label: 'Session' }]}
+                breadcrumbs={[
+                    {
+                        label: 'Template Sessions',
+                        href: `/quiz/templates/${templateId || selectedQuiz.quizId || selectedQuiz._id}/sessions`,
+                    },
+                    { label: 'Session' },
+                ]}
                 actions={(
                     <div className="flex items-center gap-2">
                         <span className={`text-xs px-2 py-1 rounded-full font-medium capitalize ${statusBadgeClass}`}>

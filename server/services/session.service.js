@@ -9,6 +9,7 @@ const ANSWER_LOCK_TTL_MS = 10 * 60 * 1000;
 
 const sessionKey = (code) => `quiz:session:${code}`;
 const lockKey = (code, questionIndex, userId) => `quiz:lock:${code}:${questionIndex}:${userId}`;
+const zsetKey = 'quiz:active_timers';
 
 const getRedisClientSafe = () => {
     if (redisClient) return redisClient;
@@ -65,9 +66,45 @@ const acquireAnswerLock = async (roomCode, questionIndex, userId) => {
     return true;
 };
 
+const registerDistributedTimer = async (roomCode, executeAtMs) => {
+    const client = getRedisClientSafe();
+    if (client) {
+        await client.zAdd(zsetKey, { score: executeAtMs, value: roomCode });
+    }
+};
+
+const clearDistributedTimer = async (roomCode) => {
+    const client = getRedisClientSafe();
+    if (client) {
+        await client.zRem(zsetKey, roomCode);
+    }
+};
+
+const getExpiredDistributedTimers = async (currentTimeMs) => {
+    const client = getRedisClientSafe();
+    if (client) {
+        return await client.zRangeByScore(zsetKey, 0, currentTimeMs);
+    }
+    return [];
+};
+
+const acquireTimerLock = async (roomCode, timestampMs) => {
+    const client = getRedisClientSafe();
+    if (client) {
+        const key = `quiz:lock:timer:${roomCode}:${timestampMs}`;
+        const result = await client.set(key, '1', { NX: true, EX: 30 });
+        return result === 'OK';
+    }
+    return false;
+};
+
 module.exports = {
     getSession,
     setSession,
     deleteSession,
     acquireAnswerLock,
+    registerDistributedTimer,
+    clearDistributedTimer,
+    getExpiredDistributedTimers,
+    acquireTimerLock,
 };

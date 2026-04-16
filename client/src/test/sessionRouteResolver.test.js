@@ -28,29 +28,29 @@ describe('resolveSessionRoute', () => {
         expect(resolveSessionRoute({ _id: id, status: 'lobby' })).toBe(`/invite/${id}`);
     });
 
-    it('returns /results/:id for completed status', () => {
-        expect(resolveSessionRoute({ _id: 'abc', status: 'completed' })).toBe('/results/abc');
+    it('returns /quiz/templates/:id/sessions for completed status', () => {
+        expect(resolveSessionRoute({ _id: 'abc', status: 'completed' })).toBe('/quiz/templates/abc/sessions');
     });
 
     it('returns /studio for aborted status', () => {
         expect(resolveSessionRoute({ _id: 'abc', status: 'aborted' })).toBe('/studio');
     });
 
-    it('returns /launch/:id for draft or unknown statuses', () => {
+    it('returns /launch/quiz/:id for draft or unknown statuses', () => {
         const id = 'quiz-3';
-        expect(resolveSessionRoute({ _id: id, status: 'draft' })).toBe(`/launch/${id}`);
-        expect(resolveSessionRoute({ _id: id, status: 'unknown_status' })).toBe(`/launch/${id}`);
-        expect(resolveSessionRoute({ _id: id, status: '' })).toBe(`/launch/${id}`);
+        expect(resolveSessionRoute({ _id: id, status: 'draft' })).toBe(`/launch/quiz/${id}`);
+        expect(resolveSessionRoute({ _id: id, status: 'unknown_status' })).toBe(`/launch/quiz/${id}`);
+        expect(resolveSessionRoute({ _id: id, status: '' })).toBe(`/launch/quiz/${id}`);
     });
 
     it('is case-insensitive for status strings', () => {
         const id = 'quiz-4';
         expect(resolveSessionRoute({ _id: id, status: 'LIVE' })).toBe(`/live/${id}`);
         expect(resolveSessionRoute({ _id: id, status: 'Waiting' })).toBe(`/invite/${id}`);
-        expect(resolveSessionRoute({ _id: id, status: 'COMPLETED' })).toBe(`/results/${id}`);
+        expect(resolveSessionRoute({ _id: id, status: 'COMPLETED' })).toBe(`/quiz/templates/${id}/sessions`);
     });
 
-    it('handles missing status field as unknown (returns /launch/:id)', () => {
-        expect(resolveSessionRoute({ _id: 'quiz-5' })).toBe('/launch/quiz-5');
+    it('handles missing status field as unknown (returns /launch/quiz/:id)', () => {
+        expect(resolveSessionRoute({ _id: 'quiz-5' })).toBe('/launch/quiz/quiz-5');
     });
 });

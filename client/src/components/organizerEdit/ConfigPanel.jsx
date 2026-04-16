@@ -1,6 +1,6 @@
 import { Shuffle, Trash2, Zap } from 'lucide-react';
 import { buttonStyles } from '../../styles/buttonStyles';
-import { textStyles, formStyles } from '../../styles/commonStyles';
+import { textStyles } from '../../styles/commonStyles';
 import { components } from '../../styles/components';
 import { cx } from '../../styles/theme';
 
@@ -26,10 +26,10 @@ const ConfigPanel = ({
 
             <div className={components.organizer.configFieldGroupTop}>
                 <div className={components.organizer.configField}>
-                    <label className={formStyles.label}>Question Type</label>
+                    <label className={components.organizer.configFieldLabel}>Question Type</label>
                     <div className={components.organizer.configSelectWrap}>
                         <select
-                            className={cx(formStyles.select, components.organizer.configSelectNative)}
+                            className={cx(components.organizer.configFieldSelect, components.organizer.configSelectNative)}
                             value={activeQuestion?.questionType || 'multiple-choice'}
                             onChange={(e) => onQuestionTypeChange(e.target.value)}
                         >
@@ -42,9 +42,9 @@ const ConfigPanel = ({
                 </div>
 
                 <div className={components.organizer.configField}>
-                    <label className={formStyles.label}>Correct Answer</label>
+                    <label className={components.organizer.configFieldLabel}>Correct Answer</label>
                     <select
-                        className={formStyles.select}
+                        className={components.organizer.configFieldSelect}
                         value={activeQuestion?.correctOption ?? ''}
                         onChange={(e) => onCorrectOptionChange(Number(e.target.value))}
                     >
@@ -57,8 +57,7 @@ const ConfigPanel = ({
             </div>
 
             <div className={components.organizer.configStack}>
-                <div className={components.organizer.configToggleCard}>
-                    <button
+                     <button
                         onClick={onToggleShuffleOptions}
                         disabled={!activeQuestion}
                         className={cx(
@@ -81,13 +80,12 @@ const ConfigPanel = ({
                             )} />
                         </span>
                     </button>
-                </div>
-            </div>
+             </div>
 
             <div className={components.organizer.configField}>
-                <label className={formStyles.label}>Time Limit</label>
+                <label className={components.organizer.configFieldLabel}>Time Limit</label>
                 <select
-                    className={formStyles.select}
+                    className={components.organizer.configFieldSelect}
                     value={activeQuestion?.timeLimit || 10}
                     onChange={(e) => onTimeLimitChange(Number(e.target.value))}
                 >
@@ -106,8 +104,7 @@ const ConfigPanel = ({
                 <Shuffle size={14} /> Apply to All Slides
             </button>
 
-            <div className={components.organizer.configToggleCard}>
-                <button
+                 <button
                     onClick={onToggleShuffleQuestions}
                     className={cx(
                         components.organizer.configToggleBtn,
@@ -129,8 +126,7 @@ const ConfigPanel = ({
                         )} />
                     </span>
                 </button>
-            </div>
-        </section>
+         </section>
 
         <div className={components.organizer.configFooter}>
             <button

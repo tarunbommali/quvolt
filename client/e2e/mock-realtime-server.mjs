@@ -67,7 +67,11 @@ const httpServer = createHttpServer((req, res) => {
   const { pathname, query } = parse(req.url || '/', true);
 
   if (req.method === 'POST' && pathname === '/api/auth/refresh') {
-    json(res, 200, { token: 'e2e-token' });
+    const b64 = (obj) => Buffer.from(JSON.stringify(obj)).toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+    const header = b64({ alg: 'HS256', typ: 'JWT' });
+    const payload = b64({ id: 'user-e2e-1', role: 'participant', exp: Math.floor(Date.now() / 1000) + 3600 });
+    const e2eToken = `${header}.${payload}.mocksignature`;
+    json(res, 200, { token: e2eToken });
     return;
   }
 

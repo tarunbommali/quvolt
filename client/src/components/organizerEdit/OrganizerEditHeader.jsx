@@ -7,7 +7,7 @@ import { cx } from '../../styles/theme';
 
 /**
  * Editor header with navigation and primary actions.
- * @param {{ title: string, isSaving: boolean, onBack: () => void, onOpenImport: () => void, onOpenAI: () => void, onOpenResults: () => void, onSave: () => void, onLaunch: () => void, themeMode?: string, onThemeModeChange?: (mode: string) => void, onOpenCommandPalette?: () => void }} props
+ * @param {{ title: string, isSaving: boolean, onBack: () => void, onOpenImport: () => void, onOpenAI: () => void, onOpenResults: () => void, onSave: () => void, onLaunch: () => void, onOpenCommandPalette?: () => void }} props
  */
 const OrganizerEditHeader = ({
     title,
@@ -18,8 +18,6 @@ const OrganizerEditHeader = ({
     onOpenResults,
     onSave,
     onLaunch,
-    themeMode = 'dark',
-    onThemeModeChange,
     onOpenCommandPalette,
 }) => {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -76,26 +74,8 @@ const OrganizerEditHeader = ({
                 </div>
 
                 <button type="button" onClick={onSave} className={cx(buttonStyles.secondary, components.organizer.saveBtn)}>
-                    <Save size={14} /> {isSaving ? 'AUTO SAVING...' : 'SAVE'}
+                    <Save size={14} /> {isSaving ? 'SAVING' : 'SAVE'}
                 </button>
-
-                <div className="inline-flex items-center gap-1 rounded-xl border theme-border theme-surface-soft p-1">
-                    {['light', 'dark', 'presentation'].map((mode) => (
-                        <button
-                            key={mode}
-                            type="button"
-                            onClick={() => onThemeModeChange?.(mode)}
-                            className={cx(
-                                'rounded-lg px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-colors',
-                                themeMode === mode
-                                    ? 'bg-(--qb-primary) text-white'
-                                    : 'theme-text-secondary hover:theme-surface',
-                            )}
-                        >
-                            {mode}
-                        </button>
-                    ))}
-                </div>
 
                 <button
                     type="button"
@@ -112,8 +92,8 @@ const OrganizerEditHeader = ({
             </div>
 
             <div className={components.organizer.headerActionsMobile} ref={menuRef}>
-                <button type="button" onClick={onSave} className={cx(buttonStyles.secondary, 'rounded-xl px-4 py-2 text-xs font-semibold')}>
-                    <Save size={14} /> {isSaving ? 'SAVING...' : 'SAVE'}
+                <button type="button" onClick={onSave} className={cx(buttonStyles.secondary, components.organizer.saveBtn)}>
+                    <Save size={14} /> {isSaving ? 'SAVING' : 'SAVE'}
                 </button>
 
                 <div className={components.organizer.mobileMenuWrap}>
