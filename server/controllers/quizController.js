@@ -809,6 +809,11 @@ const startQuizSession = async (req, res) => {
         }
 
         assertTransition(currentStatus, SESSION_STATUS.WAITING, 'quiz');
+        
+        // Ensure Redis is cleared of any stale state for this room code before starting fresh
+        const sessionStore = require('../services/session/session.service');
+        await sessionStore.deleteSession(session.sessionCode);
+
         await Quiz.findByIdAndUpdate(quiz._id, { status: SESSION_STATUS.WAITING });
 
         // Return quiz data + the live session code so frontend can use it
@@ -1456,11 +1461,12 @@ const getAnswerStats = async (req, res) => {
 // State reconciliation endpoint for real-time sync
 const getSessionState = async (req, res) => {
     try {
-        const { code } = req.params;
-        const sessionStore = require('../services/session/session.service');
+        const { code, sessionCode } = req.params;
+        const targetCode = code || sessionCode;
 
-        // Get session from Redis
-        const session = await sessionStore.getSession(code);
+        // Get session from Redis - ensure uppercase for consistency
+        const normalizedCode = String(targetCode || '').trim().toUpperCase();
+        const session = await sessionStore.getSession(normalizedCode);
         if (!session) {
             return res.status(404).json({ 
                 success: false, 
@@ -1494,7 +1500,7 @@ const getSessionState = async (req, res) => {
         res.json({
             success: true,
             data: {
-                sessionCode: code,
+                sessionCode: normalizedCode,
                 status: session.status,
                 mode: session.mode,
                 isPaused: session.isPaused || false,

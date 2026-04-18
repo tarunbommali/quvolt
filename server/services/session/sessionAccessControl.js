@@ -20,6 +20,11 @@ class SessionAccessControlService {
    */
   async canJoinSession(user, quiz, session = null) {
     try {
+      // Admins and hosts bypass all access control checks including initial join_quiz permission
+      if (user.role === 'admin' || user.role === 'host') {
+        return { allowed: true };
+      }
+
       // Requirement 10.1: Verify join_quiz permission
       const hasJoinPermission = await rbacService.checkPermission(
         user._id,
@@ -35,11 +40,6 @@ class SessionAccessControlService {
           allowed: false,
           reason: 'You do not have permission to join quiz sessions',
         };
-      }
-
-      // Admins and hosts bypass access control checks
-      if (user.role === 'admin' || user.role === 'host') {
-        return { allowed: true };
       }
 
       // Determine effective access policy

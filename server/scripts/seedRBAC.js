@@ -9,9 +9,32 @@
  */
 
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 const Permission = require('../models/Permission');
 const Role = require('../models/Role');
+const User = require('../models/User');
 const logger = require('../utils/logger');
+
+const Users = [
+  {
+    name: 'admin',
+    email: 'admin@quvolt.com',
+    password: 'abcd@1234',
+    role: 'admin',
+  },
+  {
+    name: 'host',
+    email: 'host@quvolt.com',
+    password: 'abcd@1234',
+    role: 'host',
+  },
+  {
+    name: 'participant',
+    email: 'participant@quvolt.com',
+    password: 'abcd@1234',
+    role: 'participant',
+  },
+]
 
 // Load environment variables
 require('dotenv').config();
@@ -119,6 +142,7 @@ const ROLES = [
       'manage_quiz',
       'delete_quiz',
       'view_quiz',
+      'join_quiz',
       'manage_session',
       'process_payment',
       'view_revenue',
@@ -142,9 +166,9 @@ const ROLES = [
  */
 async function seedPermissions() {
   logger.info('Seeding permissions...');
-  
+
   const createdPermissions = [];
-  
+
   for (const permData of PERMISSIONS) {
     try {
       const permission = await Permission.findOneAndUpdate(
@@ -158,7 +182,7 @@ async function seedPermissions() {
       logger.error(`✗ Failed to create permission: ${permData.name}`, { error: error.message });
     }
   }
-  
+
   logger.info(`Seeded ${createdPermissions.length} permissions`);
   return createdPermissions;
 }
@@ -168,20 +192,20 @@ async function seedPermissions() {
  */
 async function seedRoles(permissions) {
   logger.info('Seeding roles...');
-  
+
   // Create permission lookup map
   const permissionMap = new Map();
   permissions.forEach(p => permissionMap.set(p.name, p._id));
-  
+
   const createdRoles = [];
-  
+
   for (const roleData of ROLES) {
     try {
       // Map permission names to IDs
       const permissionIds = roleData.permissionNames
         ? roleData.permissionNames.map(name => permissionMap.get(name)).filter(Boolean)
         : [];
-      
+
       const role = await Role.findOneAndUpdate(
         { name: roleData.name },
         {
@@ -194,16 +218,56 @@ async function seedRoles(permissions) {
         },
         { upsert: true, new: true, setDefaultsOnInsert: true }
       );
-      
+
       createdRoles.push(role);
       logger.info(`✓ Role: ${role.name} (${permissionIds.length} permissions)`);
     } catch (error) {
       logger.error(`✗ Failed to create role: ${roleData.name}`, { error: error.message });
     }
   }
-  
+
   logger.info(`Seeded ${createdRoles.length} roles`);
   return createdRoles;
+}
+
+/**
+ * Seed users into database
+ * Requirements: 7.5 (Role assignment)
+ */
+async function seedUsers(roles) {
+  logger.info('Seeding users...');
+  
+  const roleMap = new Map();
+  roles.forEach(r => roleMap.set(r.name, r._id));
+  
+  const createdUsers = [];
+  
+  for (const userData of Users) {
+    try {
+      const hashedPassword = await bcrypt.hash(userData.password, 10);
+      const roleId = roleMap.get(userData.role);
+      
+      const user = await User.findOneAndUpdate(
+        { email: userData.email.toLowerCase() },
+        {
+          name: userData.name,
+          email: userData.email.toLowerCase(),
+          password: hashedPassword,
+          role: userData.role,
+          roles: roleId ? [roleId] : [],
+        },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      );
+      
+      createdUsers.push(user);
+      logger.info(`✓ User: ${user.email} (${user.role})`);
+    } catch (error) {
+      logger.error(`✗ Failed to create user: ${userData.email}`, { error: error.message });
+    }
+  }
+  
+  logger.info(`Seeded ${createdUsers.length} users`);
+  return createdUsers;
 }
 
 /**
@@ -212,20 +276,24 @@ async function seedRoles(permissions) {
 async function seedRBAC() {
   try {
     // Connect to MongoDB
-    const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/quiz-app';
+    const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/quiz-bolt';
     await mongoose.connect(mongoUri);
     logger.info('Connected to MongoDB');
-    
+
     // Seed permissions first
     const permissions = await seedPermissions();
-    
+
     // Then seed roles with permission references
     const roles = await seedRoles(permissions);
     
-    logger.info('✓ RBAC seeding completed successfully');
+    // Finally seed users with role references
+    const users = await seedUsers(roles);
+
+    logger.info('✓ RBAC & User seeding completed successfully');
     logger.info(`  - ${permissions.length} permissions`);
     logger.info(`  - ${roles.length} roles`);
-    
+    logger.info(`  - ${users.length} users`);
+
   } catch (error) {
     logger.error('RBAC seeding failed', { error: error.message, stack: error.stack });
     process.exit(1);
@@ -245,4 +313,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { seedRBAC, seedPermissions, seedRoles };
+module.exports = { seedRBAC, seedPermissions, seedRoles, seedUsers };

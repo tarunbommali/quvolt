@@ -47,19 +47,18 @@ const buildSessionStateSnapshot = (session, roomCode) => ({
 const registerSessionHandler = (io, socket) => {
     const user = socket.data.user;
 
-    // ── participant:join ─────────────────────────────────────────────────────
-    // Emitted by any client (host or participant) to enter a lobby room.
-    // Uses the existing quiz.service.joinRoom under the hood for full validation.
-    socket.on('participant:join', async ({ sessionCode, sessionId } = {}) => {
+    // ── Unified joining logic (join_room / participant:join) ─────────────────────
+    const handleJoin = async ({ sessionCode, roomCode, sessionId } = {}) => {
         try {
-            if (!sessionCode && !sessionId) {
+            const finalCode = sessionCode || roomCode;
+            if (!finalCode && !sessionId) {
                 return socket.emit('session:error', { message: 'sessionCode is required' });
             }
 
             const result = await quizService.joinRoom({
                 io,
                 socket,
-                roomCode: sessionCode,
+                roomCode: finalCode,
                 sessionId,
             });
 
@@ -70,19 +69,28 @@ const registerSessionHandler = (io, socket) => {
             socket.join(result.roomCode);
             socket.data.roomCode = result.roomCode;
 
-            // Emit full state snapshot to the joining socket (late-join sync)
-            socket.emit('session:state', buildSessionStateSnapshot(result.session, result.roomCode));
+            // 1. Emit full state to the JOINER (late-join sync)
+            socket.emit('room_state', result.state); // Legacy
+            socket.emit('session:state', buildSessionStateSnapshot(result.session, result.roomCode)); // New
 
-            // Debounced broadcast of updated participant list to the whole room
+            // 2. Broadcast updated list to the ROOM (debounced)
             const participants = Object.values(result.session.participants || {});
             debouncedParticipantUpdate(io, result.roomCode, participants);
+            
+            // Immediate legacy broadcast for count-sensitive components
+            const payload = { participants, count: participants.length };
+            io.to(result.roomCode).emit('participants:update', payload);
+            io.to(result.roomCode).emit('participants_update', participants);
 
-            logger.debug('participant:join', { userId: user?._id, roomCode: result.roomCode });
+            logger.debug('participant join success', { userId: user?._id, roomCode: result.roomCode });
         } catch (err) {
-            logger.error('session.handler participant:join error', { error: err.message, stack: err.stack });
+            logger.error('session.handler join error', { error: err.message, stack: err.stack });
             socket.emit('session:error', { message: 'Failed to join session' });
         }
-    });
+    };
+
+    socket.on('join_room', (data) => handleJoin(data));
+    socket.on('participant:join', (data) => handleJoin(data));
 
     // ── participant:leave ────────────────────────────────────────────────────
     socket.on('participant:leave', async ({ sessionCode } = {}) => {
@@ -138,7 +146,29 @@ const registerSessionHandler = (io, socket) => {
                 mode: result.session?.mode || mode || 'auto',
             });
 
-            logger.info('session:start broadcast', { roomCode: result.roomCode, mode });
+            // If we have a permanent waiting room, redirect everyone there to the new session room
+            const quiz = result.quiz || {};
+            const waitingRoomCode = quiz.roomCode;
+            if (waitingRoomCode && waitingRoomCode !== result.roomCode) {
+                io.to(waitingRoomCode).emit('session_redirect', { 
+                    roomCode: result.roomCode, 
+                    sessionId: result.sessionId 
+                });
+                // Legacy support for start_quiz event which some older participant pages might listen for
+                io.to(waitingRoomCode).emit('start_quiz', { 
+                    roomCode: result.roomCode, 
+                    sessionId: result.sessionId 
+                });
+            }
+
+            // Also emit legacy start_quiz to the new room just in case
+            io.to(result.roomCode).emit('start_quiz', { 
+                roomCode: result.roomCode, 
+                sessionId: result.sessionId, 
+                mode: result.session?.mode || mode || 'auto' 
+            });
+
+            logger.info('session:start broadcast', { roomCode: result.roomCode, mode, waitingRoomCode });
         } catch (err) {
             logger.error('session.handler session:start error', { error: err.message, stack: err.stack });
             socket.emit('session:error', { message: 'Failed to start session' });

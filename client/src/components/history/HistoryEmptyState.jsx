@@ -1,9 +1,9 @@
 import { Clock } from 'lucide-react';
-import Card from '../ui/Card';
+import Card from '../common/ui/Card';
 
-const HistoryEmptyState = ({ 
-    title = 'No Quiz Activity Yet', 
-    message = 'Your learning progress will appear here after you participate in or host a quiz.' 
+const HistoryEmptyState = ({
+    title = 'No Quiz Activity Yet',
+    message = 'Your learning progress will appear here after you participate in or host a quiz.'
 }) => (
     <Card className="bg-white p-20 flex flex-col items-center justify-center text-center space-y-6 rounded-[2.5rem] border border-gray-100 shadow-sm">
         <div className="p-6 bg-gray-50 rounded-full shadow-sm text-slate-400">

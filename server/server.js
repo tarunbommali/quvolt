@@ -199,6 +199,9 @@ const bootstrap = async () => {
         }, 5 * 60 * 1000).unref();
     }
 
+    // Start Stateless Distributed Quiz Telemetry Loop (Required for scheduleNextAction)
+    startDistributedTimerWorker(io);
+
     // API Routes — rate limiters applied inline on every router group
     app.use('/api/auth', authLimiter, authRoutes);
     app.use('/api/quiz', apiLimiter, quizRoutes);

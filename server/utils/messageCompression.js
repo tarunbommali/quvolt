@@ -16,30 +16,12 @@ const compressMessage = async (payload) => {
         const jsonString = JSON.stringify(payload);
         const size = Buffer.byteLength(jsonString, 'utf8');
 
-        // Only compress if message is larger than threshold
-        if (size < COMPRESSION_THRESHOLD) {
-            return {
-                compressed: false,
-                data: payload,
-                originalSize: size,
-                compressedSize: size,
-            };
-        }
-
-        const compressed = await gzip(jsonString);
-        const compressedSize = compressed.length;
-
-        logger.debug('Message compressed', {
-            originalSize: size,
-            compressedSize,
-            ratio: ((1 - compressedSize / size) * 100).toFixed(1) + '%',
-        });
-
+        // TEMPORARILY DISABLED: Client lacks decompression library
         return {
-            compressed: true,
-            data: compressed.toString('base64'),
+            compressed: false,
+            data: payload,
             originalSize: size,
-            compressedSize,
+            compressedSize: size,
         };
     } catch (error) {
         logger.error('Message compression failed', { error: error.message });

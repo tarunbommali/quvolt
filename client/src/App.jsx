@@ -3,7 +3,7 @@
 import { Suspense } from 'react';
 import { BrowserRouter as Router } from 'react-router-dom';
 import ErrorBoundary from './components/common/ErrorBoundary';
-import Navbar from './components/Navbar';
+import Navbar from './components/common/Navbar';
 import { useAppInit } from './hooks/useAppInit';
 import { components } from './styles/components';
 import GlobalCommandPalette from './components/common/GlobalCommandPalette';

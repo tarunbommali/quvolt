@@ -1,5 +1,5 @@
-import Card from '../ui/Card';
-import Button from '../ui/Button';
+import Card from '../common/ui/Card';
+import Button from '../common/ui/Button';
 
 const HistoryErrorState = ({ error, onRetry }) => (
     <div className="min-h-[80vh] flex items-center justify-center p-4">

@@ -1,5 +1,5 @@
 import { Calendar, Users } from 'lucide-react';
-import Card from '../ui/Card';
+import Card from '../common/ui/Card';
 
 const cardClass = 'bg-white border border-gray-200 rounded-2xl p-4 shadow-sm hover:shadow-md transition space-y-3';
 

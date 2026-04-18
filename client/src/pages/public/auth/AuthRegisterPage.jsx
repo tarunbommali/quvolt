@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, User, AlertCircle, Github, Eye, EyeOff, Loader2 } from 'lucide-react';
-import InputField from '../../../components/ui/InputField'
-import Button from '../../../components/ui/Button'
+import InputField from '../../../components/common/ui/InputField'
+import Button from '../../../components/common/ui/Button'
 import { useAuthStore } from '../../../stores/useAuthStore';
 import { register as registerService } from '../../../services/authService';
 import { ROLE_ROUTES } from '../../../routes/roleConfig';
- 
+
 const AuthRegisterPage = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -20,25 +20,25 @@ const AuthRegisterPage = () => {
   const [loading, setLoading] = useState(false);
   const setAuthData = useAuthStore((state) => state.setAuthData);
   const navigate = useNavigate();
- 
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!termsAccepted) {
       setError('Please agree to the Terms of Service and Privacy Policy');
       return;
     }
- 
+
     if (password !== confirmPassword) {
       setError('Password and confirm password do not match');
       return;
     }
- 
+
     setError('');
     setLoading(true);
     try {
       const data = await registerService(name, email, password, role);
       setAuthData(data);
-      
+
       const targetRoute = ROLE_ROUTES[role] || (role === 'host' ? '/studio' : '/join');
       navigate(targetRoute);
     } catch (err) {

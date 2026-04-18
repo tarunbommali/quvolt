@@ -1,6 +1,6 @@
 import { Clock, CalendarClock, ExternalLink } from 'lucide-react';
-import Card from '../ui/Card';
-import StatusBadge from '../ui/StatusBadge';
+import Card from '../common/ui/Card';
+import StatusBadge from '../common/ui/StatusBadge';
 
 const DASH = '\u2014';
 
@@ -23,11 +23,10 @@ const ScheduledSessionCard = ({ session, onJoin }) => {
 
     return (
         <Card
-            className={`bg-white border-2 rounded-3xl p-5 space-y-3 shadow-sm transition-all ${
-                isLive ? 'border-green-300 hover:border-green-400' :
-                isAborted ? 'border-red-200 hover:border-red-300' :
-                'border-violet-100 hover:border-violet-300'
-            }`}
+            className={`bg-white border-2 rounded-3xl p-5 space-y-3 shadow-sm transition-all ${isLive ? 'border-green-300 hover:border-green-400' :
+                    isAborted ? 'border-red-200 hover:border-red-300' :
+                        'border-violet-100 hover:border-violet-300'
+                }`}
         >
             <div className="flex justify-between items-start">
                 <StatusBadge status={isLive ? 'live' : isAborted ? 'aborted' : isUpcoming ? 'upcoming' : 'completed'} />
@@ -51,20 +50,18 @@ const ScheduledSessionCard = ({ session, onJoin }) => {
                 )}
             </div>
             {session.message && (
-                <div className={`rounded-2xl px-3 py-2 text-[11px] font-bold ${
-                    isAborted ? 'bg-red-50 text-red-600' : 'bg-gray-50 text-slate-500'
-                }`}>
+                <div className={`rounded-2xl px-3 py-2 text-[11px] font-bold ${isAborted ? 'bg-red-50 text-red-600' : 'bg-gray-50 text-slate-500'
+                    }`}>
                     {session.message}
                 </div>
             )}
             {(isLive || isUpcoming) && (
                 <button
                     onClick={() => onJoin(session)}
-                    className={`w-full py-2.5 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 transition-all ${
-                        isLive
+                    className={`w-full py-2.5 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 transition-all ${isLive
                             ? 'bg-green-600 hover:bg-green-700 text-white'
                             : 'bg-violet-50 hover:bg-violet-100 text-violet-700'
-                    }`}
+                        }`}
                 >
                     <ExternalLink size={12} />
                     {isLive ? 'Join Now' : 'Enter Invite Room'}

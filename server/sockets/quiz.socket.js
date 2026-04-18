@@ -27,35 +27,6 @@ const registerQuizSocket = (io, socket) => {
     // These remain untouched so existing host/participant pages continue to work
     // while the frontend migrates to the new event names.
 
-    socket.on('join_room', async ({ roomCode, sessionId }) => {
-        try {
-            const result = await quizService.joinRoom({ io, socket, roomCode, sessionId });
-            if (result.error) return socket.emit('error', result.error);
-
-            socket.join(result.roomCode);
-            socket.emit('room_state', result.state);
-            
-            // Emit to ALL sockets in the room (including the one that just joined)
-            const participantsArray = result.state.participants || [];
-            logger.info('Emitting participants_update', { 
-                roomCode: result.roomCode, 
-                participantCount: participantsArray.length,
-                participants: participantsArray.map(p => ({ id: p._id, name: p.name }))
-            });
-            
-            io.to(result.roomCode).emit('participants_update', participantsArray);
-
-            // Also emit spec-compliant alias so new frontend code works in parallel
-            io.to(result.roomCode).emit('session:updateParticipants', {
-                participants: participantsArray,
-                count: participantsArray.length,
-            });
-        } catch (error) {
-            logger.error('Socket join_room error', { roomCode, sessionId, error: error.message, stack: error.stack });
-            socket.emit('error', 'Join failed');
-        }
-    });
-
     socket.on('start_quiz', async ({ roomCode, sessionId, mode }) => {
         try {
             const result = await quizService.startQuizSession({ io, roomCode, sessionId, user: socket.data.user, mode: mode || 'auto' });

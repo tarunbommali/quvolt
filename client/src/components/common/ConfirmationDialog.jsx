@@ -1,6 +1,6 @@
 import { motion as Motion } from 'framer-motion';
 import { AlertTriangle, X } from 'lucide-react';
-import Button from '../ui/Button';
+import Button from './ui/Button';
 import { modalStyles } from '../../styles/layoutStyles';
 import { textStyles } from '../../styles/commonStyles';
 

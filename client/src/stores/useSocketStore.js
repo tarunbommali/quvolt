@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { io } from 'socket.io-client';
 import { getAccessToken, getSocketUrl } from '../services/api';
 import { useQuizStore } from './useQuizStore';
+import { useAuthStore } from './useAuthStore';
 
 export const useSocketStore = create((set, get) => ({
     socket: null,
@@ -139,7 +140,7 @@ export const useSocketStore = create((set, get) => ({
         const existing = get().socket;
         if (existing) return existing;
 
-        const authToken = token || getAccessToken();
+        const authToken = token || useAuthStore.getState().token || getAccessToken();
         if (!authToken) return null;
 
         set({ connectionState: 'connecting', lastError: null });
@@ -154,6 +155,9 @@ export const useSocketStore = create((set, get) => ({
             withCredentials: true,
             path: '/socket.io',
         });
+
+        // Set socket immediately so subsequent calls to joinRoom etc. can use it or see joinedRoomCode
+        set({ socket });
 
         socket.on('connect', () => {
             console.log('[Socket] Connected to server');
@@ -174,7 +178,6 @@ export const useSocketStore = create((set, get) => ({
         // Handle compressed messages
         socket.on('compressed_message', async (payload) => {
             try {
-                // Decompress the message
                 const { event, data, metadata } = payload;
                 
                 console.debug('[Socket] Received compressed message', {
@@ -183,14 +186,33 @@ export const useSocketStore = create((set, get) => ({
                     compressedSize: metadata?.compressedSize,
                 });
 
-                // Decompress using pako or similar (client-side decompression)
-                // For now, we'll assume the server sends base64-encoded gzipped data
-                // In a real implementation, you'd use pako.inflate or similar
+                // In a real browser environment, we might use pako or similar.
+                // For now, if it's base64 encoded and we don't have pako,
+                // we'll assume it's just serialized data OR we need to warn.
+                // However, we MUST NOT use socket.emit() as it sends to the server.
                 
-                // Emit the decompressed data to the appropriate handler
-                socket.emit(event, data);
+                // To trigger LOCAL listeners, we use the internal event emitter if available,
+                // or we manually find the specific handler.
+                // Socket.io client exposes 'on' listeners.
+                
+                const listeners = socket._callbacks?.[`$${event}`] || [];
+                if (listeners.length > 0) {
+                    listeners.forEach(handler => handler(data));
+                } else {
+                    // Fallback: manually trigger known store updates for critical events
+                    if (event === 'new_question') {
+                        useQuizStore.getState().applyNewQuestion(data);
+                    } else if (event === 'participants:update' || event === 'participants_update') {
+                        const participants = Array.isArray(data) ? data : data?.participants;
+                        if (participants) useQuizStore.getState().setParticipants(participants);
+                    } else if (event === 'room_state') {
+                        useQuizStore.getState().applyRoomState(data);
+                    } else if (event === 'update_leaderboard') {
+                        useQuizStore.getState().setLeaderboard(data);
+                    }
+                }
             } catch (error) {
-                console.error('[Socket] Failed to decompress message', error);
+                console.error('[Socket] Failed to process compressed message', error);
             }
         });
         
@@ -223,49 +245,90 @@ export const useSocketStore = create((set, get) => ({
             if (!get().checkSequenceNumber(fastestUser)) return; // Check sequence number
             useQuizStore.getState().setFastestUser(fastestUser);
         });
-        socket.on('participants_update', (participants) => {
-            if (!get().shouldProcessEvent('participants_update', participants)) return;
-            useQuizStore.getState().setParticipants(participants);
+        socket.on('session:state', (snapshot = {}) => {
+            if (!get().shouldProcessEvent('session:state', snapshot)) return;
+            const quizStore = useQuizStore.getState();
+            
+            if (snapshot.sessionCode) quizStore.setSessionCode(snapshot.sessionCode);
+            if (snapshot.mode) quizStore.setSessionMode(snapshot.mode);
+            if (snapshot.status) quizStore.setStatus(snapshot.status);
+            if (snapshot.isPaused !== undefined) quizStore.setIsPaused(snapshot.isPaused);
+            if (Array.isArray(snapshot.participants)) quizStore.setParticipants(snapshot.participants);
+            
+            if (snapshot.currentQuestion) {
+                quizStore.applyNewQuestion(snapshot.currentQuestion);
+            }
+            
+            if (snapshot.status === 'live' || snapshot.status === 'playing') {
+                quizStore.setView('live');
+            }
         });
+
+        socket.on('session:start', async ({ sessionCode, sessionId, mode } = {}) => {
+            const quizStore = useQuizStore.getState();
+            if (sessionCode) quizStore.setSessionCode(sessionCode);
+            if (sessionId) quizStore.setSessionId(sessionId);
+            if (mode) quizStore.setSessionMode(mode);
+            
+            quizStore.setStatus('live');
+            quizStore.setView('live');
+
+            setTimeout(() => {
+                get().requestStateReconciliation();
+            }, 800);
+        });
+
+        socket.on('participants:update', (payload) => {
+            const participants = Array.isArray(payload) ? payload : payload?.participants;
+            if (participants) useQuizStore.getState().setParticipants(participants);
+        });
+
+        socket.on('participants_update', (payload) => {
+            const participants = Array.isArray(payload) ? payload : payload?.participants;
+            if (participants) useQuizStore.getState().setParticipants(participants);
+        });
+
+        socket.on('session:updateParticipants', (payload) => {
+            const participants = Array.isArray(payload) ? payload : payload?.participants;
+            if (participants) useQuizStore.getState().setParticipants(participants);
+        });
+
         socket.on('new_question', (question) => {
             if (!get().shouldProcessEvent('new_question', question)) return;
-            if (!get().checkSequenceNumber(question)) return; // Check sequence number
+            if (!get().checkSequenceNumber(question)) return; 
             useQuizStore.getState().applyNewQuestion(question);
         });
+
+        socket.on('question:update', (question) => {
+            if (!get().shouldProcessEvent('question:update', question)) return;
+            useQuizStore.getState().applyNewQuestion(question);
+        });
+
+        socket.on('timer:tick', ({ timeLeft }) => {
+            useQuizStore.getState().setTimeLeft(timeLeft);
+        });
+
         socket.on('timer_tick', (timeLeft) => {
             useQuizStore.getState().setTimeLeft(timeLeft);
         });
-        socket.on('answer_result', (result) => {
-            useQuizStore.getState().setMyResult(result);
-        });
+
+        socket.on('answer:result', (result) => useQuizStore.getState().setMyResult(result));
+        
         socket.on('update_leaderboard', (leaderboard) => {
             if (!get().shouldProcessEvent('update_leaderboard', leaderboard)) return;
             useQuizStore.getState().setLeaderboard(leaderboard);
         });
-        socket.on('quiz_finished', (payload) => {
-            if (!get().checkSequenceNumber(payload)) return; // Check sequence number
-            useQuizStore.getState().applyQuizFinished();
+
+        socket.on('quiz_paused', (payload) => {
+            if (!get().checkSequenceNumber(payload)) return;
+            useQuizStore.getState().applyQuizPaused(payload?.message);
         });
-        socket.on('quiz_ended_by_host', () => {
-            useQuizStore.getState().applyQuizFinished();
+
+        socket.on('quiz_resumed', (payload) => {
+            if (!get().checkSequenceNumber(payload)) return;
+            useQuizStore.getState().applyQuizResumed(payload?.expiry);
         });
-        socket.on('quiz_aborted', ({ message }) => {
-            useQuizStore.getState().applyQuizAborted(message);
-        });
-        socket.on('start_quiz', ({ roomCode, sessionId, mode }) => {
-            if (roomCode) {
-                useQuizStore.getState().setSessionCode(roomCode);
-            }
-            if (sessionId) {
-                useQuizStore.getState().setSessionId(sessionId);
-            }
-            // Store the authoritative session mode from the server
-            if (mode) {
-                useQuizStore.getState().setSessionMode(mode);
-            }
-            useQuizStore.getState().setStatus('live');
-            useQuizStore.getState().setView('live');
-        });
+
         socket.on('session_redirect', ({ roomCode, sessionId }) => {
             if (roomCode) {
                 set({ joinedRoomCode: roomCode, joinedSessionId: sessionId || null });
@@ -276,49 +339,10 @@ export const useSocketStore = create((set, get) => ({
                 socket.emit('join_room', { roomCode, sessionId });
             }
         });
-        socket.on('quiz_paused', (payload) => {
-            if (!get().checkSequenceNumber(payload)) return; // Check sequence number
-            useQuizStore.getState().applyQuizPaused(payload?.message);
-        });
-        socket.on('quiz_resumed', (payload) => {
-            if (!get().checkSequenceNumber(payload)) return; // Check sequence number
-            useQuizStore.getState().applyQuizResumed(payload?.expiry);
-        });
-        socket.on('trigger_next_question', () => {
-            const { sessionCode, sessionId } = useQuizStore.getState();
-            socket.emit('next_question', { roomCode: sessionCode, sessionId });
-        });
+
         socket.on('error', (err) => {
             useQuizStore.getState().setErrorMessage(err?.message || err);
             set({ lastError: err?.message || err });
-        });
-
-        // ── Spec-compliant event handlers ─────────────────────────────────────
-        // These mirror the event names defined in the real-time session spec.
-        // Legacy events above are kept for backward compatibility.
-
-        socket.on('session:start', ({ sessionCode, sessionId, mode } = {}) => {
-            if (sessionCode) useQuizStore.getState().setSessionCode(sessionCode);
-            if (sessionId) useQuizStore.getState().setSessionId(sessionId);
-            if (mode) useQuizStore.getState().setSessionMode(mode);
-            useQuizStore.getState().setStatus('live');
-            useQuizStore.getState().setView('live');
-        });
-
-        socket.on('session:state', (snapshot = {}) => {
-            if (!get().shouldProcessEvent('session:state', snapshot)) return;
-            const quizStore = useQuizStore.getState();
-            if (snapshot.sessionCode) quizStore.setSessionCode(snapshot.sessionCode);
-            if (snapshot.mode) quizStore.setSessionMode(snapshot.mode);
-            if (Array.isArray(snapshot.participants)) quizStore.setParticipants(snapshot.participants);
-            if (snapshot.isPaused !== undefined) quizStore.setIsPaused(snapshot.isPaused);
-        });
-
-        socket.on('session:updateParticipants', ({ participants, count } = {}) => {
-            if (!get().shouldProcessEvent('session:updateParticipants', { count })) return;
-            if (Array.isArray(participants)) {
-                useQuizStore.getState().setParticipants(participants);
-            }
         });
 
         socket.on('session:modeChanged', ({ mode } = {}) => {
@@ -367,7 +391,6 @@ export const useSocketStore = create((set, get) => ({
             useQuizStore.getState().setTimeLeft(0);
         });
 
-        set({ socket });
         return socket;
     },
 
@@ -391,10 +414,21 @@ export const useSocketStore = create((set, get) => ({
     },
 
     joinRoom: (roomCode, sessionId) => {
+        const code = roomCode ? String(roomCode).toUpperCase() : null;
+        const sid = sessionId || null;
+        
+        // Always persist target room to store so on('connect') can pick it up
+        set({ joinedRoomCode: code, joinedSessionId: sid });
+
         const { socket } = get();
-        if (socket && (roomCode || sessionId)) {
-            set({ joinedRoomCode: roomCode || null, joinedSessionId: sessionId || null });
-            socket.emit('join_room', { roomCode, sessionId });
+        // Use socket.connected check because emit() on disconnected socket might just buffer or drop depending on config
+        if (socket && socket.connected && (code || sid)) {
+            console.log('[Socket] Emitting join_room now', { code, sid });
+            socket.emit('join_room', { roomCode: code, sessionId: sid });
+        } else if (socket) {
+            console.log('[Socket] Socket present but not connected yet, join_room will fire on connect', { code, sid });
+        } else {
+            console.warn('[Socket] joinRoom called but socket is null — call connectSocket() first');
         }
     },
 
@@ -415,6 +449,14 @@ export const useSocketStore = create((set, get) => ({
     reconnectSocket: (token) => {
         get().disconnectSocket();
         return get().connectSocket(token);
+    },
+
+    requestStateReconciliation: () => {
+        const { socket, joinedRoomCode } = get();
+        const code = joinedRoomCode || useQuizStore.getState().sessionCode;
+        if (socket && code) {
+            socket.emit('session:syncState', { sessionCode: code });
+        }
     },
 
     triggerNextQuestion: (sessionId) => {

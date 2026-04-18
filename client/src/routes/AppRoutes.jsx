@@ -4,12 +4,12 @@ import { Suspense, lazy } from 'react';
 import RoleGuard from '../guards/RoleGuard';
 
 // Shared (all authenticated roles)
-const UserProfilePage = lazy(() => import('../pages/profile/UserProfilePage'));
+const UserProfilePage = lazy(() => import('../pages/public/profile/UserProfilePage'));
 
 // Public
-const PublicLandingPage = lazy(() => import('../pages/public/PublicLandingPage'));
-const JoinSessionPage = lazy(() => import('../pages/public/JoinSessionPage'));
-const UnauthorizedPage = lazy(() => import('../pages/public/UnauthorizedPage'));
+const PublicLandingPage = lazy(() => import('../pages/public/landingPage/PublicLandingPage'));
+const JoinSessionPage = lazy(() => import('../pages/participant/quiz/QuizJoinRoom'));
+const UnauthorizedPage = lazy(() => import('../pages/public/error/UnauthorizedPage'));
 const AuthLoginPage = lazy(() => import('../pages/public/auth/AuthLoginPage'));
 const AuthRegisterPage = lazy(() => import('../pages/public/auth/AuthRegisterPage'));
 
@@ -22,30 +22,26 @@ const DisclaimerPage = lazy(() => import('../pages/public/legal/DisclaimerPage')
 
 // Participant
 const ParticipantLayout = lazy(() => import('../layouts/ParticipantLayout'));
-const ParticipantDashboard = lazy(() => import('../pages/participant/ParticipantDashboard'));
 const ParticipantSessionPage = lazy(() => import('../pages/participant/ParticipantSessionPage'));
-const ParticipantHistoryPage = lazy(() => import('../pages/participant/ParticipantHistoryPage'));
+const ParticipantHistoryPage = lazy(() => import('../pages/participant/quiz/QuizSessionHistory'));
 
 // Host
 const HostLayout = lazy(() => import('../layouts/HostLayout'));
-const HostDashboard = lazy(() => import('../pages/host/HostDashboard'));
-const HostStudioPage = lazy(() => import('../pages/host/HostStudioPage'));
-const HostLaunchPage = lazy(() => import('../pages/host/HostLaunchPage'));
-const HostLobbyPage = lazy(() => import('../pages/host/HostLobbyPage'));
-const HostEditPage = lazy(() => import('../pages/host/HostEditPage'));
-const HostLivePage = lazy(() => import('../pages/host/HostLivePage'));
-const HostAnalyticsPage = lazy(() => import('../pages/host/HostAnalyticsPage'));
-const HostHistoryPage = lazy(() => import('../pages/host/HostHistoryPage'));
-const TemplateHistoryPage = lazy(() => import('../pages/host/TemplateHistoryPage'));
-
-// Session Details (Shared/Refactored)
-const HostSessionDetailPage = lazy(() => import('../pages/history/SessionHistoryDetailPage'));
+const Studio = lazy(() => import('../pages/host/studio/Studio'));
+const LaunchQuiz = lazy(() => import('../pages/host/launchQuiz/LaunchQuiz'));
+const QuizTemplateEditor = lazy(() => import('../pages/host/template/QuizTemplateEditor'));
+const HostLivePage = lazy(() => import('../pages/host/quiz/LiveSessionPage'));
+const HostAnalyticsPage = lazy(() => import('../pages/host/analytics/HostAnalyticsPage'));
+const SessionHistoryPage = lazy(() => import('../pages/host/history/SessionHistoryPage'));
+const TemplateQuizHistory = lazy(() => import('../pages/host/templateQuizHistory/TemplateQuizHistory'));
+const InviteRoom = lazy(() => import('../pages/host/inviteRoom/InviteRoom'));
+const SessionHistoryDetailPage = lazy(() => import('../pages/host/history/SessionHistoryDetailPage'));
 
 // Admin
 const AdminLayout = lazy(() => import('../layouts/AdminLayout'));
 const AdminDashboard = lazy(() => import('../pages/admin/AdminDashboard'));
 const AdminUserManagement = lazy(() => import('../pages/admin/AdminUserManagement'));
-const BillingOverviewPage = lazy(() => import('../pages/billing/BillingOverviewPage'));
+const BillingOverviewPage = lazy(() => import('../pages/host/billing/BillingOverviewPage'));
 
 export default function AppRoutes() {
   return (
@@ -73,11 +69,8 @@ export default function AppRoutes() {
           <ParticipantLayout />
         </RoleGuard>
       }>
-        <Route path="/p" element={<ParticipantDashboard />} />
-        <Route path="/p/dashboard" element={<ParticipantDashboard />} />
         <Route path="/p/history" element={<ParticipantHistoryPage />} />
         <Route path="/quiz/:code" element={<ParticipantSessionPage />} />
-        <Route path="/quiz/sessions/:id" element={<HostSessionDetailPage />} />
       </Route>
 
       {/* Global Shared Routes */}
@@ -86,7 +79,7 @@ export default function AppRoutes() {
           <ParticipantLayout />
         </RoleGuard>
       }>
-        <Route path="/history" element={<HostHistoryPage />} />
+        <Route path="/history" element={<SessionHistoryPage />} />
       </Route>
 
       {/* Host */}
@@ -96,17 +89,17 @@ export default function AppRoutes() {
         </RoleGuard>
       }>
         <Route path="/o" element={<Navigate to="/studio" replace />} />
-        <Route path="/o/dashboard" element={<HostDashboard />} />
-        <Route path="/studio" element={<HostStudioPage />} />
-        <Route path="/quiz/templates/:quizId" element={<HostEditPage />} />
-        <Route path="/launch/quiz/:id" element={<HostLaunchPage />} />
-        <Route path="/quiz/templates/:id/launch" element={<HostLaunchPage />} />
-        <Route path="/invite/:id" element={<HostLobbyPage />} />
-        <Route path="/quiz/templates/:id/session" element={<HostLobbyPage />} />
+        <Route path="/o/dashboard" element={<Studio />} />
+        <Route path="/studio" element={<Studio />} />
+        <Route path="/quiz/templates/:quizId" element={<QuizTemplateEditor />} />
+        <Route path="/launch/quiz/:id" element={<LaunchQuiz />} />
+        <Route path="/quiz/templates/:id/launch" element={<LaunchQuiz />} />
+        <Route path="/invite/:id" element={<InviteRoom />} />
+        <Route path="/quiz/templates/:id/session" element={<InviteRoom />} />
         <Route path="/live/:id" element={<HostLivePage />} />
         <Route path="/analytics" element={<HostAnalyticsPage />} />
-        <Route path="/quiz/templates/:id/sessions" element={<TemplateHistoryPage />} />
-        <Route path="/history/template_id/:id" element={<HostSessionDetailPage />} />
+        <Route path="/quiz/templates/:id/sessions" element={<TemplateQuizHistory />} />
+        <Route path="/history/template_id/:id" element={<SessionHistoryDetailPage />} />
         <Route path="/billing" element={<BillingOverviewPage />} />
       </Route>
 

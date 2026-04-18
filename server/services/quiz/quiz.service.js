@@ -427,23 +427,37 @@ const joinRoom = async ({ io, socket, roomCode, sessionId }) => {
     
     if (!session) {
         session = {
-            status: SESSION_STATUS.DRAFT,
+            status: liveSession?.status || quiz?.status || SESSION_STATUS.DRAFT,
             participants: {},
             leaderboard: {},
+            currentQuestionIndex: null, // No question should be active in lobby
             lastActivity: Date.now(),
             participantLimit: 50,
         };
-    } else if (session.status === SESSION_STATUS.LIVE || session.status === SESSION_STATUS.WAITING) {
+    } else {
+        // Force sync status from DB if Redis is out of sync
+        const dbStatus = liveSession?.status || quiz?.status;
+        if (dbStatus && session.status !== dbStatus) {
+            session.status = dbStatus;
+        }
+
+        // Requirement 2: Do NOT allow answering if status is not LIVE
+        if (session.status !== SESSION_STATUS.LIVE) {
+            session.currentQuestionIndex = null;
+        }
+
         // Check if this is a reconnection attempt
-        const sessionRecovery = require('../session/sessionRecovery');
-        reconnectionData = await sessionRecovery.handleParticipantReconnection(socket, socketRoom, user);
-        
-        if (reconnectionData.reconnected) {
-            logger.info('Participant reconnected to session', {
-                userId: user._id,
-                sessionCode: socketRoom,
-                currentScore: reconnectionData.userStats.score
-            });
+        if (session.status === SESSION_STATUS.LIVE || session.status === SESSION_STATUS.WAITING) {
+            const sessionRecovery = require('../session/sessionRecovery');
+            reconnectionData = await sessionRecovery.handleParticipantReconnection(socket, socketRoom, user);
+            
+            if (reconnectionData.reconnected) {
+                logger.info('Participant reconnected to session', {
+                    userId: user._id,
+                    sessionCode: socketRoom,
+                    currentScore: reconnectionData.userStats.score
+                });
+            }
         }
     }
 
@@ -466,16 +480,26 @@ const joinRoom = async ({ io, socket, roomCode, sessionId }) => {
         } catch {
             session.participantLimit = getPlanConfig('FREE').participants;
         }
-        
-        // Add host/organizer to participants list so they show up in the count
-        session.participants[user._id] = { _id: user._id, name: user.name, role: user.role };
-    } else {
-        const currentCount = Object.keys(session.participants || {}).length;
-        if (!session.participants[user._id] && currentCount >= (session.participantLimit || 50)) {
+    }
+    
+    const userId = String(user._id);
+    if (!session.participants) session.participants = {};
+
+    // Standardize registration before any state is built or emitted
+    session.participants[userId] = { 
+        _id: user._id, 
+        name: user.name, 
+        role: user.role,
+        avatar: user.avatar || null,
+        joinedAt: new Date().toISOString()
+    };
+
+    if (user.role !== 'host' && user.role !== 'organizer') {
+        const currentCount = Object.keys(session.participants).length;
+        if (currentCount > (session.participantLimit || 50)) {
+            delete session.participants[userId]; // Rollback
             return { error: 'Upgrade your plan' };
         }
-
-        session.participants[user._id] = { _id: user._id, name: user.name, role: user.role };
     }
 
     session.lastActivity = Date.now();
@@ -489,7 +513,9 @@ const joinRoom = async ({ io, socket, roomCode, sessionId }) => {
 
     await sessionStore.setSession(socketRoom, session);
 
+    const updatedQuiz = await Quiz.findById(quiz._id).lean();
     const state = buildRoomState(session, socketRoom);
+    state.quiz = updatedQuiz;
     
     // If this is a reconnection, send the current question and score to the participant
     if (reconnectionData?.reconnected) {
@@ -581,6 +607,12 @@ const startQuizSession = async ({ io, quizId, roomCode, sessionId, user }) => {
                 },
                 { session: dbSession }
             );
+            
+            // Notify participants immediately to transition UI
+            io.to(session.sessionCode).emit('session:start', { 
+                roomCode: session.sessionCode,
+                status: 'live' 
+            });
             
             return { session, quiz };
         }, {
@@ -785,30 +817,31 @@ const submitAnswer = async ({ io, socket, roomCode, sessionId, questionId, selec
     io.to(socketRoom).emit('fastest_user', fastestPayload);
     io.to(socketRoom).emit('streak_update', streakPayload);
 
-    if (session.subjectRoom) {
-        const subjectId = session.subjectRoom.replace('subject_', '');
-        const subjectLeaderboard = await getSubjectLeaderboardData(subjectId);
-        io.to(session.subjectRoom).emit('subject_score_update', subjectLeaderboard);
-    }
+    // Requirement 8: Server -> Client strict contract
+    socket.emit('answer:result', {
+        correctAnswer: question.options.find(o => o.isCorrect)?.text || question.correctAnswer || 'Check Screen',
+        isCorrect,
+        timeTaken,
+        scoreChange: score,
+        totalScore: userStats.score,
+    });
 
-    // Early transition if all participants have answered in auto mode
-    const activeParticipants = Object.keys(session.participants || {}).length;
-    if (session.mode === 'auto' && activeParticipants > 0 && currentStats.totalAnswers >= activeParticipants) {
-        // Wait just a brief moment (1s) so the last user can see their score
-        // before transitioning immediately
-        scheduleNextAction(socketRoom, 'advance', 1000);
-        logger.audit('Early advancement triggered (all users answered)', { roomCode: socketRoom });
+    // Requirement 6: Maintain real-time leaderboard (Top 10)
+    io.to(socketRoom).emit('leaderboard:update', leaderboard);
+
+    // Requirement 5: After all answers received, emit question:end and move to next
+    const participantsCount = Object.keys(session.participants || {}).length;
+    if (currentStats.totalAnswers >= participantsCount && session.mode === 'auto') {
+        io.to(socketRoom).emit('question:end');
+        scheduleNextAction(socketRoom, 'advance', 1000); 
     }
 
     return {
         room: socketRoom,
         isCorrect,
-        correctAnswer: question.options[question.correctOption || 0],
         timeTaken,
         score,
         totalScore: userStats.score,
-        streak: userStats.streak,
-        bestStreak: userStats.bestStreak,
         leaderboard,
     };
 };
@@ -1201,6 +1234,22 @@ const broadcastQuestionEnhanced = async (io, roomCode) => {
     // Use compression for large payloads
     await emitWithCompression(io, roomCode, 'new_question', questionPayload);
     await emitWithCompression(io, roomCode, 'question:update', questionPayload);
+
+    // Requirement 8: Server -> Client strict contract
+    await emitWithCompression(io, roomCode, 'question:start', {
+        questionId: question._id,
+        text: question.text,
+        options: formattedQuestion.options,
+        duration: question.timeLimit,
+        ...questionPayload
+    });
+
+    // Requirement 6: Display top 10 participants
+    const sortedLeaderboard = Object.values(session.leaderboard || {})
+        .sort((a, b) => b.score - a.score || a.time - b.time)
+        .slice(0, 10);
+        
+    io.to(roomCode).emit('leaderboard:update', sortedLeaderboard);
     io.to(roomCode).emit('answer_stats', statsPayload);
     io.to(roomCode).emit('fastest_user', null);
     await startTimerTicks(io, roomCode);
@@ -1343,12 +1392,21 @@ const leaveRoom = async ({ io, socket }) => {
     const session = await sessionStore.getSession(roomCode);
     if (!session || !session.participants) return;
 
-    if (session.participants[user._id]) {
-        delete session.participants[user._id];
+    const userId = String(user._id);
+    if (session.participants[userId]) {
+        delete session.participants[userId];
         await sessionStore.setSession(roomCode, session);
         
-        const participants = Object.values(session.participants);
-        io.to(roomCode).emit('participants_update', participants);
+        const participantsArray = Object.values(session.participants);
+        
+        // Broadcast to everyone in the room (including the joining socket)
+        io.to(roomCode).emit('participants_update', participantsArray);
+        
+        // Also emit the modern event for newer components
+        io.to(roomCode).emit('session:updateParticipants', {
+            participants: participantsArray,
+            count: participantsArray.length
+        });
     }
 };
 

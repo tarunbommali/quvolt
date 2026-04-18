@@ -1,4 +1,4 @@
-import Card from '../ui/Card';
+import Card from '../common/ui/Card';
 
 const HistoryNoResultsState = () => (
     <Card className="bg-white p-12 text-center text-slate-500 rounded-4xl border border-gray-100 shadow-sm">

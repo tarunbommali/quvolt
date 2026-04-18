@@ -1,5 +1,5 @@
 import { X } from 'lucide-react';
-import Modal from '../ui/Modal';
+import Modal from '../common/ui/Modal';
 import { modalStyles } from '../../styles/layoutStyles';
 import { textStyles } from '../../styles/commonStyles';
 import { cardStyles } from '../../styles/cardStyles';

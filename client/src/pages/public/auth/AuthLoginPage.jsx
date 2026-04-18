@@ -3,15 +3,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, AlertCircle, Eye, EyeOff, Loader2 } from 'lucide-react';
-import InputField from '../../../components/ui/InputField';
-import Button from '../../../components/ui/Button';
+import InputField from '../../../components/common/ui/InputField';
+import Button from '../../../components/common/ui/Button';
 import { useAuthStore } from '../../../stores/useAuthStore';
 import { login as loginService } from '../../../services/authService';
 import { ROLE_ROUTES } from '../../../routes/roleConfig';
 
 const AuthLoginPage = () => {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+    const [email, setEmail] = useState('participant@quvolt.com');
+    const [password, setPassword] = useState('abcd@1234');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
