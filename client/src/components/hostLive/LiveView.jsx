@@ -21,7 +21,7 @@ const LiveView = ({ activeQuiz, sessionMode, joinCode, currentQuestion, timeLeft
     const effectiveJoinCode = joinCode || activeQuiz?.activeSessionCode || activeQuiz?.roomCode;
 
     return (
-        <div className="app-page relative mx-auto max-w-6xl space-y-6 animate-in fade-in duration-300">
+        <div className="app-page relative mx-auto max-w-7xl space-y-6 animate-in fade-in duration-300">
             <SubHeader
                 title="Host Console"
                 subtitle={`Control real-time flow for ${activeQuiz?.title || 'this quiz'}`}
@@ -42,20 +42,22 @@ const LiveView = ({ activeQuiz, sessionMode, joinCode, currentQuestion, timeLeft
                             </button>
                         )}
 
-                        {!isPaused ? (
-                            <button
-                                onClick={onPause}
-                                className={`${buttonStyles.secondary} inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-bold`}
-                            >
-                                <Pause size={14} /> Pause
-                            </button>
-                        ) : (
-                            <button
-                                onClick={onResume}
-                                className={`${buttonStyles.primary} theme-status-warning inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-bold`}
-                            >
-                                <Play size={14} /> Resume
-                            </button>
+                        {isManual && (
+                            !isPaused ? (
+                                <button
+                                    onClick={onPause}
+                                    className={`${buttonStyles.secondary} inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-bold`}
+                                >
+                                    <Pause size={14} /> Pause
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={onResume}
+                                    className={`${buttonStyles.primary} theme-status-warning inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-bold`}
+                                >
+                                    <Play size={14} /> Resume
+                                </button>
+                            )
                         )}
 
                         <button
@@ -123,27 +125,27 @@ const LiveView = ({ activeQuiz, sessionMode, joinCode, currentQuestion, timeLeft
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         {/* Time remaining — only shown in auto mode */}
                         {!isManual && (
-                        <div className="rounded-xl theme-surface p-4">
-                            <div className="mb-2 flex items-center justify-between">
-                                <p className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wider theme-text-muted">
-                                    <Timer size={13} /> Time remaining
-                                </p>
-                                <span className={`text-sm font-black ${timeLeft < 10 ? 'theme-tone-danger' : 'text-(--qb-primary)'}`}>{timeLeft}s</span>
+                            <div className="rounded-xl theme-surface p-4">
+                                <div className="mb-2 flex items-center justify-between">
+                                    <p className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wider theme-text-muted">
+                                        <Timer size={13} /> Time remaining
+                                    </p>
+                                    <span className={`text-sm font-black ${timeLeft < 10 ? 'theme-tone-danger' : 'text-(--qb-primary)'}`}>{timeLeft}s</span>
+                                </div>
+                                <div className="h-2 w-full overflow-hidden rounded-full theme-surface-soft">
+                                    <div className="h-full bg-(--qb-primary) transition-all duration-700" style={{ width: `${timePercent}%` }} />
+                                </div>
                             </div>
-                            <div className="h-2 w-full overflow-hidden rounded-full theme-surface-soft">
-                                <div className="h-full bg-(--qb-primary) transition-all duration-700" style={{ width: `${timePercent}%` }} />
-                            </div>
-                        </div>
                         )}
 
                         {/* In tutor mode, show a message instead */}
                         {isManual && (
-                        <div className="rounded-xl theme-surface p-4 flex items-center gap-2">
-                            <ChevronRight size={16} className="text-(--qb-primary) shrink-0" />
-                            <p className="text-xs font-semibold theme-text-secondary">
-                                Click <span className="font-bold theme-text-primary">Next</span> in the toolbar to advance to the next question.
-                            </p>
-                        </div>
+                            <div className="rounded-xl theme-surface p-4 flex items-center gap-2">
+                                <ChevronRight size={16} className="text-(--qb-primary) shrink-0" />
+                                <p className="text-xs font-semibold theme-text-secondary">
+                                    Click <span className="font-bold theme-text-primary">Next</span> in the toolbar to advance to the next question.
+                                </p>
+                            </div>
                         )}
 
                         <div className="rounded-xl theme-surface p-4">

@@ -107,6 +107,26 @@ const paymentSchema = new mongoose.Schema({
   metadata: {
     type: mongoose.Schema.Types.Mixed,
     default: {}
+  },
+  // Gateway tracking fields (Requirements 6.1, 6.2)
+  gatewayUsed: {
+    type: String,
+    trim: true,
+    default: null
+  },
+  attemptCount: {
+    type: Number,
+    default: 1,
+    min: [1, 'Attempt count must be at least 1']
+  },
+  fallbackReason: {
+    type: String,
+    trim: true,
+    default: null
+  },
+  routingMetadata: {
+    type: mongoose.Schema.Types.Mixed,
+    default: null
   }
 }, { timestamps: true });
 

@@ -65,7 +65,8 @@ api.interceptors.response.use(
             return Promise.reject(error);
         }
 
-        if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url?.includes('/auth/refresh')) {
+        const isAuthMutation = ['/auth/login', '/auth/register'].some(p => originalRequest.url?.includes(p));
+        if (error.response?.status === 401 && !originalRequest._retry && !isAuthMutation && !originalRequest.url?.includes('/auth/refresh')) {
             originalRequest._retry = true;
             try {
                 // Perform the refresh
@@ -206,6 +207,9 @@ export const nextQuestion = (id, sessionCode) =>
 
 export const deleteQuiz = (id) =>
     api.delete(`/quiz/${id}`).then(r => r.data);
+
+export const getTemplateSessions = (templateId) =>
+    api.get(`/quiz/templates/${templateId}/sessions`).then(r => r.data);
 
 // Participant: register for a scheduled session
 export const joinScheduledSession = (roomCode) =>

@@ -1,0 +1,248 @@
+#!/usr/bin/env node
+
+/**
+ * RBAC Seeding Script
+ * Seeds default roles and permissions for the RBAC system
+ * Requirements: 7.1
+ * 
+ * Usage: node server/scripts/seedRBAC.js
+ */
+
+const mongoose = require('mongoose');
+const Permission = require('../models/Permission');
+const Role = require('../models/Role');
+const logger = require('../utils/logger');
+
+// Load environment variables
+require('dotenv').config();
+
+// Permission definitions
+const PERMISSIONS = [
+  {
+    name: 'create_quiz',
+    description: 'Create new quizzes',
+    resource: 'quiz',
+    action: 'create',
+  },
+  {
+    name: 'manage_quiz',
+    description: 'Manage and edit quizzes',
+    resource: 'quiz',
+    action: 'manage',
+  },
+  {
+    name: 'delete_quiz',
+    description: 'Delete quizzes',
+    resource: 'quiz',
+    action: 'delete',
+  },
+  {
+    name: 'view_quiz',
+    description: 'View quiz content',
+    resource: 'quiz',
+    action: 'view',
+  },
+  {
+    name: 'join_quiz',
+    description: 'Join quiz sessions as participant',
+    resource: 'session',
+    action: 'join',
+  },
+  {
+    name: 'manage_session',
+    description: 'Manage quiz sessions (start, pause, resume)',
+    resource: 'session',
+    action: 'manage',
+  },
+  {
+    name: 'manage_users',
+    description: 'Manage user accounts and roles',
+    resource: 'user',
+    action: 'manage',
+  },
+  {
+    name: 'view_users',
+    description: 'View user information',
+    resource: 'user',
+    action: 'view',
+  },
+  {
+    name: 'process_payment',
+    description: 'Process payment transactions',
+    resource: 'payment',
+    action: 'process',
+  },
+  {
+    name: 'view_revenue',
+    description: 'View revenue and financial reports',
+    resource: 'revenue',
+    action: 'view',
+  },
+  {
+    name: 'manage_payouts',
+    description: 'Manage payout operations',
+    resource: 'payout',
+    action: 'manage',
+  },
+  {
+    name: 'configure_gateways',
+    description: 'Configure payment gateway settings',
+    resource: 'gateway',
+    action: 'configure',
+  },
+  {
+    name: 'view_audit_logs',
+    description: 'View audit logs and security events',
+    resource: 'audit',
+    action: 'view',
+  },
+];
+
+// Role definitions with permission mappings
+const ROLES = [
+  {
+    name: 'admin',
+    displayName: 'Administrator',
+    description: 'Full system access with all permissions',
+    isAdmin: true,
+    priority: 100,
+    permissions: [], // Admin gets all permissions automatically
+  },
+  {
+    name: 'host',
+    displayName: 'Quiz Host',
+    description: 'Can create and manage quizzes, view revenue',
+    isAdmin: false,
+    priority: 50,
+    permissionNames: [
+      'create_quiz',
+      'manage_quiz',
+      'delete_quiz',
+      'view_quiz',
+      'manage_session',
+      'process_payment',
+      'view_revenue',
+    ],
+  },
+  {
+    name: 'participant',
+    displayName: 'Participant',
+    description: 'Can join and participate in quizzes',
+    isAdmin: false,
+    priority: 10,
+    permissionNames: [
+      'view_quiz',
+      'join_quiz',
+    ],
+  },
+];
+
+/**
+ * Seed permissions into database
+ */
+async function seedPermissions() {
+  logger.info('Seeding permissions...');
+  
+  const createdPermissions = [];
+  
+  for (const permData of PERMISSIONS) {
+    try {
+      const permission = await Permission.findOneAndUpdate(
+        { name: permData.name },
+        permData,
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      );
+      createdPermissions.push(permission);
+      logger.info(`✓ Permission: ${permission.name}`);
+    } catch (error) {
+      logger.error(`✗ Failed to create permission: ${permData.name}`, { error: error.message });
+    }
+  }
+  
+  logger.info(`Seeded ${createdPermissions.length} permissions`);
+  return createdPermissions;
+}
+
+/**
+ * Seed roles into database
+ */
+async function seedRoles(permissions) {
+  logger.info('Seeding roles...');
+  
+  // Create permission lookup map
+  const permissionMap = new Map();
+  permissions.forEach(p => permissionMap.set(p.name, p._id));
+  
+  const createdRoles = [];
+  
+  for (const roleData of ROLES) {
+    try {
+      // Map permission names to IDs
+      const permissionIds = roleData.permissionNames
+        ? roleData.permissionNames.map(name => permissionMap.get(name)).filter(Boolean)
+        : [];
+      
+      const role = await Role.findOneAndUpdate(
+        { name: roleData.name },
+        {
+          name: roleData.name,
+          displayName: roleData.displayName,
+          description: roleData.description,
+          isAdmin: roleData.isAdmin,
+          priority: roleData.priority,
+          permissions: permissionIds,
+        },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      );
+      
+      createdRoles.push(role);
+      logger.info(`✓ Role: ${role.name} (${permissionIds.length} permissions)`);
+    } catch (error) {
+      logger.error(`✗ Failed to create role: ${roleData.name}`, { error: error.message });
+    }
+  }
+  
+  logger.info(`Seeded ${createdRoles.length} roles`);
+  return createdRoles;
+}
+
+/**
+ * Main seeding function
+ */
+async function seedRBAC() {
+  try {
+    // Connect to MongoDB
+    const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/quiz-app';
+    await mongoose.connect(mongoUri);
+    logger.info('Connected to MongoDB');
+    
+    // Seed permissions first
+    const permissions = await seedPermissions();
+    
+    // Then seed roles with permission references
+    const roles = await seedRoles(permissions);
+    
+    logger.info('✓ RBAC seeding completed successfully');
+    logger.info(`  - ${permissions.length} permissions`);
+    logger.info(`  - ${roles.length} roles`);
+    
+  } catch (error) {
+    logger.error('RBAC seeding failed', { error: error.message, stack: error.stack });
+    process.exit(1);
+  } finally {
+    await mongoose.connection.close();
+    logger.info('Database connection closed');
+  }
+}
+
+// Run if called directly
+if (require.main === module) {
+  seedRBAC()
+    .then(() => process.exit(0))
+    .catch(error => {
+      logger.error('Unhandled error', { error: error.message });
+      process.exit(1);
+    });
+}
+
+module.exports = { seedRBAC, seedPermissions, seedRoles };

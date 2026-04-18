@@ -1,0 +1,3 @@
+{
+  "ignore": ["*.log", "err.txt", "out.txt", "out_active.txt", "out_active_utf8.txt", "out_utf8.txt", "node_modules/**"]
+}

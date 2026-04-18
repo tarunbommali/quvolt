@@ -13,6 +13,7 @@ Updated: 2026-04
 - Expand analytics dashboards with host trend drill-downs.
 - Improve participant live-room resilience and reconnect UX.
 - Refine quiz authoring and AI insertion validation UX.
+- Complete design system application across all non-core pages (Legal, Billing, Analytics). [DONE]
 
 3. Monetization and Operations
 - Run payment webhook replay simulation in staging.

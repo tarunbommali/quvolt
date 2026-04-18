@@ -8,6 +8,8 @@ import { useSocketStore } from '../stores/useSocketStore';
 import ThemeToggle from './ui/ThemeToggle';
 import { navbar } from '../styles/navbar';
 import { cx } from '../styles/theme';
+import { BrandLogo } from './BrandLogo';
+import { useSubscriptionTheme } from '../hooks/useSubscriptionTheme';
 
 const STATUS_STYLES = {
     connected: 'theme-status-success',
@@ -54,6 +56,7 @@ const Navbar = () => {
     const role = user?.role || 'guest';
     const isHost = role === 'host' || role === 'admin';
     const isParticipant = Boolean(user) && !isHost;
+    const { theme, plan } = useSubscriptionTheme();
 
     const primaryCta = isHost
         ? { label: 'Open Studio', to: '/studio' }
@@ -75,6 +78,7 @@ const Navbar = () => {
             { label: 'Studio', to: '/studio' },
             { label: 'Analytics', to: '/analytics' },
             { label: 'History', to: '/history' },
+            { label: 'Billing', to: '/billing' },
         ]
         : isParticipant
             ? [
@@ -145,7 +149,7 @@ const Navbar = () => {
         <nav className={navbar.container} aria-label="Primary navigation">
             <div className={navbar.inner}>
                 <Link to="/" className={navbar.brandLink} aria-label="Quvolt home">
-                    <span className={navbar.brandTitle}>QU<span className={navbar.brandAccent}>VOLT</span></span>
+                    <BrandLogo />
                 </Link>
 
                 <div className={navbar.menu}>
@@ -212,8 +216,15 @@ const Navbar = () => {
                                         <div className="px-3 py-2 border-b theme-border mb-1">
                                             <p className="text-sm font-semibold theme-text-primary truncate">{user.name || 'User'}</p>
                                             <p className="text-xs theme-text-muted truncate">{user.email}</p>
-                                            <span className="mt-1 inline-block text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-[color-mix(in_srgb,var(--qb-primary)_14%,var(--qb-surface-1))] text-[var(--qb-primary)]">
-                                                {user.role}
+                                            <span className={cx(
+                                                "mt-1 inline-block text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border",
+                                                plan === 'PREMIUM'
+                                                    ? "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-800/50"
+                                                    : plan === 'PRO'
+                                                        ? "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800/50"
+                                                        : "bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
+                                            )}>
+                                                {theme.label}
                                             </span>
                                         </div>
                                         {accountItems.map(({ label, to }) => (

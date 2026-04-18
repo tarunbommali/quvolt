@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { CalendarDays, Clock3, EllipsisVertical, Play, Radio, Zap } from 'lucide-react';
 import { textStyles, tagStyles, controlStyles } from '../../styles/commonStyles';
 import { cardStyles } from '../../styles/cardStyles';
@@ -42,6 +43,7 @@ const getModeTag = (mode) => (
 );
 
 const QuizCard = ({ quiz, view = 'grid', cloning, onEdit, onDelete, onClone, onGoLive, onPrefetch }) => {
+    const navigate = useNavigate();
     const [showMenu, setShowMenu] = useState(false);
     const menuRef = useRef(null);
     const isList = view === 'list';
@@ -175,8 +177,15 @@ const QuizCard = ({ quiz, view = 'grid', cloning, onEdit, onDelete, onClone, onG
 
                                 {showMenu && (
                                     <div className={cardStyles.menuPanel} onClick={(event) => event.stopPropagation()}>
-                                        <button type="button" onClick={() => handleMenuAction(onEdit)} className={cardStyles.menuItem}>
+                                        <button type="button" onClick={() => handleMenuAction(() => onEdit())} className={cardStyles.menuItem}>
                                             Edit
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleMenuAction(() => navigate(`/quiz/templates/${quiz._id}/sessions`))}
+                                            className={cardStyles.menuItem}
+                                        >
+                                            Session History
                                         </button>
                                         <button
                                             type="button"
@@ -248,6 +257,13 @@ const QuizCard = ({ quiz, view = 'grid', cloning, onEdit, onDelete, onClone, onG
                                         className={cardStyles.menuItem}
                                     >
                                         Edit
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleMenuAction(() => navigate(`/quiz/templates/${quiz._id}/sessions`))}
+                                        className={cardStyles.menuItem}
+                                    >
+                                        Session History
                                     </button>
                                     <button
                                         type="button"

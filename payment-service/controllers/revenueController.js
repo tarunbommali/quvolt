@@ -214,3 +214,371 @@ exports.getRevenueByPeriod = async (req, res) => {
     });
   }
 };
+
+/**
+ * Get transaction history with gateway information
+ * GET /payment/transactions/:userId
+ * Requirements: 6.3
+ */
+exports.getTransactionHistory = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { page = 1, limit = 20, status, gatewayUsed, usedFallback } = req.query;
+
+    // Validate userId BEFORE authorization checks
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({
+        error: 'Bad Request',
+        message: 'Invalid user ID'
+      });
+    }
+
+    // Authorization: users can only view their own transactions, admins can view any
+    if (req.user?.role !== 'admin' && req.user?._id.toString() !== userId) {
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: 'You can only view your own transaction history'
+      });
+    }
+
+    // Build filter
+    const filter = { userId: new mongoose.Types.ObjectId(userId) };
+
+    if (status) {
+      filter.status = status;
+    }
+
+    if (gatewayUsed) {
+      filter.gatewayUsed = gatewayUsed;
+    }
+
+    // Filter for fallback transactions
+    if (usedFallback === 'true') {
+      filter.fallbackReason = { $ne: null };
+    } else if (usedFallback === 'false') {
+      filter.fallbackReason = null;
+    }
+
+    // Pagination with proper defaults for invalid values
+    const rawPage = parseInt(page);
+    const rawLimit = parseInt(limit);
+    const pageNum = Number.isInteger(rawPage) && rawPage > 0 ? rawPage : 1;
+    const limitNum = Number.isInteger(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 100) : 20;
+    const skip = (pageNum - 1) * limitNum;
+
+    // Get transactions with pagination
+    const [transactions, total] = await Promise.all([
+      Payment.find(filter)
+        .select('quizId amount currency status gatewayUsed attemptCount fallbackReason routingMetadata createdAt updatedAt')
+        .populate('quizId', 'title')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum)
+        .lean(),
+      Payment.countDocuments(filter)
+    ]);
+
+    // Format response
+    const formattedTransactions = transactions.map(tx => ({
+      id: tx._id,
+      quizId: tx.quizId?._id,
+      quizTitle: tx.quizId?.title || 'Unknown Quiz',
+      amount: tx.amount,
+      currency: tx.currency,
+      status: tx.status,
+      gatewayUsed: tx.gatewayUsed,
+      attemptCount: tx.attemptCount,
+      usedFallback: tx.fallbackReason !== null,
+      fallbackReason: tx.fallbackReason,
+      routingMetadata: tx.routingMetadata,
+      createdAt: tx.createdAt,
+      updatedAt: tx.updatedAt
+    }));
+
+    res.json({
+      transactions: formattedTransactions,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum)
+      }
+    });
+  } catch (error) {
+    logger.error('Error fetching transaction history', { error: error.message });
+    res.status(500).json({
+      error: 'Failed to fetch transaction history',
+      message: error.message
+    });
+  }
+};
+
+/**
+ * Get revenue breakdown by gateway
+ * POST /payment/revenue/by-gateway
+ * Requirements: 6.3, 6.5, 6.6
+ */
+exports.getRevenueByGateway = async (req, res) => {
+  try {
+    const { quizIds, startDate, endDate } = req.body;
+
+    if (quizIds !== undefined && !Array.isArray(quizIds)) {
+      return res.status(400).json({
+        error: 'Invalid request',
+        message: 'quizIds must be an array when provided'
+      });
+    }
+
+    const match = buildMatchFilter(quizIds, req.user);
+    
+    // Add date range filter if provided
+    if (startDate || endDate) {
+      match.createdAt = {};
+      if (startDate) {
+        match.createdAt.$gte = new Date(startDate);
+      }
+      if (endDate) {
+        match.createdAt.$lte = new Date(endDate);
+      }
+    }
+
+    // Only include payments with gateway information
+    match.gatewayUsed = { $ne: null };
+
+    // Calculate revenue per gateway - include ALL transactions (not just completed)
+    const result = await Payment.aggregate([
+      {
+        $match: match
+      },
+      {
+        $group: {
+          _id: '$gatewayUsed',
+          revenue: { 
+            $sum: {
+              $cond: [{ $eq: ['$status', 'completed'] }, '$amount', 0]
+            }
+          },
+          platformRevenue: { 
+            $sum: {
+              $cond: [{ $eq: ['$status', 'completed'] }, '$platformFeeAmount', 0]
+            }
+          },
+          hostPayoutAmount: { 
+            $sum: {
+              $cond: [{ $eq: ['$status', 'completed'] }, '$hostAmount', 0]
+            }
+          },
+          transactionCount: { $sum: 1 }, // Count ALL transactions
+          successfulTransactions: {
+            $sum: {
+              $cond: [{ $eq: ['$status', 'completed'] }, 1, 0]
+            }
+          },
+          fallbackTransactions: {
+            $sum: {
+              $cond: [{ $ne: ['$fallbackReason', null] }, 1, 0]
+            }
+          },
+          totalLatency: {
+            $sum: {
+              $cond: [
+                { $eq: ['$status', 'completed'] },
+                { $ifNull: ['$routingMetadata.latency', 0] },
+                0
+              ]
+            }
+          }
+        }
+      },
+      {
+        $sort: { revenue: -1 }
+      }
+    ]);
+
+    // Format response with performance metrics
+    const gateways = result.map(item => {
+      const successRate = item.transactionCount > 0
+        ? ((item.successfulTransactions / item.transactionCount) * 100).toFixed(2)
+        : 0;
+      
+      const avgResponseTime = item.successfulTransactions > 0
+        ? Math.round(item.totalLatency / item.successfulTransactions)
+        : null;
+
+      return {
+        gateway: item._id,
+        revenue: item.revenue,
+        platformRevenue: item.platformRevenue || 0,
+        hostPayoutAmount: item.hostPayoutAmount || 0,
+        transactionCount: item.transactionCount,
+        successfulTransactions: item.successfulTransactions,
+        fallbackTransactions: item.fallbackTransactions,
+        successRate: `${successRate}%`,
+        avgResponseTime
+      };
+    });
+
+    const totalRevenue = gateways.reduce((sum, item) => sum + item.revenue, 0);
+    const totalTransactions = gateways.reduce((sum, item) => sum + item.transactionCount, 0);
+
+    res.json({
+      gateways,
+      summary: {
+        totalRevenue,
+        totalTransactions,
+        gatewayCount: gateways.length
+      },
+      currency: 'INR'
+    });
+  } catch (error) {
+    logger.error('Error calculating revenue by gateway', { error: error.message });
+    res.status(500).json({
+      error: 'Failed to calculate revenue by gateway',
+      message: error.message
+    });
+  }
+};
+
+/**
+ * Get comprehensive revenue analytics with gateway breakdown
+ * POST /payment/revenue/analytics
+ * Requirements: 6.3, 6.5, 6.6
+ */
+exports.getRevenueAnalytics = async (req, res) => {
+  try {
+    const { quizIds, startDate, endDate } = req.body;
+
+    if (quizIds !== undefined && !Array.isArray(quizIds)) {
+      return res.status(400).json({
+        error: 'Invalid request',
+        message: 'quizIds must be an array when provided'
+      });
+    }
+
+    const match = buildMatchFilter(quizIds, req.user);
+    
+    // Add date range filter if provided
+    if (startDate || endDate) {
+      match.createdAt = {};
+      if (startDate) {
+        match.createdAt.$gte = new Date(startDate);
+      }
+      if (endDate) {
+        match.createdAt.$lte = new Date(endDate);
+      }
+    }
+
+    // Get overall revenue summary - count ALL transactions
+    const overallResult = await Payment.aggregate([
+      {
+        $match: match
+      },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { 
+            $sum: {
+              $cond: [{ $eq: ['$status', 'completed'] }, '$amount', 0]
+            }
+          },
+          platformRevenue: { 
+            $sum: {
+              $cond: [{ $eq: ['$status', 'completed'] }, '$platformFeeAmount', 0]
+            }
+          },
+          hostPayoutAmount: { 
+            $sum: {
+              $cond: [{ $eq: ['$status', 'completed'] }, '$hostAmount', 0]
+            }
+          },
+          transactionCount: { $sum: 1 } // Count ALL transactions
+        }
+      }
+    ]);
+
+    // Get gateway breakdown - include ALL transactions
+    const gatewayMatch = { ...match, gatewayUsed: { $ne: null } };
+    const gatewayResult = await Payment.aggregate([
+      {
+        $match: gatewayMatch
+      },
+      {
+        $group: {
+          _id: '$gatewayUsed',
+          revenue: { 
+            $sum: {
+              $cond: [{ $eq: ['$status', 'completed'] }, '$amount', 0]
+            }
+          },
+          transactionCount: { $sum: 1 }, // Count ALL transactions
+          successfulTransactions: {
+            $sum: {
+              $cond: [{ $eq: ['$status', 'completed'] }, 1, 0]
+            }
+          },
+          fallbackTransactions: {
+            $sum: {
+              $cond: [{ $ne: ['$fallbackReason', null] }, 1, 0]
+            }
+          },
+          avgLatency: {
+            $avg: {
+              $cond: [
+                { $eq: ['$status', 'completed'] },
+                { $ifNull: ['$routingMetadata.latency', 0] },
+                null
+              ]
+            }
+          }
+        }
+      },
+      {
+        $sort: { revenue: -1 }
+      }
+    ]);
+
+    const overall = overallResult.length > 0 ? overallResult[0] : {
+      totalRevenue: 0,
+      platformRevenue: 0,
+      hostPayoutAmount: 0,
+      transactionCount: 0
+    };
+
+    const gatewayBreakdown = gatewayResult.map(item => {
+      const successRate = item.transactionCount > 0
+        ? ((item.successfulTransactions / item.transactionCount) * 100).toFixed(2)
+        : 0;
+
+      return {
+        gateway: item._id,
+        revenue: item.revenue,
+        transactionCount: item.transactionCount,
+        successfulTransactions: item.successfulTransactions,
+        fallbackTransactions: item.fallbackTransactions,
+        successRate: `${successRate}%`,
+        avgResponseTime: Math.round(item.avgLatency)
+      };
+    });
+
+    res.json({
+      overall: {
+        totalRevenue: overall.totalRevenue,
+        platformRevenue: overall.platformRevenue,
+        hostPayoutAmount: overall.hostPayoutAmount,
+        transactionCount: overall.transactionCount
+      },
+      gatewayBreakdown,
+      period: {
+        startDate: startDate || null,
+        endDate: endDate || null
+      },
+      currency: 'INR'
+    });
+  } catch (error) {
+    logger.error('Error calculating revenue analytics', { error: error.message });
+    res.status(500).json({
+      error: 'Failed to calculate revenue analytics',
+      message: error.message
+    });
+  }
+};

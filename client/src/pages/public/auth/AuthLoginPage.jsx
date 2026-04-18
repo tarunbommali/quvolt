@@ -10,8 +10,8 @@ import { login as loginService } from '../../../services/authService';
 import { ROLE_ROUTES } from '../../../routes/roleConfig';
 
 const AuthLoginPage = () => {
-    const [email, setEmail] = useState('test@gmail.com');
-    const [password, setPassword] = useState('abcd@1234');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);

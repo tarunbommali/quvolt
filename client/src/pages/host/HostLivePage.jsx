@@ -125,6 +125,28 @@ const LiveSessionPage = () => {
         return () => clearInterval(interval);
     }, [expiry, view, setTimeLeft]);
 
+    // Watchdog: if next question does not arrive 2.5s after timer:end, sync state
+    const socket = useSocketStore((state) => state.socket);
+    useEffect(() => {
+        if (!socket || view !== 'live') return;
+        let watchdog = null;
+        const onTimerEnd = () => {
+            watchdog = setTimeout(() => {
+                socket.emit('session:syncState', { sessionCode: effectiveJoinCode });
+            }, 2500);
+        };
+        const cancelWatchdog = () => { if (watchdog) clearTimeout(watchdog); };
+        socket.on('timer:end', onTimerEnd);
+        socket.on('new_question', cancelWatchdog);
+        socket.on('question:update', cancelWatchdog);
+        return () => {
+            if (watchdog) clearTimeout(watchdog);
+            socket.off('timer:end', onTimerEnd);
+            socket.off('new_question', cancelWatchdog);
+            socket.off('question:update', cancelWatchdog);
+        };
+    }, [socket, view, effectiveJoinCode]);
+
     // â”€â”€â”€ Actions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const handleAbort = async () => {
         try {

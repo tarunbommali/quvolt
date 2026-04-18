@@ -1,6 +1,8 @@
 import Card from '../ui/Card';
 import SubHeader from '../layout/SubHeader';
 import { components } from '../../styles/components';
+import { useSubscriptionTheme } from '../../hooks/useSubscriptionTheme';
+import { cx } from '../../styles/theme';
 
 const ProfileTemplate = ({
     title,
@@ -11,9 +13,11 @@ const ProfileTemplate = ({
     avatarFallback,
     name,
     email,
+    plan,
     children,
 }) => {
     const template = components.profileTemplate;
+    const { theme, plan: currentPlan, isPro } = useSubscriptionTheme();
 
     return (
         <div className={template.page}>
@@ -38,6 +42,16 @@ const ProfileTemplate = ({
                         <div className={template.titleWrap}>
                             <h1 className={template.titleRow}>
                                 <span className={template.title}>{name || 'User'}</span>
+                                {plan !== 'participant' && (
+                                    <span className={cx(
+                                        "ml-3 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-300 hover:scale-105",
+                                        theme.colors.badgeBg,
+                                        theme.colors.badgeText,
+                                        isPro ? 'shadow-sm shadow-indigo-500/10' : ''
+                                    )}>
+                                        {theme.label}
+                                    </span>
+                                )}
                             </h1>
                             <p className={template.email}>{email || 'No email available'}</p>
                         </div>

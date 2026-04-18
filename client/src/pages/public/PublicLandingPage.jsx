@@ -13,6 +13,7 @@ import {
 import { useAuthStore } from '../../stores/useAuthStore';
 import { components } from '../../styles/components';
 import { cx } from '../../styles/theme';
+import Footer from '../../components/Footer';
 
 const PublicLandingPage = () => {
   const user = useAuthStore((s) => s.user);
@@ -29,6 +30,7 @@ const PublicLandingPage = () => {
       <HomeStepsGrid steps={steps} />
       <HomePricingGrid plans={plans} />
       <HomeCtaBanner user={user} />
+      <Footer />
     </div>
   );
 };

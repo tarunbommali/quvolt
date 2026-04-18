@@ -9,6 +9,8 @@ const config = require('./config/env');
 const { initSubscriptionJobs } = require('./jobs/subscriptionExpiryJob');
 const { initFailedJobWorker } = require('./jobs/failedJobWorker');
 const FailedJob = require('./models/FailedJob');
+const { loadGatewayConfigs } = require('./config/gateways');
+const paymentRouter = require('./services/PaymentRouter');
 
 const httpServerEnabled = String(process.env.HTTP_SERVER_ENABLED || 'true').toLowerCase() === 'true';
 
@@ -196,22 +198,60 @@ const bootWorkers = () => {
   }
 };
 
+/**
+ * Initialize Payment Router with gateway configurations
+ * Requirements: 4.1, 4.2, 4.3
+ */
+const initializePaymentRouter = () => {
+  try {
+    const { gateways, errors } = loadGatewayConfigs();
+    
+    if (gateways.length === 0) {
+      logger.warn('No payment gateways configured - payment routing will not be available', {
+        errors: errors.length > 0 ? errors : undefined,
+      });
+      return;
+    }
+
+    paymentRouter.initialize(gateways);
+    
+    logger.info('Payment router initialized successfully', {
+      gatewayCount: gateways.length,
+      gateways: gateways.map(g => g.getName()),
+    });
+  } catch (error) {
+    logger.error('Failed to initialize payment router', {
+      error: error.message,
+      stack: error.stack,
+    });
+  }
+};
+
 let server = null;
 if (httpServerEnabled) {
   server = app.listen(config.port, () => {
     logger.info(`Payment service running on port ${config.port}`);
+    initializePaymentRouter();
     bootWorkers();
   });
 } else {
   logger.info('Payment worker mode started (HTTP server disabled)', {
     environment: config.nodeEnv,
   });
+  initializePaymentRouter();
   bootWorkers();
 }
 
 // ---- Graceful Shutdown ----
 const gracefulShutdown = (signal) => {
   logger.info(`${signal} received, shutting down gracefully`);
+
+  // Stop payment router health monitoring
+  try {
+    paymentRouter.stopHealthMonitoring();
+  } catch (error) {
+    logger.error('Error stopping payment router', { error: error.message });
+  }
 
   const closeDbAndExit = async () => {
     try {

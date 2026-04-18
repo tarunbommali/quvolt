@@ -16,6 +16,11 @@ const UserSchema = new mongoose.Schema({
   password: { type: String, required: true },
   profilePhoto: { type: String, default: '' },
   role: { type: String, enum: ['admin', 'host', 'participant'], default: 'participant' },
+  // RBAC: Support multiple roles per user (Requirement 7.5)
+  roles: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Role',
+  }],
   participantProfile: {
     phone: { type: String, default: '', trim: true, maxlength: 30 },
     city: { type: String, default: '', trim: true, maxlength: 80 },

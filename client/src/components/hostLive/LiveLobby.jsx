@@ -6,6 +6,8 @@ import { LivePulseBadge } from '../ui';
 import { buttonStyles } from '../../styles/buttonStyles';
 import ErrorState from '../common/ErrorState';
 import { motionTokens } from '../../design';
+import { useSocketStore } from '../../stores/useSocketStore';
+import { useQuizStore } from '../../stores/useQuizStore';
 
 // Formats ms remaining into HH:MM:SS
 const formatCountdown = (ms) => {
@@ -17,10 +19,11 @@ const formatCountdown = (ms) => {
     return [h, m, s].map(n => String(n).padStart(2, '0')).join(':');
 };
 
-const LiveLobby = ({ activeQuiz, joinCode, participants, startQuizBroadcast, showToast, onAbort, realtimeError }) => {
+const LiveLobby = ({ activeQuiz, joinCode, participants, startQuizBroadcast, showToast, onAbort, realtimeError, sessionMode, onModeChange }) => {
     const scheduledAt = activeQuiz?.scheduledAt;
     const isScheduled = !!scheduledAt;
     const scheduledDate = useMemo(() => (scheduledAt ? new Date(scheduledAt) : null), [scheduledAt]);
+    const reconnectSocket = useSocketStore((state) => state.reconnectSocket);
     const displayedCode = joinCode || activeQuiz?.activeSessionCode || activeQuiz?.roomCode;
 
     const joinUrl = `${window.location.origin}/quiz/${displayedCode}`;
@@ -90,6 +93,8 @@ const LiveLobby = ({ activeQuiz, joinCode, participants, startQuizBroadcast, sho
                     <ErrorState
                         title="Realtime sync issue"
                         message={realtimeError}
+                        actionLabel="Connect Again"
+                        onAction={() => reconnectSocket()}
                     />
                 ) : null}
 
@@ -148,6 +153,42 @@ const LiveLobby = ({ activeQuiz, joinCode, participants, startQuizBroadcast, sho
                     >
                         {copied ? 'Copied' : 'Copy Link'}
                     </button>
+                </div>
+
+                <div className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-white px-5 py-4 md:flex-row md:items-center md:justify-between">
+                    <div className="flex items-center gap-3">
+                        <span className="rounded-lg bg-indigo-50 p-2 text-indigo-600">
+                            <CalendarClock size={16} />
+                        </span>
+                        <div>
+                            <p className="text-sm font-semibold text-gray-900">Quiz Mode</p>
+                            <p className="text-xs text-gray-500">Choose how questions flow during the session</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2 rounded-lg border border-gray-200 p-1">
+                        <button
+                            type="button"
+                            onClick={() => onModeChange?.('auto')}
+                            className={`rounded-md px-4 py-1.5 text-xs font-bold transition-all ${
+                                (!sessionMode || sessionMode === 'auto')
+                                    ? 'bg-indigo-600 text-white shadow-sm'
+                                    : 'text-gray-500 hover:text-gray-900'
+                            }`}
+                        >
+                            AUTO
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => onModeChange?.('tutor')}
+                            className={`rounded-md px-4 py-1.5 text-xs font-bold transition-all ${
+                                sessionMode === 'tutor'
+                                    ? 'bg-violet-600 text-white shadow-sm'
+                                    : 'text-gray-500 hover:text-gray-900'
+                            }`}
+                        >
+                            TUTOR
+                        </button>
+                    </div>
                 </div>
 
                 <div className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-white px-5 py-4 md:flex-row md:items-center md:justify-between">

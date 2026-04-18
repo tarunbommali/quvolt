@@ -26,14 +26,15 @@ const QuizLobbyPage = () => {
     
     // Quiz Store
     const getQuizzesForParent = useQuizStore((state) => state.getQuizzesForParent);
-
     const activeQuiz = useQuizStore((state) => state.activeQuiz);
     const sessionCode = useQuizStore((state) => state.sessionCode);
     const participants = useQuizStore((state) => state.participants);
+    const sessionMode = useQuizStore((state) => state.sessionMode);
     const setActiveQuiz = useQuizStore((state) => state.setActiveQuiz);
     const setSessionCode = useQuizStore((state) => state.setSessionCode);
     const setStatus = useQuizStore((state) => state.setStatus);
     const resetRealtimeState = useQuizStore((state) => state.resetRealtimeState);
+    const setSessionMode = useQuizStore((state) => state.setSessionMode);
 
     const { toast, showToast, clearToast } = useToast();
     const [loading, setLoading] = useState(true);
@@ -172,6 +173,17 @@ const QuizLobbyPage = () => {
         }
     };
 
+    const handleModeChange = (mode) => {
+        setSessionMode(mode);
+        // Persist the mode choice to the backend room so it is applied on launch
+        if (socket) {
+            const code = sessionCode || activeQuiz?.activeSessionCode || activeQuiz?.sessionCode || activeQuiz?.roomCode;
+            if (code) {
+                socket.emit('session:modeToggle', { sessionCode: code.toUpperCase(), mode });
+            }
+        }
+    };
+
     if (loading) return <LiveLoading />;
 
     return (
@@ -188,6 +200,8 @@ const QuizLobbyPage = () => {
                 showToast={showToast}
                 onAbort={handleAbort}
                 realtimeError={realtimeError}
+                sessionMode={sessionMode}
+                onModeChange={handleModeChange}
             />
         </>
     );

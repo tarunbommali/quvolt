@@ -2,23 +2,30 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Suspense, lazy } from 'react';
 import RoleGuard from '../guards/RoleGuard';
- 
+
 // Shared (all authenticated roles)
 const UserProfilePage = lazy(() => import('../pages/profile/UserProfilePage'));
- 
+
 // Public
 const PublicLandingPage = lazy(() => import('../pages/public/PublicLandingPage'));
 const JoinSessionPage = lazy(() => import('../pages/public/JoinSessionPage'));
 const UnauthorizedPage = lazy(() => import('../pages/public/UnauthorizedPage'));
 const AuthLoginPage = lazy(() => import('../pages/public/auth/AuthLoginPage'));
 const AuthRegisterPage = lazy(() => import('../pages/public/auth/AuthRegisterPage'));
- 
+
+// Legal
+const TermsPage = lazy(() => import('../pages/public/legal/TermsPage'));
+const PrivacyPolicyPage = lazy(() => import('../pages/public/legal/PrivacyPolicyPage'));
+const RefundPolicyPage = lazy(() => import('../pages/public/legal/RefundPolicyPage'));
+const CookiePolicyPage = lazy(() => import('../pages/public/legal/CookiePolicyPage'));
+const DisclaimerPage = lazy(() => import('../pages/public/legal/DisclaimerPage'));
+
 // Participant
 const ParticipantLayout = lazy(() => import('../layouts/ParticipantLayout'));
 const ParticipantDashboard = lazy(() => import('../pages/participant/ParticipantDashboard'));
 const ParticipantSessionPage = lazy(() => import('../pages/participant/ParticipantSessionPage'));
 const ParticipantHistoryPage = lazy(() => import('../pages/participant/ParticipantHistoryPage'));
- 
+
 // Host
 const HostLayout = lazy(() => import('../layouts/HostLayout'));
 const HostDashboard = lazy(() => import('../pages/host/HostDashboard'));
@@ -29,16 +36,17 @@ const HostEditPage = lazy(() => import('../pages/host/HostEditPage'));
 const HostLivePage = lazy(() => import('../pages/host/HostLivePage'));
 const HostAnalyticsPage = lazy(() => import('../pages/host/HostAnalyticsPage'));
 const HostHistoryPage = lazy(() => import('../pages/host/HostHistoryPage'));
- 
+const TemplateHistoryPage = lazy(() => import('../pages/host/TemplateHistoryPage'));
+
 // Session Details (Shared/Refactored)
 const HostSessionDetailPage = lazy(() => import('../pages/history/SessionHistoryDetailPage'));
- 
+
 // Admin
 const AdminLayout = lazy(() => import('../layouts/AdminLayout'));
 const AdminDashboard = lazy(() => import('../pages/admin/AdminDashboard'));
 const AdminUserManagement = lazy(() => import('../pages/admin/AdminUserManagement'));
 const BillingOverviewPage = lazy(() => import('../pages/billing/BillingOverviewPage'));
- 
+
 export default function AppRoutes() {
   return (
     <Routes>
@@ -48,10 +56,17 @@ export default function AppRoutes() {
       <Route path="/register" element={<AuthRegisterPage />} />
       <Route path="/join/:code" element={<JoinSessionPage />} />
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
- 
+
+      {/* Legal */}
+      <Route path="/terms" element={<TermsPage />} />
+      <Route path="/privacy" element={<PrivacyPolicyPage />} />
+      <Route path="/refund" element={<RefundPolicyPage />} />
+      <Route path="/cookies" element={<CookiePolicyPage />} />
+      <Route path="/disclaimer" element={<DisclaimerPage />} />
+
       {/* Join Route */}
       <Route path="/join" element={<JoinSessionPage />} />
- 
+
       {/* Participant */}
       <Route element={
         <RoleGuard roles={['participant']}>
@@ -64,7 +79,7 @@ export default function AppRoutes() {
         <Route path="/quiz/:code" element={<ParticipantSessionPage />} />
         <Route path="/quiz/sessions/:id" element={<HostSessionDetailPage />} />
       </Route>
- 
+
       {/* Global Shared Routes */}
       <Route element={
         <RoleGuard roles={['host', 'admin', 'participant']}>
@@ -73,7 +88,7 @@ export default function AppRoutes() {
       }>
         <Route path="/history" element={<HostHistoryPage />} />
       </Route>
- 
+
       {/* Host */}
       <Route element={
         <RoleGuard roles={['host', 'admin']}>
@@ -88,11 +103,13 @@ export default function AppRoutes() {
         <Route path="/quiz/templates/:id/launch" element={<HostLaunchPage />} />
         <Route path="/invite/:id" element={<HostLobbyPage />} />
         <Route path="/quiz/templates/:id/session" element={<HostLobbyPage />} />
-        <Route path="/live/:quizId" element={<HostLivePage />} />
+        <Route path="/live/:id" element={<HostLivePage />} />
         <Route path="/analytics" element={<HostAnalyticsPage />} />
+        <Route path="/quiz/templates/:id/sessions" element={<TemplateHistoryPage />} />
         <Route path="/history/template_id/:id" element={<HostSessionDetailPage />} />
+        <Route path="/billing" element={<BillingOverviewPage />} />
       </Route>
- 
+
       {/* Profile â€” accessible to every authenticated role */}
       <Route path="/profile" element={
         <RoleGuard roles={['participant', 'host', 'admin']}>
@@ -104,7 +121,7 @@ export default function AppRoutes() {
           <UserProfilePage initialMode="edit" />
         </RoleGuard>
       } />
- 
+
       {/* Admin */}
       <Route element={
         <RoleGuard roles={['admin']}>

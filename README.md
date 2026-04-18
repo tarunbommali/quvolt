@@ -19,6 +19,8 @@ Implemented and active:
 - host onboarding and payout state support
 - subscription and failed-job workers (toggleable by env)
 - AI quiz generation with 5% difficulty distribution controls
+- Redesigned Legal pages (Terms, Privacy, etc.) with unified layout and breadcrumbs
+- Theme-aware Billing Analytics with consistent typographic standards
 
 Validation in place:
 - server unit and integration suites for lifecycle, auth, and middleware contracts

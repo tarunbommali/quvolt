@@ -1,4 +1,5 @@
 const { getRedisClient } = require('../../config/redis');
+const logger = require('../../utils/logger');
 
 let redisClient = null;
 const memSessions = new Map();
@@ -35,7 +36,39 @@ const getSession = async (code) => {
 const setSession = async (code, session) => {
     const client = getRedisClientSafe();
     if (client) {
-        await client.set(sessionKey(code), JSON.stringify(session), { EX: SESSION_TTL_SECONDS });
+        // Retry logic for Redis writes
+        let lastError = null;
+        const maxRetries = 3;
+        
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                await client.set(sessionKey(code), JSON.stringify(session), { EX: SESSION_TTL_SECONDS });
+                
+                if (attempt > 1) {
+                    logger.info('Redis write succeeded after retry', { code, attempt });
+                }
+                
+                return;
+            } catch (error) {
+                lastError = error;
+                logger.warn('Redis write failed', { code, attempt, maxRetries, error: error.message });
+                
+                if (attempt < maxRetries) {
+                    // Exponential backoff: 100ms, 200ms, 400ms
+                    const delayMs = 100 * Math.pow(2, attempt - 1);
+                    await new Promise(resolve => setTimeout(resolve, delayMs));
+                }
+            }
+        }
+        
+        // All retries failed, log error and fall back to memory
+        logger.error('Redis write failed after all retries, falling back to memory', {
+            code,
+            attempts: maxRetries,
+            error: lastError.message
+        });
+        
+        memSessions.set(code, session);
         return;
     }
 

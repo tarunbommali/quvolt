@@ -1,13 +1,47 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Clock, Zap, ShieldCheck, Loader2, AlertCircle } from 'lucide-react';
+import { Users, Clock, Zap, Trophy, Loader2, AlertCircle, CheckCircle2, XCircle } from 'lucide-react';
 import { useSocketStore } from '../../stores/useSocketStore';
 import { useQuizStore } from '../../stores/useQuizStore';
 import { useAuthStore } from '../../stores/useAuthStore';
 import OptionButton from '../../components/common/OptionButton';
-import { buttonStyles } from '../../styles/buttonStyles';
 import { cx } from '../../styles/theme';
+
+// ── Typography helpers (keeps JSX clean) ──────────────────────────────────────
+const Label = ({ children, className = '' }) => (
+	<span className={`text-[10px] font-bold uppercase tracking-widest theme-text-muted ${className}`}>
+		{children}
+	</span>
+);
+
+const Stat = ({ label, value, accent }) => (
+	<div className="flex flex-col items-center gap-0.5">
+		<Label>{label}</Label>
+		<span className={`text-2xl font-black tabular-nums ${accent ?? 'theme-text-primary'}`}>{value}</span>
+	</div>
+);
+
+// ── Page shell ─────────────────────────────────────────────────────────────────
+const Shell = ({ children }) => (
+	<div className="min-h-screen theme-surface-soft theme-text-primary overflow-x-hidden font-sans">
+		{children}
+	</div>
+);
+
+// ── Centered card wrapper (loading / error / finished) ─────────────────────────
+const CenterCard = ({ children }) => (
+	<div className="min-h-screen flex items-center justify-center p-6">
+		<div className="w-full max-w-sm">{children}</div>
+	</div>
+);
+
+// ── Simple token-based card ────────────────────────────────────────────────────
+const Card = ({ children, className = '' }) => (
+	<div className={`surface-card rounded-2xl p-6 ${className}`}>{children}</div>
+);
+
+// ──────────────────────────────────────────────────────────────────────────────
 
 const ParticipantSessionPage = () => {
 	const { code } = useParams();
@@ -30,42 +64,35 @@ const ParticipantSessionPage = () => {
 		setSelectedOption,
 		setView,
 		getQuizByCodeCached,
-		resetRealtimeState
+		resetRealtimeState,
 	} = useQuizStore();
 
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(null);
 
-	// Initial Data Fetch & Socket Connection
+	const [showFeedback, setShowFeedback] = useState(false);
+
+	// ── Init & socket connection ─────────────────────────────────────────────
 	useEffect(() => {
 		let isMounted = true;
 
 		const initSession = async () => {
 			if (!code) return;
-
 			try {
 				setLoading(true);
 				setError(null);
 
-				// 1. Fetch Quiz Metadata (cached)
 				const quizData = await getQuizByCodeCached(code.toUpperCase());
 				if (!isMounted) return;
 
-				// Sync title to store for UI visibility
 				useQuizStore.getState().setQuizTitle(quizData?.title || '');
 				useQuizStore.getState().setActiveQuiz(quizData);
 
-				// 2. Connect Socket if not connected
-				if (!socket || !connected) {
-					connectSocket();
-				}
-
-				// 3. Join the specific room
+				if (!socket || !connected) connectSocket();
 				joinRoom(code.toUpperCase());
-
 			} catch (err) {
 				if (isMounted) {
-					setError(err?.response?.data?.message || 'Failed to join this session. Please check the code.');
+					setError(err?.response?.data?.message || 'Failed to join session. Check the code and try again.');
 				}
 			} finally {
 				if (isMounted) setLoading(false);
@@ -73,230 +100,272 @@ const ParticipantSessionPage = () => {
 		};
 
 		initSession();
-
-		return () => {
-			isMounted = false;
-		};
+		return () => { isMounted = false; };
 	}, [code, connectSocket, joinRoom, socket, connected, getQuizByCodeCached]);
 
-	// Cleanup on unmount
-	useEffect(() => {
-		return () => resetRealtimeState();
-	}, [resetRealtimeState]);
+	// ── Cleanup ──────────────────────────────────────────────────────────────
+	useEffect(() => () => resetRealtimeState(), [resetRealtimeState]);
 
-	// Handle View Transition (When host starts)
+	// ── Redirect on abort ────────────────────────────────────────────────────
 	useEffect(() => {
-		if (status === 'playing' || status === 'live' || currentQuestion) {
-			// Logic to switch to Active Quiz View if integrated, 
-			// for now we stay in lobby or handle sub-views.
-		}
-	}, [status, currentQuestion]);
-
-	// REDIRECT IF ABORTED
-	useEffect(() => {
-		if (abortMessage) {
-			navigate('/join', { state: { error: abortMessage } });
-		}
+		if (abortMessage) navigate('/join', { state: { error: abortMessage } });
 	}, [abortMessage, navigate]);
 
-	// AUTO-TRANSITION TO LIVE VIEW
+	// ── Auto-transition to live view ─────────────────────────────────────────
 	useEffect(() => {
-		// Map 'live' status from socket to 'live' view in the app
-		if (status === 'live' || status === 'playing') {
-			if (view !== 'live') setView('live');
-		}
+		if ((status === 'live' || status === 'playing') && view !== 'live') setView('live');
 	}, [status, view, setView]);
 
+	// ── Watchdog: request state sync if next question is late ────────────────
+	useEffect(() => {
+		if (!socket) return;
+		let watchdog = null;
+		const onTimerEnd = () => {
+			watchdog = setTimeout(() => {
+				socket.emit('session:syncState', { sessionCode: code?.toUpperCase() });
+			}, 2500);
+		};
+		const cancelWatchdog = () => { if (watchdog) clearTimeout(watchdog); };
+		socket.on('timer:end', onTimerEnd);
+		socket.on('new_question', cancelWatchdog);
+		socket.on('question:update', cancelWatchdog);
+		return () => {
+			if (watchdog) clearTimeout(watchdog);
+			socket.off('timer:end', onTimerEnd);
+			socket.off('new_question', cancelWatchdog);
+			socket.off('question:update', cancelWatchdog);
+		};
+	}, [socket, code]);
+
+	// ── Submit answer ────────────────────────────────────────────────────────
+	const handleAnswer = (option) => {
+		if (selectedOption || myResult) return;
+		setSelectedOption(option);
+		socket?.emit('submit_answer', {
+			roomCode: code?.toUpperCase(),
+			questionId: currentQuestion?._id,
+			selectedOption: option,
+		});
+	};
+
+	// Show feedback for 1.5 seconds when myResult populates
+	useEffect(() => {
+		if (myResult) {
+			setShowFeedback(true);
+			const t = setTimeout(() => setShowFeedback(false), 1500);
+			return () => clearTimeout(t);
+		}
+	}, [myResult]);
+
+	// ─────────────────────────────────────────────────────────────────────────
+	// LOADING
+	// ─────────────────────────────────────────────────────────────────────────
 	if (loading) {
 		return (
-			<div className="min-h-screen flex flex-col items-center justify-center bg-[var(--qb-surface-0)] theme-text-primary p-6">
-				<motion.div
-					initial={{ scale: 0.9, opacity: 0 }}
-					animate={{ scale: 1, opacity: 1 }}
-					className="flex flex-col items-center gap-6"
-				>
-					<div className="relative">
-						<div className="absolute inset-0 blur-xl bg-primary-500/20 rounded-full animate-pulse" />
-						<Loader2 className="w-12 h-12 text-[var(--qb-primary)] animate-spin relative" />
+			<Shell>
+				<CenterCard>
+					<div className="flex flex-col items-center gap-5 text-center">
+						<div className="w-14 h-14 rounded-2xl theme-status-info flex items-center justify-center">
+							<Loader2 size={28} className="animate-spin" />
+						</div>
+						<div>
+							<p className="font-black theme-text-primary">Syncing Session</p>
+							<p className="text-sm theme-text-secondary mt-1">
+								Joining <span className="font-black text-[var(--qb-primary)]">{code?.toUpperCase()}</span>…
+							</p>
+						</div>
 					</div>
-					<div className="text-center space-y-2">
-						<h2 className="text-2xl font-bold tracking-tight">Syncing Session</h2>
-						<p className="text-slate-500 font-medium">Entering the lobby for {code?.toUpperCase()}...</p>
-					</div>
-				</motion.div>
-			</div>
+				</CenterCard>
+			</Shell>
 		);
 	}
 
+	// ─────────────────────────────────────────────────────────────────────────
+	// ERROR
+	// ─────────────────────────────────────────────────────────────────────────
 	if (error || errorMessage) {
 		return (
-			<div className="min-h-screen flex items-center justify-center bg-[var(--qb-surface-0)] p-6">
-				<motion.div
-					initial={{ y: 20, opacity: 0 }}
-					animate={{ y: 0, opacity: 1 }}
-					className="w-full max-w-md p-8 rounded-3xl bg-white border theme-border shadow-xl text-center space-y-6 shadow-[12px_12px_0px_0px_rgba(15,23,42,1)] border-2 border-slate-900"
-				>
-					<div className="w-16 h-16 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mx-auto">
-						<AlertCircle size={32} />
-					</div>
-					<div className="space-y-2">
-						<h2 className="text-2xl font-bold theme-text-primary">Ops! Something went wrong</h2>
-						<p className="text-slate-500 font-medium font-bold text-red-500">{error || errorMessage}</p>
-					</div>
-					<button
-						onClick={() => navigate('/join')}
-						className="w-full h-14 bg-slate-900 hover:bg-black text-white rounded-2xl font-black text-lg transition-transform hover:scale-[1.02] active:scale-95 shadow-lg"
-					>
-						Back to Join
-					</button>
-				</motion.div>
-			</div>
+			<Shell>
+				<CenterCard>
+					<Card className="text-center space-y-5">
+						<div className="w-12 h-12 rounded-2xl theme-status-danger flex items-center justify-center mx-auto">
+							<AlertCircle size={22} />
+						</div>
+						<div>
+							<p className="font-black theme-text-primary">Something went wrong</p>
+							<p className="text-sm theme-tone-danger mt-1 font-semibold">{error || errorMessage}</p>
+						</div>
+						<button
+							onClick={() => navigate('/join')}
+							className="w-full h-11 rounded-xl bg-[var(--qb-primary)] hover:bg-[var(--qb-primary-strong)] text-white text-sm font-bold transition-colors"
+						>
+							Back to Join
+						</button>
+					</Card>
+				</CenterCard>
+			</Shell>
 		);
 	}
 
-	// QUIZ COMPLETE VIEW
+	// ─────────────────────────────────────────────────────────────────────────
+	// QUIZ COMPLETE
+	// ─────────────────────────────────────────────────────────────────────────
 	if (status === 'finished' || status === 'completed') {
 		const myRank = leaderboard.findIndex(p => p.userId === user?._id) + 1;
-		const myScore = leaderboard.find(p => p.userId === user?._id)?.score || 0;
+		const myScore = leaderboard.find(p => p.userId === user?._id)?.score ?? 0;
 
 		return (
-			<div className="min-h-screen bg-[var(--qb-surface-0)] theme-text-primary p-6 flex flex-col items-center justify-center">
-				<motion.div
-					initial={{ scale: 0.9, opacity: 0 }}
-					animate={{ scale: 1, opacity: 1 }}
-					className="w-full max-w-2xl bg-white border p-8 md:p-12 rounded-[2.5rem] border-2 border-slate-900 shadow-[12px_12px_0px_0px_rgba(15,23,42,1)] space-y-8 relative overflow-hidden text-center"
-				>
-					{/* Decorative background circle */}
-					<div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-bl-full -z-10 translate-x-12 -translate-y-12" />
-
-					<div className="space-y-4">
-						<div className="w-20 h-20 bg-indigo-50 text-indigo-500 rounded-3xl flex items-center justify-center mx-auto mb-6">
-							<ShieldCheck size={40} />
-						</div>
-						<h1 className="text-4xl md:text-5xl font-black theme-text-primary tracking-tight">Quiz Complete!</h1>
-						<p className="text-xl theme-text-secondary font-bold">You've reached the finish line. Great job!</p>
-					</div>
-
-					<div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6">
-						<div className="p-6 rounded-3xl bg-slate-50 border theme-border flex flex-col items-center gap-2">
-							<span className="text-[10px] font-black theme-text-muted uppercase tracking-[0.2em]">YOUR FINAL SCORE</span>
-							<span className="text-4xl font-black text-[var(--qb-primary)]">{myScore}</span>
-						</div>
-						<div className="p-6 rounded-3xl bg-slate-50 border theme-border flex flex-col items-center gap-2">
-							<span className="text-[10px] font-black theme-text-muted uppercase tracking-[0.2em]">YOUR RANK</span>
-							<span className="text-4xl font-black text-slate-900">#{myRank || '—'}</span>
-						</div>
-					</div>
-
-					<div className="space-y-4 pt-6">
-						<h3 className="text-left text-[11px] font-black theme-text-muted uppercase tracking-widest pl-2">Top Performers</h3>
-						<div className="space-y-2">
-							{leaderboard.slice(0, 3).map((player, idx) => (
-								<div key={idx} className={cx(
-									"flex items-center justify-between p-4 rounded-2xl border-2 transition-all",
-									player.userId === user?._id ? "border-slate-900 bg-slate-50" : "border-slate-100 bg-white"
-								)}>
-									<div className="flex items-center gap-3">
-										<span className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center text-xs font-black">
-											{idx + 1}
-										</span>
-										<span className="font-bold theme-text-primary">{player.name}</span>
-									</div>
-									<span className="font-black text-[var(--qb-primary)]">{player.score} pts</span>
-								</div>
-							))}
-						</div>
-					</div>
-
-					<button
-						onClick={() => navigate('/dashboard')}
-						className="w-full h-14 bg-slate-900 hover:bg-black text-white rounded-2xl font-black text-lg transition-transform hover:scale-[1.02] active:scale-95 shadow-lg"
+			<Shell>
+				<div className="min-h-screen flex items-center justify-center p-6">
+					<motion.div
+						initial={{ opacity: 0, y: 24 }}
+						animate={{ opacity: 1, y: 0 }}
+						className="w-full max-w-md space-y-5"
 					>
-						Back to Dashboard
-					</button>
-				</motion.div>
-			</div>
+						{/* Hero */}
+						<Card className="text-center space-y-4">
+							<div className="w-14 h-14 rounded-2xl theme-status-success flex items-center justify-center mx-auto">
+								<Trophy size={26} />
+							</div>
+							<div>
+								<h1 className="font-black tracking-tight theme-text-primary">Quiz Complete!</h1>
+								<p className="text-sm theme-text-secondary mt-1">You've reached the finish line.</p>
+							</div>
+							{/* Score / Rank */}
+							<div className="grid grid-cols-2 gap-3 pt-2">
+								<div className="rounded-xl theme-surface-soft border theme-border p-4 flex flex-col items-center gap-1">
+									<Label>Final Score</Label>
+									<span className="text-2xl font-black text-[var(--qb-primary)]">{myScore}</span>
+								</div>
+								<div className="rounded-xl theme-surface-soft border theme-border p-4 flex flex-col items-center gap-1">
+									<Label>Your Rank</Label>
+									<span className="text-2xl font-black theme-text-primary">#{myRank || '—'}</span>
+								</div>
+							</div>
+						</Card>
+
+						{/* Leaderboard */}
+						{leaderboard.length > 0 && (
+							<Card className="space-y-3">
+								<Label>Top Performers</Label>
+								<div className="space-y-2 mt-2">
+									{leaderboard.slice(0, 5).map((player, idx) => (
+										<div
+											key={idx}
+											className={cx(
+												'flex items-center justify-between rounded-xl border px-3 py-2.5 transition-colors',
+												player.userId === user?._id
+													? 'border-[var(--qb-primary)] bg-[color-mix(in_srgb,var(--qb-primary)_7%,var(--qb-surface-1))]'
+													: 'theme-border theme-surface-soft'
+											)}
+										>
+											<div className="flex items-center gap-2.5">
+												<span className="w-6 h-6 rounded-lg bg-[var(--qb-primary)] text-white text-xs font-black flex items-center justify-center">
+													{idx + 1}
+												</span>
+												<span className="text-sm font-semibold theme-text-primary">{player.name}</span>
+											</div>
+											<span className="text-sm font-black text-[var(--qb-primary)]">{player.score}</span>
+										</div>
+									))}
+								</div>
+							</Card>
+						)}
+
+						<button
+							onClick={() => navigate('/dashboard')}
+							className="w-full h-11 rounded-xl bg-[var(--qb-primary)] hover:bg-[var(--qb-primary-strong)] text-white text-sm font-bold transition-colors"
+						>
+							Back to Dashboard
+						</button>
+					</motion.div>
+				</div>
+			</Shell>
 		);
 	}
 
-	// ACTIVE GAMEPLAY VIEW
+	// ─────────────────────────────────────────────────────────────────────────
+	// ACTIVE GAMEPLAY
+	// ─────────────────────────────────────────────────────────────────────────
 	if (status === 'playing' || status === 'live' || currentQuestion) {
 		return (
-			<div className="min-h-screen bg-[var(--qb-surface-0)] theme-text-primary pb-24 overflow-x-hidden">
-				{/* Fixed Header */}
-				<div className="fixed top-0 left-0 w-full z-30 bg-[var(--qb-surface-0)] border-b theme-border px-6 py-4 flex items-center justify-between">
-					<div className="flex items-center gap-3">
-						<div className="px-3 py-1 rounded-lg bg-primary-50 text-[var(--qb-primary)] text-[10px] font-black uppercase tracking-widest border border-primary-100">
-							LIVE SESSION
-						</div>
-						<h2 className="font-black theme-text-primary text-sm tracking-tight truncate max-w-[200px]">
-							{quizTitle}
-						</h2>
+			<Shell>
+				{/* Fixed top bar */}
+				<div className="fixed top-0 left-0 w-full z-30 surface-card border-b theme-border px-5 py-3 flex items-center justify-between shadow-sm">
+					<div className="flex items-center gap-2.5">
+						<span className="px-2.5 py-1 rounded-lg bg-[color-mix(in_srgb,var(--qb-primary)_12%,var(--qb-surface-1))] text-[var(--qb-primary)] text-[10px] font-black uppercase tracking-widest">
+							Live
+						</span>
+						<span className="text-sm font-bold theme-text-primary truncate max-w-[180px]">{quizTitle}</span>
 					</div>
-
-					<div className="flex items-center gap-4">
-						<div className="flex flex-col items-end">
-							<span className="text-[10px] font-black theme-text-muted uppercase tracking-widest">PROGRESS</span>
-							<span className="font-black theme-text-primary tabular-nums">
-								{currentQuestion?.index + 1} / {currentQuestion?.total}
-							</span>
-						</div>
+					<div className="text-right">
+						<Label>Progress</Label>
+						<p className="text-sm font-black theme-text-primary tabular-nums leading-none mt-0.5">
+							{(currentQuestion?.index ?? 0) + 1} / {currentQuestion?.total ?? '—'}
+						</p>
 					</div>
 				</div>
 
-				<div className="max-w-4xl mx-auto px-6 pt-24 space-y-8">
-					{/* Question Card */}
+				{/* Content */}
+				<div className="max-w-2xl mx-auto px-5 pt-24 pb-12 space-y-5">
+					{/* Question card */}
 					<motion.div
 						key={currentQuestion?._id}
-						initial={{ scale: 0.95, opacity: 0 }}
-						animate={{ scale: 1, opacity: 1 }}
-						className="p-8 md:p-12 rounded-[2.5rem] bg-white border-2 border-slate-900 shadow-[8px_8px_0px_0px_rgba(15,23,42,1)] relative overflow-hidden"
+						initial={{ opacity: 0, y: 12 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ duration: 0.25 }}
+						className="surface-card rounded-2xl overflow-hidden"
 					>
-						<div className="absolute top-0 left-0 w-full h-1.5 bg-slate-100">
+						{/* Timer bar */}
+						<div className="h-1 theme-surface-soft">
 							<motion.div
+								key={currentQuestion?._id + '-bar'}
 								initial={{ width: '100%' }}
 								animate={{ width: '0%' }}
-								transition={{ duration: currentQuestion?.timeLimit || 10, ease: 'linear' }}
+								transition={{ duration: currentQuestion?.timeLimit || 30, ease: 'linear' }}
 								className="h-full bg-[var(--qb-primary)]"
 							/>
 						</div>
 
-						<div className="space-y-4 pt-4">
+						<div className="p-6 space-y-4">
+							{/* Q label + result badge */}
 							<div className="flex items-center justify-between">
-								<div className="flex items-center gap-2 text-indigo-500 font-black text-xs uppercase tracking-widest">
-									<Zap size={14} fill="currentColor" />
-									<span>Question {currentQuestion?.index + 1}</span>
+								<div className="flex items-center gap-1.5 text-[var(--qb-primary)] text-xs font-black uppercase tracking-widest">
+									<Zap size={13} fill="currentColor" />
+									<span>Question {(currentQuestion?.index ?? 0) + 1}</span>
 								</div>
 
-								{/* Result Badge */}
 								<AnimatePresence>
 									{myResult && (
 										<motion.div
-											initial={{ x: 20, opacity: 0 }}
-											animate={{ x: 0, opacity: 1 }}
+											initial={{ scale: 0.8, opacity: 0 }}
+											animate={{ scale: 1, opacity: 1 }}
 											className={cx(
-												"px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5",
-												myResult.isCorrect ? "bg-green-100 text-green-600 border border-green-200" : "bg-red-100 text-red-600 border border-red-200"
+												'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider',
+												myResult.isCorrect
+													? 'bg-green-50 text-green-700 border border-green-200'
+													: 'bg-red-50 text-red-600 border border-red-200'
 											)}
 										>
-											{myResult.isCorrect ? (
-												<><ShieldCheck size={12} /> CORRECT</>
-											) : (
-												<><AlertCircle size={12} /> WRONG</>
-											)}
+											{myResult.isCorrect
+												? <><CheckCircle2 size={11} /> +{myResult.score ?? 0}</>
+												: <><XCircle size={11} /> 0</>
+											}
 										</motion.div>
 									)}
 								</AnimatePresence>
 							</div>
-							<h1 className="text-2xl md:text-4xl font-black theme-text-primary leading-tight">
+
+							{/* Question text */}
+							<h2 className="text-xl md:text-2xl font-black theme-text-primary leading-snug">
 								{currentQuestion?.text}
-							</h1>
+							</h2>
 						</div>
 					</motion.div>
 
-					{/* Options Grid */}
+					{/* Options */}
 					<div className="relative">
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 							{(currentQuestion?.options || []).map((option, idx) => (
 								<OptionButton
 									key={idx}
@@ -304,210 +373,130 @@ const ParticipantSessionPage = () => {
 									index={idx}
 									isSelected={selectedOption === option}
 									isCorrect={
-										myResult && selectedOption === option 
-											? (myResult.isCorrect) 
-											: (myResult && myResult.correctAnswer === option ? true : undefined)
+										myResult && selectedOption === option
+											? myResult.isCorrect
+											: myResult && myResult.correctAnswer === option
+											? true
+											: undefined
 									}
 									disabled={!!selectedOption}
-									onClick={() => {
-										if (selectedOption) return; // Prevent double submission
-										setSelectedOption(option);
-
-										// Handle answer submission via socket
-										socket?.emit('submit_answer', {
-											roomCode: code?.toUpperCase(),
-											questionId: currentQuestion?._id,
-											selectedOption: option
-										});
-									}}
+									onClick={() => handleAnswer(option)}
 								/>
 							))}
 						</div>
 
-						{/* RESULT OVERLAY */}
+						{/* Result overlay - Minimal Menti style */}
 						<AnimatePresence>
-							{myResult && (
+							{myResult && showFeedback && (
 								<motion.div
-									initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
-									animate={{ opacity: 1, backdropFilter: 'blur(8px)' }}
-									exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
-									className="absolute inset-0 z-20 flex items-center justify-center rounded-[2.5rem] bg-white/40"
+									initial={{ opacity: 0, scale: 0.8, y: 20 }}
+									animate={{ opacity: 1, scale: 1, y: 0 }}
+									exit={{ opacity: 0, scale: 0.8, y: -20 }}
+									className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none"
 								>
-									<motion.div
-										initial={{ scale: 0.5, opacity: 0, y: 20 }}
-										animate={{ scale: 1, opacity: 1, y: 0 }}
-										className={cx(
-											"p-8 md:p-12 rounded-[2rem] border-4 shadow-2xl flex flex-col items-center gap-6 text-center max-w-[90%]",
-											myResult.isCorrect 
-												? "bg-white border-green-500 text-green-600 shadow-green-200" 
-												: "bg-white border-red-500 text-red-600 shadow-red-200"
-										)}
-									>
+									<div className="surface-card shadow-2xl rounded-2xl p-4 flex flex-col items-center gap-2 border border-[var(--qb-border)]">
 										<div className={cx(
-											"w-24 h-24 rounded-full flex items-center justify-center mb-2",
-											myResult.isCorrect ? "bg-green-100" : "bg-red-100"
+											'w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-inner',
+											myResult.isCorrect ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
 										)}>
-											{myResult.isCorrect ? (
-												<ShieldCheck size={64} className="fill-green-100" />
-											) : (
-												<AlertCircle size={64} className="fill-red-100" />
-											)}
+											{myResult.isCorrect ? <CheckCircle2 size={28} /> : <XCircle size={28} />}
 										</div>
-										
-										<div className="space-y-2">
-											<h2 className="text-4xl font-black uppercase tracking-tighter">
-												{myResult.isCorrect ? "Brilliant!" : "Not Quite!"}
-											</h2>
-											<p className="text-lg font-bold opacity-80">
-												{myResult.isCorrect 
-													? `You earned +${myResult.score} points!` 
-													: "Sometimes we win, sometimes we learn."}
+										<div className="text-center">
+											<p className={cx("text-[17px] font-black tracking-tight leading-none", myResult.isCorrect ? "text-green-600" : "text-red-500")}>
+												{myResult.isCorrect ? 'Correct' : 'Wrong'}
+											</p>
+											<p className="text-[11px] font-bold theme-text-muted mt-1 uppercase tracking-widest leading-none">
+												{myResult.timeTaken ? `${myResult.timeTaken.toFixed(1)}s` : ''}
 											</p>
 										</div>
-
-										{!myResult.isCorrect && myResult.correctAnswer && (
-											<div className="mt-4 p-4 rounded-2xl bg-slate-50 border border-slate-200 w-full text-slate-600">
-												<span className="text-[10px] font-black uppercase tracking-widest block mb-1">Correct Answer</span>
-												<span className="text-xl font-black tracking-tight">{myResult.correctAnswer}</span>
-											</div>
-										)}
-
-										<div className="flex items-center gap-6 mt-4">
-											<div className="flex flex-col items-center">
-												<span className="text-[10px] font-black opacity-40 uppercase tracking-widest">STREAK</span>
-												<span className="text-2xl font-black">{myResult.streak || 0} 🔥</span>
-											</div>
-											<div className="w-px h-8 bg-current opacity-20" />
-											<div className="flex flex-col items-center">
-												<span className="text-[10px] font-black opacity-40 uppercase tracking-widest">TOTAL</span>
-												<span className="text-2xl font-black">{myResult.totalScore || 0}</span>
-											</div>
-										</div>
-									</motion.div>
+									</div>
 								</motion.div>
 							)}
 						</AnimatePresence>
 					</div>
-
-					<div className="text-center pt-12">
-						<p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
-							Session Code: {code?.toUpperCase()}
-						</p>
-					</div>
 				</div>
-			</div>
+			</Shell>
 		);
 	}
 
+	// ─────────────────────────────────────────────────────────────────────────
+	// LOBBY (waiting for host to start)
+	// ─────────────────────────────────────────────────────────────────────────
 	return (
-		<div className="min-h-screen bg-[var(--qb-surface-0)] theme-text-primary pb-24 overflow-x-hidden">
+		<Shell>
+			<div className="max-w-2xl mx-auto px-5 py-12 md:py-20 space-y-6">
+				{/* Header */}
+				<div className="space-y-3">
+					<div className="flex items-center gap-2">
+						<span className="px-2.5 py-1 rounded-full bg-[color-mix(in_srgb,var(--qb-primary)_10%,var(--qb-surface-1))] border border-[color-mix(in_srgb,var(--qb-primary)_20%,var(--qb-border))] text-[var(--qb-primary)] text-[10px] font-black uppercase tracking-widest">
+							Lobby Active
+						</span>
+						<span className="flex items-center gap-1.5 text-xs font-semibold text-green-600">
+							<span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+							Live Connection
+						</span>
+					</div>
+					<h1 className="text-2xl md:text-3xl font-black theme-text-primary tracking-tight leading-tight">
+						{quizTitle || 'Joining Session…'}
+					</h1>
+					<p className="text-sm theme-text-secondary">
+						The host will start the quiz shortly. Stay on this page.
+					</p>
+				</div>
 
-			{/* Background Accents */}
-			<div className="fixed top-0 left-0 w-full h-full pointer-events-none overflow-hidden -z-10">
-				<div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-primary-500/5 blur-[120px] rounded-full" />
-				<div className="absolute bottom-0 right-0 w-[30%] h-[30%] bg-indigo-500/5 blur-[100px] rounded-full" />
-			</div>
-
-			<div className="max-w-4xl mx-auto px-6 pt-12 md:pt-20 space-y-10">
-				{/* Header Section */}
-				<div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-8 border-b theme-border">
-					<motion.div
-						initial={{ x: -20, opacity: 0 }}
-						animate={{ x: 0, opacity: 1 }}
-						className="space-y-3"
-					>
-						<div className="flex items-center gap-3">
-							<span className="px-3 py-1 rounded-full bg-primary-50 text-[var(--qb-primary)] text-[10px] font-black uppercase tracking-widest border border-primary-100">
-								LOBBY ACTIVE
-							</span>
-							<div className="flex items-center gap-1.5 text-xs font-bold text-green-500">
-								<div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-								LIVE CONNECTION
-							</div>
-						</div>
-						<h1 className="text-3xl md:text-5xl font-black theme-text-primary tracking-tight">
-							{quizTitle || 'Joining Session...'}
-						</h1>
-						<p className="theme-text-secondary font-semibold text-lg max-w-lg">
-							Hang tight! The host will start the quiz shortly.
-						</p>
-					</motion.div>
-
-					<motion.div
-						initial={{ x: 20, opacity: 0 }}
-						animate={{ x: 0, opacity: 1 }}
-						className="flex flex-col items-end gap-1.5"
-					>
-						<span className="text-[10px] font-black theme-text-muted uppercase tracking-[0.2em]">SESSION CODE</span>
-						<div className="px-6 py-3 rounded-2xl bg-white border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] text-2xl font-black tracking-widest theme-text-primary">
+				{/* Session code + stats */}
+				<div className="grid grid-cols-2 gap-3">
+					<Card className="space-y-1">
+						<Label>Session Code</Label>
+						<p className="text-xl font-black tracking-widest text-[var(--qb-primary)]">
 							{code?.toUpperCase()}
-						</div>
-					</motion.div>
-				</div>
-
-				{/* Main Content Grid */}
-				<div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-					{/* Left: Stats/Info */}
-					<div className="md:col-span-8 space-y-6">
-						<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-							<motion.div
-								initial={{ y: 20, opacity: 0 }}
-								animate={{ y: 0, opacity: 1 }}
-								transition={{ delay: 0.1 }}
-								className="p-6 rounded-3xl bg-white border theme-border shadow-sm space-y-4"
-							>
-								<div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-500 flex items-center justify-center">
-									<Clock size={24} />
-								</div>
-								<div className="space-y-1">
-									<h3 className="font-bold theme-text-primary text-sm uppercase tracking-wider">Waiting for Host</h3>
-									<p className="text-[11px] theme-text-muted font-bold">Synced with Game Server</p>
-								</div>
-							</motion.div>
-
-							<motion.div
-								initial={{ y: 20, opacity: 0 }}
-								animate={{ y: 0, opacity: 1 }}
-								transition={{ delay: 0.2 }}
-								className="p-6 rounded-3xl bg-white border theme-border shadow-sm space-y-4"
-							>
-								<div className="w-12 h-12 rounded-2xl bg-orange-50 text-orange-500 flex items-center justify-center">
-									<Zap size={24} />
-								</div>
-								<div className="space-y-1">
-									<h3 className="font-bold theme-text-primary text-sm uppercase tracking-wider">Interactive Flow</h3>
-									<p className="text-[11px] theme-text-muted font-bold">Real-time participation ready</p>
-								</div>
-							</motion.div>
-						</div>
-
-						{/* Connected Users Reel */}
-						<motion.div
-							initial={{ y: 20, opacity: 0 }}
-							animate={{ y: 0, opacity: 1 }}
-							transition={{ delay: 0.3 }}
-							className="p-8 rounded-3xl theme-surface-soft border theme-border flex items-center justify-between"
-						>
-							<div className="flex items-center gap-3">
-								<Users className="text-[var(--qb-primary)]" size={20} />
-								<h3 className="font-bold text-lg theme-text-primary">Lobby Connected</h3>
-							</div>
-							<div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white border theme-border shadow-sm">
-								<div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-								<span className="text-xs font-black theme-text-primary uppercase tracking-widest">You are in!</span>
-							</div>
-						</motion.div>
-					</div>
-
-					{/* Right: User Status */}
-					<div className="md:col-span-4 space-y-4">
-						<p className="text-[10px] text-center text-slate-400 font-bold uppercase tracking-widest px-4">
-							You will automatically be launched into the quiz when the host starts.
 						</p>
-					</div>
+					</Card>
+					<Card className="space-y-1">
+						<Label>Participants</Label>
+						<div className="flex items-center gap-2">
+							<Users size={16} className="theme-text-muted" />
+							<p className="text-xl font-black theme-text-primary">{participants.length}</p>
+						</div>
+					</Card>
 				</div>
+
+				{/* Status cards */}
+				<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+					<Card className="flex items-center gap-4">
+						<div className="w-10 h-10 rounded-xl theme-status-info flex items-center justify-center shrink-0">
+							<Clock size={18} />
+						</div>
+						<div>
+							<p className="text-sm font-bold theme-text-primary">Waiting for Host</p>
+							<p className="text-xs theme-text-muted mt-0.5">Synced with game server</p>
+						</div>
+					</Card>
+					<Card className="flex items-center gap-4">
+						<div className="w-10 h-10 rounded-xl theme-status-accent flex items-center justify-center shrink-0">
+							<Zap size={18} />
+						</div>
+						<div>
+							<p className="text-sm font-bold theme-text-primary">Real-time Ready</p>
+							<p className="text-xs theme-text-muted mt-0.5">You're in the room</p>
+						</div>
+					</Card>
+				</div>
+
+				{/* "You are in" confirmed row */}
+				<Card className="flex items-center justify-between">
+					<span className="text-sm font-semibold theme-text-secondary">Your spot is confirmed</span>
+					<span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-50 border border-green-200 text-green-700 text-xs font-bold">
+						<span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+						You're In!
+					</span>
+				</Card>
+
+				<p className="text-center text-xs theme-text-muted">
+					Session Code: <strong className="theme-text-secondary">{code?.toUpperCase()}</strong>
+				</p>
 			</div>
-		</div>
+		</Shell>
 	);
 };
 

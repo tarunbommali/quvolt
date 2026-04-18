@@ -1,6 +1,5 @@
-import { BadgeCheck, Loader2, Sparkles } from 'lucide-react';
-import Card from '../ui/Card';
-import Button from '../ui/Button';
+import { CheckCircle2, Loader2, Sparkles } from 'lucide-react';
+import { buttonStyles } from '../../styles/buttonStyles';
 
 const BILLING_PLAN_COPY = {
     FREE: {
@@ -65,67 +64,65 @@ const PlanGrid = ({ plans, currentPlanId, actionLoading, onUpgrade, inrSymbol })
             const ctaLabel = copy.ctaLabel || 'Upgrade';
 
             return (
-                <Card
+                <div
                     key={plan.id}
-                    className={`flex flex-col rounded-2xl border-2 p-4 md:p-6 transition-all ${
-                        isCurrent
-                            ? 'border-indigo-500 bg-indigo-50/30 ring-4 ring-indigo-50'
-                            : copy.featured
-                                ? 'border-violet-200 hover:border-violet-300'
-                                : 'border-gray-100 hover:border-gray-200'
-                    }`}
+                    className={`flex flex-col rounded-2xl p-6 border transition-all ${
+                        copy.featured
+                            ? 'md:scale-105 border-indigo-500 ring-2 ring-indigo-500/20 shadow-lg'
+                            : 'border-gray-200 dark:border-gray-700'
+                    } bg-white dark:bg-gray-800`}
                 >
-                    <div className="flex-1 space-y-6">
-                        {copy.featured ? (
-                            <span className="inline-flex rounded-full bg-indigo-600 px-2 py-1 text-xs font-semibold text-white">
+                    {copy.featured ? (
+                        <div className="mb-0">
+                            <span className="text-xs bg-indigo-600 text-white px-2 py-1 rounded-full">
                                 Most Popular
                             </span>
-                        ) : null}
-
-                        <div className="space-y-2">
-                            <h3 className="flex items-center gap-2 text-xl md:text-2xl font-semibold text-slate-900">
-                                {copy.name || plan.name} {isCurrent && <Sparkles size={16} className="theme-tone-caution" />}
-                            </h3>
-                            <p className="text-sm text-slate-500">{priceLabel}</p>
-                            {copy.tagline ? <p className="text-sm font-medium text-slate-700">{copy.tagline}</p> : null}
-                            {copy.audience ? <p className="text-xs text-slate-500">{copy.audience}</p> : null}
                         </div>
+                    ) : null}
 
-                        <div className="space-y-3 border-t border-slate-200 pt-4">
-                            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Features</p>
-                            <ul className="space-y-4">
-                                {features.map((feature, index) => (
-                                    <li key={index} className="flex gap-3 text-sm font-medium text-slate-700">
-                                        <BadgeCheck size={20} className={isCurrent ? 'text-indigo-600' : 'text-slate-400'} />
-                                        <span>{feature}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
+                    <div className="flex items-center gap-2 mt-3">
+                        <h3 className="text-xl font-bold flex-1">{copy.name || plan.name}</h3>
+                        {isCurrent && <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-1 rounded-md flex items-center gap-1"><Sparkles size={12}/> Current</span>}
+                    </div>
+                    <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-gray-100">{priceLabel}</p>
+                    {copy.tagline ? <p className="mt-2 text-sm font-medium text-gray-600 dark:text-gray-300">{copy.tagline}</p> : null}
+                    {copy.audience ? <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{copy.audience}</p> : null}
 
-                        {copy.upgradeNote ? (
-                            <p className="rounded-lg bg-indigo-50 px-3 py-2 text-xs font-medium text-indigo-700">
-                                {copy.upgradeNote}
-                            </p>
-                        ) : null}
+                    <div className="mt-5 border-t border-gray-200 pt-4 dark:border-gray-700 flex-1">
+                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-gray-500 dark:text-gray-400">Features</p>
 
-                        {copy.commission ? (
-                            <p className={`text-sm font-semibold ${plan.id === 'FREE' ? 'theme-tone-warning' : 'text-emerald-700'}`}>
-                                {copy.commission}
-                            </p>
-                        ) : null}
+                        <ul className="mt-3 space-y-3 text-sm">
+                            {features.map((feature, index) => (
+                                <li key={index} className="flex items-start gap-2 text-gray-700 dark:text-gray-300">
+                                    <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-indigo-500" />
+                                    <span>{feature}</span>
+                                </li>
+                            ))}
+                        </ul>
                     </div>
 
-                    <Button
+                    {copy.upgradeNote ? (
+                        <p className="mt-4 rounded-lg bg-indigo-50 px-3 py-2 text-xs font-medium text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300">
+                            {copy.upgradeNote}
+                        </p>
+                    ) : null}
+
+                    {copy.commission ? (
+                        <p className={`mt-4 text-sm font-semibold ${plan.id === 'FREE' ? 'theme-tone-warning' : 'text-emerald-600 dark:text-emerald-300'}`}>
+                            {plan.id === 'FREE' ? 'Warning: ' : 'Value: '}{copy.commission.replace(/^(Warning|Value):\s*/, '')}
+                        </p>
+                    ) : null}
+
+                    <button
                         onClick={() => onUpgrade(plan.id)}
                         disabled={actionLoading[plan.id] || isCurrent}
-                        className={`mt-8 w-full rounded-xl py-3 text-sm font-medium ${
+                        className={`${buttonStyles?.base || 'inline-flex items-center justify-center rounded-xl font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 h-10 px-4 text-sm'} ${
                             isCurrent
-                                ? 'bg-indigo-100 text-indigo-400 cursor-not-allowed'
-                                : plan.id === 'PREMIUM'
-                                    ? 'bg-slate-900 text-white hover:bg-slate-800'
-                                    : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-600/20'
-                        }`}
+                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-800 dark:text-gray-500 dark:border dark:border-gray-700'
+                                : (copy.featured
+                                    ? (buttonStyles?.primary || 'bg-[var(--qb-primary)] text-white hover:bg-[var(--qb-primary-strong)]')
+                                    : (buttonStyles?.secondary || 'theme-surface-soft theme-text-primary hover:opacity-90 border theme-border'))
+                        } mt-5 w-full justify-center`}
                     >
                         {actionLoading[plan.id] ? (
                             <Loader2 size={18} className="animate-spin mx-auto" />
@@ -136,8 +133,8 @@ const PlanGrid = ({ plans, currentPlanId, actionLoading, onUpgrade, inrSymbol })
                         ) : (
                             ctaLabel
                         )}
-                    </Button>
-                </Card>
+                    </button>
+                </div>
             );
         })}
     </div>

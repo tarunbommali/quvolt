@@ -1,7 +1,32 @@
+/**
+ * quiz.socket.js
+ *
+ * Root socket registration module.  Wires together all sub-handlers:
+ *   - session.handler  → lobby / join / start / sync lifecycle
+ *   - question.handler → question:start, question:next, answer:submit
+ *   - timer.handler    → timer:request (server-driven timer events)
+ *
+ * Legacy event names (join_room, start_quiz, …) are kept for backward
+ * compatibility with existing client code until a full migration is done.
+ */
+
 const quizService = require('../services/quiz/quiz.service');
 const logger = require('../utils/logger');
+const registerSessionHandler = require('./handlers/session.handler');
+const registerQuestionHandler = require('./handlers/question.handler');
+const { registerTimerHandler } = require('./handlers/timer.handler');
+const sessionStore = require('../services/session/session.service');
 
 const registerQuizSocket = (io, socket) => {
+    // ── New handlers (spec-compliant event names) ─────────────────────────────
+    registerSessionHandler(io, socket);
+    registerQuestionHandler(io, socket);
+    registerTimerHandler(io, socket, () => sessionStore);
+
+    // ── Legacy handlers (backward-compatible) ─────────────────────────────────
+    // These remain untouched so existing host/participant pages continue to work
+    // while the frontend migrates to the new event names.
+
     socket.on('join_room', async ({ roomCode, sessionId }) => {
         try {
             const result = await quizService.joinRoom({ io, socket, roomCode, sessionId });
@@ -9,7 +34,22 @@ const registerQuizSocket = (io, socket) => {
 
             socket.join(result.roomCode);
             socket.emit('room_state', result.state);
-            io.to(result.roomCode).emit('participants_update', result.state.participants);
+            
+            // Emit to ALL sockets in the room (including the one that just joined)
+            const participantsArray = result.state.participants || [];
+            logger.info('Emitting participants_update', { 
+                roomCode: result.roomCode, 
+                participantCount: participantsArray.length,
+                participants: participantsArray.map(p => ({ id: p._id, name: p.name }))
+            });
+            
+            io.to(result.roomCode).emit('participants_update', participantsArray);
+
+            // Also emit spec-compliant alias so new frontend code works in parallel
+            io.to(result.roomCode).emit('session:updateParticipants', {
+                participants: participantsArray,
+                count: participantsArray.length,
+            });
         } catch (error) {
             logger.error('Socket join_room error', { roomCode, sessionId, error: error.message, stack: error.stack });
             socket.emit('error', 'Join failed');
@@ -30,9 +70,14 @@ const registerQuizSocket = (io, socket) => {
             }
 
             io.to(result.roomCode).emit('start_quiz', { roomCode: result.roomCode, sessionId: result.sessionId, mode: result.session.mode });
+            // Emit spec-compliant alias
+            io.to(result.roomCode).emit('session:start', {
+                sessionCode: result.roomCode,
+                sessionId: result.sessionId,
+                mode: result.session.mode,
+            });
             socket.emit('session_redirect', { roomCode: result.roomCode, sessionId: result.sessionId });
 
-            // STEP 2: Wait briefly to ensure participants have joined the new room before broadcasting
             setTimeout(() => {
                 quizService.broadcastQuestionEnhanced(io, result.roomCode).catch((err) => {
                     logger.error('broadcastQuestionEnhanced failed on start', { roomCode: result.roomCode, error: err.message, stack: err.stack });
@@ -46,11 +91,9 @@ const registerQuizSocket = (io, socket) => {
 
     socket.on('pause_quiz', async ({ quizId, sessionCode, roomCode }) => {
         try {
-            // STEP 3: Fix pause to work anytime (even before answers)
             const result = await quizService.pauseQuizSession({ io, quizId, sessionCode: sessionCode || roomCode, user: socket.data.user });
             if (result.error) return socket.emit('error', result.error);
 
-            // Emit pause event to all participants
             io.to(sessionCode || roomCode).emit('quiz_paused', { roomCode: sessionCode || roomCode });
         } catch (error) {
             logger.error('Socket pause_quiz error', { quizId, sessionCode, error: error.message, stack: error.stack });
@@ -68,7 +111,6 @@ const registerQuizSocket = (io, socket) => {
 
     socket.on('next_question', async ({ quizId, sessionId, sessionCode, roomCode }) => {
         try {
-            // STEP 7: Different behavior for auto vs tutor mode
             const result = await quizService.advanceQuizQuestion({
                 io,
                 quizId,
@@ -82,7 +124,6 @@ const registerQuizSocket = (io, socket) => {
         }
     });
 
-    // STEP 8: New host control events
     socket.on('reveal_answer', async ({ roomCode, sessionCode }) => {
         try {
             const user = socket.data.user;
@@ -121,6 +162,7 @@ const registerQuizSocket = (io, socket) => {
                 return;
             }
 
+            // Legacy answer_result shape
             socket.emit('answer_result', {
                 isCorrect: result.isCorrect,
                 correctAnswer: result.correctAnswer,
@@ -129,6 +171,18 @@ const registerQuizSocket = (io, socket) => {
                 streak: result.streak,
                 bestStreak: result.bestStreak,
             });
+
+            // Spec-compliant alias
+            socket.emit('answer:result', {
+                correct: result.isCorrect,
+                correctOption: result.correctAnswer,
+                timeTaken: result.timeTaken ?? 0,
+                score: result.score,
+                totalScore: result.totalScore,
+                streak: result.streak,
+                bestStreak: result.bestStreak,
+            });
+
             io.to(result.room).emit('update_leaderboard', result.leaderboard);
         } catch (error) {
             logger.error('Socket submit_answer error', { roomCode, sessionId, error: error.message, stack: error.stack });

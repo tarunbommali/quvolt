@@ -190,8 +190,8 @@ const AuthRegisterPage = () => {
               className="mt-1 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
             />
             <label htmlFor="terms" className="text-sm text-gray-600 font-medium leading-6 cursor-pointer">
-              I agree to the <a href="#" className="text-indigo-600 font-bold hover:text-indigo-700">Terms of Service</a> and{' '}
-              <a href="#" className="text-indigo-600 font-bold hover:text-indigo-700">Privacy Policy</a>
+              I agree to the <Link to="/terms" className="text-indigo-600 font-bold hover:text-indigo-700">Terms of Service</Link> and{' '}
+              <Link to="/privacy" className="text-indigo-600 font-bold hover:text-indigo-700">Privacy Policy</Link>
             </label>
           </div>
 

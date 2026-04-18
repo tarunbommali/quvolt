@@ -9,6 +9,7 @@ const logger = require('../utils/logger');
 const { getHostCurrentPlan } = require('../services/subscriptionService');
 const { getCommissionForPlan } = require('../utils/subscriptionPlans');
 const config = require('../config/env');
+const paymentRouter = require('../services/PaymentRouter');
 
 // Keep legacy PLATFORM_FEE_PERCENT for backward compatibility
 const PLATFORM_FEE_PERCENT = Number(process.env.PLATFORM_FEE_PERCENT || 20);
@@ -158,8 +159,11 @@ const createOrder = async (req, res) => {
     }
 
     let razorpayOrder;
+    let routingResult;
     try {
-      razorpayOrder = await razorpay.orders.create(options);
+      // Use PaymentRouter for gateway routing with failover support
+      routingResult = await paymentRouter.routeCreateOrder(options);
+      razorpayOrder = { id: routingResult.id };
     } catch (error) {
       if (config.mockPaymentsEnabled) {
         logger.warn('Falling back to mock marketplace order', {
@@ -168,6 +172,18 @@ const createOrder = async (req, res) => {
           reason: error.message,
         });
         razorpayOrder = { id: buildMockMarketplaceOrderId(quizId, userId) };
+        routingResult = {
+          id: razorpayOrder.id,
+          gatewayUsed: 'mock',
+          routingMetadata: {
+            gateway: 'mock',
+            priority: 0,
+            latency: 0,
+            attemptNumber: 1,
+            totalAttempts: 1,
+            usedFallback: false,
+          },
+        };
       } else {
         throw error;
       }
@@ -193,6 +209,13 @@ const createOrder = async (req, res) => {
         hostPlan: hostPlan,
         payoutBlockedReason,
       },
+      // Gateway tracking fields (Requirements 6.1, 6.2)
+      gatewayUsed: routingResult?.gatewayUsed || null,
+      attemptCount: routingResult?.routingMetadata?.totalAttempts || 1,
+      fallbackReason: routingResult?.routingMetadata?.usedFallback 
+        ? (routingResult?.routingMetadata?.failedAttempts?.[0]?.error || 'Primary gateway unavailable')
+        : null,
+      routingMetadata: routingResult?.routingMetadata || null,
     });
 
     logger.info('Marketplace payment order created', {

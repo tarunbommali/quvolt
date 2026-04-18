@@ -1,0 +1,25 @@
+﻿[dotenv@17.3.1] injecting env (0) from .env -- tip: ├ó┼íΓäó├»┬╕┬Å  write to custom object with { processEnv: myObject }
+[dotenv@17.3.1] injecting env (15) from ..\.env -- tip: ├ó┼íΓäó├»┬╕┬Å  specify custom .env file path with { path: '/custom/path/.env' }
+MongoDB Connected: undefined
+22:06:25 [quiz-server] [31merror[39m: Redis subClient error {"service":"quiz-server","error":""}
+22:06:25 [quiz-server] [31merror[39m: Redis pubClient error {"service":"quiz-server","error":""}
+22:06:25 [quiz-server] [31merror[39m: Redis subClient error {"service":"quiz-server","error":""}
+22:06:25 [quiz-server] [31merror[39m: Redis pubClient error {"service":"quiz-server","error":""}
+22:06:25 [quiz-server] [31merror[39m: Redis pubClient error {"service":"quiz-server","error":""}
+22:06:25 [quiz-server] [31merror[39m: Redis subClient error {"service":"quiz-server","error":""}
+22:06:26 [quiz-server] [31merror[39m: Redis pubClient error {"service":"quiz-server","error":""}
+22:06:26 [quiz-server] [31merror[39m: Redis subClient error {"service":"quiz-server","error":""}
+22:06:26 [quiz-server] [31merror[39m: Redis pubClient error {"service":"quiz-server","error":""}
+22:06:26 [quiz-server] [33mwarn[39m: Redis unavailable, falling back to in-memory session store {"service":"quiz-server","error":"Max retries reached"}
+22:06:26 [quiz-server] [31merror[39m: Redis subClient error {"service":"quiz-server","error":""}
+22:06:26 [quiz-server] [33mwarn[39m: Failed to initialize PermissionRevocationService with Redis, falling back to in-memory mode {"service":"quiz-server","error":""}
+22:06:26 [quiz-server] [32minfo[39m: PermissionRevocationService initialized in in-memory mode {"service":"quiz-server"}
+22:06:26 [quiz-server] [32minfo[39m: Server started {"service":"quiz-server","port":"5000","environment":"development"}
+Process exiting with code: 1
+node : Error: querySrv ETIMEOUT _mongodb._tcp.quizbolt.iurppjl.mongodb.net
+At line:1 char:1
++ node server.js > out_active.txt 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Error: querySrv...pjl.mongodb.net:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 

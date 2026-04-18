@@ -35,8 +35,11 @@ const QuizSchema = new mongoose.Schema({
     },
     parentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Quiz', default: null },
     status: { type: String, enum: ['draft', 'scheduled', 'waiting', 'live', 'completed', 'aborted'], default: 'draft' },
-    accessType: { type: String, enum: ['public', 'private'], default: 'public' },
+    // Resource-level access control (Requirements 8.3, 8.4, 8.5)
+    accessType: { type: String, enum: ['public', 'private', 'shared'], default: 'public' },
     allowedEmails: [{ type: String, trim: true, lowercase: true }],
+    // Shared access control - users who have been granted specific access
+    sharedWith: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     isPaid: { type: Boolean, default: false },
     price: { type: Number, default: 0, min: 0 },
     shuffleQuestions: { type: Boolean, default: false },
@@ -75,6 +78,7 @@ QuizSchema.pre('validate', function normalizePricing() {
 
     this.mode = this.mode === 'teaching' ? 'tutor' : this.mode;
 
+    // Clear allowedEmails if not private
     if (this.accessType !== 'private') {
         this.allowedEmails = [];
     } else {
@@ -83,6 +87,11 @@ QuizSchema.pre('validate', function normalizePricing() {
                 .map((email) => String(email || '').trim().toLowerCase())
                 .filter(Boolean),
         ));
+    }
+    
+    // Clear sharedWith if not shared
+    if (this.accessType !== 'shared') {
+        this.sharedWith = [];
     }
 });
 

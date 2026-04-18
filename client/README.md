@@ -7,6 +7,8 @@ Status snapshot (April 2026):
 - session-aware host route resolution is active
 - AI generation editor flow includes preview + JSON workflows
 - e2e coverage is available through Playwright tests
+- UI/UX consistency pass across Legal and Billing modules
+- Theme-aware analytics system with refined typographic standards
 
 ## Responsibilities
 

@@ -7,7 +7,7 @@ const QuizSessionSchema = new mongoose.Schema({
         type: {
             title: { type: String, default: '' },
             mode: { type: String, enum: ['auto', 'tutor'], default: 'auto' },
-            accessType: { type: String, enum: ['public', 'private'], default: 'public' },
+            accessType: { type: String, enum: ['public', 'private', 'shared'], default: 'public' },
             shuffleQuestions: { type: Boolean, default: false },
             questions: [
                 {
@@ -29,6 +29,10 @@ const QuizSessionSchema = new mongoose.Schema({
     sessionCode: { type: String, required: true, unique: true, uppercase: true, trim: true },
     status: { type: String, enum: ['draft', 'scheduled', 'waiting', 'live', 'completed', 'aborted'], default: 'draft' },
     mode: { type: String, enum: ['auto', 'tutor'], default: 'auto' },
+    // Session-specific access control (Requirements 10.3, 10.4, 10.5)
+    accessType: { type: String, enum: ['inherit', 'public', 'private', 'shared'], default: 'inherit' },
+    allowedEmails: [{ type: String, trim: true, lowercase: true }],
+    sharedWith: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     questionState: { type: String, enum: ['waiting', 'live', 'review', 'paused'], default: 'waiting' },
     isPaused: { type: Boolean, default: false },
     currentQuestionIndex: { type: Number, default: 0 },

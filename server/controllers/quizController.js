@@ -211,8 +211,8 @@ const getQuizByCode = async (req, res) => {
             quiz = await Quiz.findOne({ roomCode: code }).select('-questions.hashedCorrectAnswer -questions.correctOption');
         }
 
-
         if (!quiz) return res.status(404).json({ message: 'Quiz not found' });
+        
         const quizObj = quiz.toObject();
         if (session) {
             quizObj.sessionId = session._id;
@@ -650,6 +650,15 @@ const deleteQuiz = async (req, res) => {
         const quiz = await Quiz.findOne(buildQuizAccessQuery(req, id));
         if (!quiz) return res.status(404).json({ message: 'Quiz not found' });
 
+        // Requirement 8.7: Log access grant revocation when quiz is deleted
+        if (quiz.sharedWith && quiz.sharedWith.length > 0) {
+            logger.info('Revoking all access grants for deleted quiz', {
+                quizId: quiz._id,
+                sharedWithCount: quiz.sharedWith.length,
+                deletedBy: req.user._id,
+            });
+        }
+
         // Cascade delete children if it's a subject
         if (quiz.type === 'subject') {
             const childQuizzes = await Quiz.find({ parentId: id });
@@ -718,6 +727,7 @@ const deleteQuestion = async (req, res) => {
 const startQuizSession = async (req, res) => {
     try {
         const templateId = resolveTemplateIdParam(req.params);
+        const { accessType, allowedEmails, sharedWith } = req.body || {}; // Accept optional access policy overrides
         const quizResult = await getManagedQuizOrError(req, templateId);
         if (quizResult.error) return sendError(res, quizResult.statusCode, quizResult.error);
         const { quiz } = quizResult;
@@ -750,28 +760,53 @@ const startQuizSession = async (req, res) => {
             }, 'Existing session reused');
         }
 
+        console.log('[DEBUG] Building template snapshot for quiz:', quiz._id);
+        const snapshot = buildTemplateSnapshot(quiz);
+        console.log('[DEBUG] Snapshot built with', snapshot.questions.length, 'questions');
+
         // The quiz is a permanent template â€” generate a fresh unique session code
         let session;
         let attempts = 0;
         while (!session && attempts < 5) {
             attempts++;
             const sessionCode = generateCode();
+            console.log('[DEBUG] Attempting session creation with code:', sessionCode, 'attempt:', attempts);
             try {
-                session = await QuizSession.create({
+                // Build session data with optional access policy overrides
+                const sessionData = {
                     templateId: quiz._id,
                     quizId: quiz._id,
-                    templateSnapshot: buildTemplateSnapshot(quiz),
+                    templateSnapshot: snapshot,
                     sessionCode,
                     status: SESSION_STATUS.WAITING,
                     mode: normalizeSessionMode(quiz.mode),
                     startedAt: new Date(),
-                });
+                };
+
+                // Apply access policy overrides if provided (Requirement 10.5)
+                if (accessType !== undefined) {
+                    sessionData.accessType = accessType;
+                }
+                if (allowedEmails !== undefined) {
+                    sessionData.allowedEmails = allowedEmails;
+                }
+                if (sharedWith !== undefined) {
+                    sessionData.sharedWith = sharedWith;
+                }
+
+                console.log('[DEBUG] Calling QuizSession.create...');
+                session = await QuizSession.create(sessionData);
+                console.log('[DEBUG] QuizSession.create succeeded:', session._id);
             } catch (err) {
+                console.error('[DEBUG] QuizSession.create failed:', err.message, 'code:', err.code);
                 if (err?.code === 11000) continue; // duplicate code, retry
                 throw err;
             }
         }
-        if (!session) return sendError(res, 409, 'Unable to allocate unique session code');
+        if (!session) {
+            console.warn('[DEBUG] Failed to allocate session code after 5 attempts');
+            return sendError(res, 409, 'Unable to allocate unique session code');
+        }
 
         assertTransition(currentStatus, SESSION_STATUS.WAITING, 'quiz');
         await Quiz.findByIdAndUpdate(quiz._id, { status: SESSION_STATUS.WAITING });
@@ -785,8 +820,9 @@ const startQuizSession = async (req, res) => {
             status: SESSION_STATUS.WAITING,
         }, 'Session started');
     } catch (error) {
+        console.error('[Controller] startQuizSession Error:', error);
         logger.error('[Controller] startQuizSession', { message: error.message, stack: error.stack });
-        return sendError(res, 500, 'Server Error');
+        return sendError(res, 500, error.message || 'Server Error');
     }
 };
 
@@ -822,8 +858,9 @@ const startLiveSession = async (req, res) => {
             activeSessionId: result.sessionId,
         }, 'Session is live');
     } catch (error) {
+        console.error('[Controller] startLiveSession Error:', error);
         logger.error('[Controller] startLiveSession', { message: error.message, stack: error.stack });
-        return sendError(res, 500, 'Server Error');
+        return sendError(res, 500, error.message || 'Server Error');
     }
 };
 
@@ -1182,7 +1219,7 @@ const getQuizSessions = async (req, res) => {
 const scheduleQuiz = async (req, res) => {
     try {
         const { id } = req.params;
-        const { scheduledAt } = req.body;
+        const { scheduledAt, accessType, allowedEmails, sharedWith } = req.body; // Accept access policy overrides
 
         if (!scheduledAt) {
             return sendError(res, 400, 'scheduledAt date-time is required');
@@ -1221,7 +1258,8 @@ const scheduleQuiz = async (req, res) => {
             while (!scheduledSession && attempts < 5) {
                 attempts += 1;
                 try {
-                    scheduledSession = await QuizSession.create({
+                    // Build session data with optional access policy overrides
+                    const sessionData = {
                         templateId: quiz._id,
                         quizId: quiz._id,
                         templateSnapshot: buildTemplateSnapshot(quiz),
@@ -1229,7 +1267,20 @@ const scheduleQuiz = async (req, res) => {
                         status: SESSION_STATUS.SCHEDULED,
                         mode: normalizeSessionMode(quiz.mode),
                         startedAt: scheduled,
-                    });
+                    };
+
+                    // Apply access policy overrides if provided (Requirement 10.5)
+                    if (accessType !== undefined) {
+                        sessionData.accessType = accessType;
+                    }
+                    if (allowedEmails !== undefined) {
+                        sessionData.allowedEmails = allowedEmails;
+                    }
+                    if (sharedWith !== undefined) {
+                        sessionData.sharedWith = sharedWith;
+                    }
+
+                    scheduledSession = await QuizSession.create(sessionData);
                 } catch (err) {
                     if (err?.code === 11000) continue;
                     throw err;
@@ -1402,6 +1453,316 @@ const getAnswerStats = async (req, res) => {
     }
 };
 
+// State reconciliation endpoint for real-time sync
+const getSessionState = async (req, res) => {
+    try {
+        const { code } = req.params;
+        const sessionStore = require('../services/session/session.service');
+
+        // Get session from Redis
+        const session = await sessionStore.getSession(code);
+        if (!session) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Session not found' 
+            });
+        }
+
+        // Build current state snapshot
+        const currentQuestionIndex = session.currentQuestionIndex ?? 0;
+        const question = session.questions?.[currentQuestionIndex];
+        
+        const currentQuestion = question ? {
+            _id: question._id,
+            text: question.text,
+            options: question.options,
+            timeLimit: question.timeLimit,
+            mediaUrl: question.mediaUrl,
+            questionType: question.questionType,
+            index: currentQuestionIndex,
+            total: session.questions.length,
+            expiry: session.questionExpiry,
+        } : null;
+
+        const leaderboard = Object.values(session.leaderboard || {})
+            .sort((a, b) => b.score - a.score || a.time - b.time)
+            .slice(0, 10);
+
+        const participants = Object.values(session.participants || {});
+
+        // Return complete state with sequence number
+        res.json({
+            success: true,
+            data: {
+                sessionCode: code,
+                status: session.status,
+                mode: session.mode,
+                isPaused: session.isPaused || false,
+                currentQuestionIndex,
+                currentQuestion,
+                questionState: session.questionState || 'waiting',
+                leaderboard,
+                participants,
+                participantCount: participants.length,
+                sequenceNumber: session.sequenceNumber || 0,
+                timestamp: Date.now(),
+                answerStats: session.currentQuestionStats ? {
+                    questionId: session.currentQuestionStats.questionId,
+                    optionCounts: session.currentQuestionStats.optionCounts || {},
+                    totalAnswers: session.currentQuestionStats.totalAnswers || 0,
+                    fastestUser: session.currentQuestionStats.fastestUser || null,
+                } : null,
+            }
+        });
+    } catch (error) {
+        logger.error('[Controller] getSessionState', { 
+            code: req.params.code,
+            message: error.message, 
+            stack: error.stack 
+        });
+        res.status(500).json({ 
+            success: false, 
+            message: 'Server Error' 
+        });
+    }
+};
+
+/**
+ * Grant quiz access to a specific user
+ * Requirement 8.6: Allow hosts to grant specific permissions to other users for their quizzes
+ */
+const grantQuizAccess = async (req, res) => {
+    try {
+        const quizId = req.params.id || req.params.quizId;
+        const { userId, email } = req.body;
+
+        if (!quizId) {
+            return sendError(res, 400, 'Quiz ID is required');
+        }
+
+        if (!userId && !email) {
+            return sendError(res, 400, 'User ID or email is required');
+        }
+
+        // Find the quiz and verify ownership
+        const quiz = await Quiz.findById(quizId);
+        if (!quiz) {
+            return sendError(res, 404, 'Quiz not found');
+        }
+
+        // Only owner or admin can grant access
+        if (req.user.role !== 'admin' && String(quiz.hostId) !== String(req.user._id)) {
+            return sendError(res, 403, 'Only the quiz owner can grant access');
+        }
+
+        // Find the user to grant access to
+        let targetUser;
+        if (userId) {
+            targetUser = await User.findById(userId);
+        } else if (email) {
+            targetUser = await User.findOne({ email: email.toLowerCase() });
+        }
+
+        if (!targetUser) {
+            return sendError(res, 404, 'User not found');
+        }
+
+        // Check if quiz is set to shared access type
+        if (quiz.accessType !== 'shared') {
+            return sendError(res, 400, 'Quiz must have "shared" access type to grant access to users');
+        }
+
+        // Check if user already has access
+        const alreadyHasAccess = quiz.sharedWith.some(
+            id => String(id) === String(targetUser._id)
+        );
+
+        if (alreadyHasAccess) {
+            return sendError(res, 400, 'User already has access to this quiz');
+        }
+
+        // Grant access
+        quiz.sharedWith.push(targetUser._id);
+        await quiz.save();
+
+        logger.info('Quiz access granted', {
+            quizId: quiz._id,
+            grantedBy: req.user._id,
+            grantedTo: targetUser._id,
+        });
+
+        return sendSuccess(res, {
+            quizId: quiz._id,
+            userId: targetUser._id,
+            userName: targetUser.name,
+            userEmail: targetUser.email,
+        }, 'Access granted successfully');
+    } catch (error) {
+        logger.error('Error granting quiz access', {
+            error: error.message,
+            stack: error.stack,
+        });
+        return sendError(res, 500, 'Server error');
+    }
+};
+
+/**
+ * Revoke quiz access from a specific user
+ * Requirement 8.6: Allow hosts to revoke quiz access
+ */
+const revokeQuizAccess = async (req, res) => {
+    try {
+        const quizId = req.params.id || req.params.quizId;
+        const { userId } = req.params;
+
+        if (!quizId || !userId) {
+            return sendError(res, 400, 'Quiz ID and User ID are required');
+        }
+
+        // Find the quiz and verify ownership
+        const quiz = await Quiz.findById(quizId);
+        if (!quiz) {
+            return sendError(res, 404, 'Quiz not found');
+        }
+
+        // Only owner or admin can revoke access
+        if (req.user.role !== 'admin' && String(quiz.hostId) !== String(req.user._id)) {
+            return sendError(res, 403, 'Only the quiz owner can revoke access');
+        }
+
+        // Check if user has access
+        const hasAccess = quiz.sharedWith.some(
+            id => String(id) === String(userId)
+        );
+
+        if (!hasAccess) {
+            return sendError(res, 400, 'User does not have access to this quiz');
+        }
+
+        // Revoke access
+        quiz.sharedWith = quiz.sharedWith.filter(
+            id => String(id) !== String(userId)
+        );
+        await quiz.save();
+
+        logger.info('Quiz access revoked', {
+            quizId: quiz._id,
+            revokedBy: req.user._id,
+            revokedFrom: userId,
+        });
+
+        return sendSuccess(res, {
+            quizId: quiz._id,
+            userId,
+        }, 'Access revoked successfully');
+    } catch (error) {
+        logger.error('Error revoking quiz access', {
+            error: error.message,
+            stack: error.stack,
+        });
+        return sendError(res, 500, 'Server error');
+    }
+};
+
+/**
+ * Get list of users who have access to a quiz
+ */
+const getQuizAccessList = async (req, res) => {
+    try {
+        const quizId = req.params.id || req.params.quizId;
+
+        if (!quizId) {
+            return sendError(res, 400, 'Quiz ID is required');
+        }
+
+        // Find the quiz and verify ownership
+        const quiz = await Quiz.findById(quizId).populate('sharedWith', 'name email');
+        if (!quiz) {
+            return sendError(res, 404, 'Quiz not found');
+        }
+
+        // Only owner or admin can view access list
+        if (req.user.role !== 'admin' && String(quiz.hostId) !== String(req.user._id)) {
+            return sendError(res, 403, 'Only the quiz owner can view the access list');
+        }
+
+        return sendSuccess(res, {
+            quizId: quiz._id,
+            accessType: quiz.accessType,
+            sharedWith: quiz.sharedWith || [],
+        }, 'Access list retrieved successfully');
+    } catch (error) {
+        logger.error('Error getting quiz access list', {
+            error: error.message,
+            stack: error.stack,
+        });
+        return sendError(res, 500, 'Server error');
+    }
+};
+
+/**
+ * Update session-specific access policy
+ * Requirements: 10.3, 10.5
+ */
+updateSessionAccessPolicy = async (req, res) => {
+    try {
+        const sessionCode = req.params.sessionCode;
+        const { accessType, allowedEmails, sharedWith } = req.body;
+
+        if (!sessionCode) {
+            return sendError(res, 400, 'Session code is required');
+        }
+
+        // Find the session
+        const session = await QuizSession.findOne({ sessionCode: sessionCode.toUpperCase() });
+        if (!session) {
+            return sendError(res, 404, 'Session not found');
+        }
+
+        // Find the parent quiz to verify ownership
+        const quiz = await Quiz.findById(session.quizId);
+        if (!quiz) {
+            return sendError(res, 404, 'Quiz not found');
+        }
+
+        // Only owner or admin can update session access policy
+        if (req.user.role !== 'admin' && String(quiz.hostId) !== String(req.user._id)) {
+            return sendError(res, 403, 'Only the quiz owner can update session access policy');
+        }
+
+        // Use the session access control service to update the policy
+        const sessionAccessControl = require('../services/session/sessionAccessControl');
+        const result = await sessionAccessControl.updateSessionAccessPolicy(
+            session._id,
+            req.user._id,
+            { accessType, allowedEmails, sharedWith }
+        );
+
+        if (!result.success) {
+            return sendError(res, 400, result.message || 'Failed to update session access policy');
+        }
+
+        // Fetch updated session
+        const updatedSession = await QuizSession.findById(session._id)
+            .populate('sharedWith', 'name email')
+            .lean();
+
+        return sendSuccess(res, {
+            sessionCode: updatedSession.sessionCode,
+            accessType: updatedSession.accessType,
+            allowedEmails: updatedSession.allowedEmails || [],
+            sharedWith: updatedSession.sharedWith || [],
+        }, 'Session access policy updated successfully');
+    } catch (error) {
+        logger.error('Error updating session access policy', {
+            error: error.message,
+            stack: error.stack,
+        });
+        return sendError(res, 500, 'Server error');
+    }
+}
+
+
 module.exports = {
     createQuiz,
     addQuestion,
@@ -1425,6 +1786,7 @@ module.exports = {
     revealAnswer,
     endQuizSession,
     getAnswerStats,
+    getSessionState,
     scheduleQuiz,
     joinScheduledSession,
     getMyScheduledJoins,
@@ -1432,4 +1794,8 @@ module.exports = {
     getSessionParticipants,
     exportSessionParticipants,
     getQuizSessions,
+    grantQuizAccess,
+    revokeQuizAccess,
+    getQuizAccessList,
+    updateSessionAccessPolicy,
 };

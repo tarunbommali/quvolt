@@ -36,6 +36,7 @@ const subscriptionRoutes = require('./routes/subscriptionRoutes');
 const hostOnboardingRoutes = require('./routes/hostOnboardingRoutes');
 const analyticsRoutes = require('./routes/analytics.routes');
 const aiRoutes = require('./routes/ai.routes');
+const rbacRoutes = require('./routes/rbac.routes');
 
 // Initialize Express
 const app = express();
@@ -130,10 +131,32 @@ const bootstrap = async () => {
     // Connect Database
     await connectDB();
 
+    let redisFailed = false;
     // Connect Redis & attach adapter to Socket.io
     try {
-        const pubClient = createClient({ url: config.redisUrl });
+        const redisOptions = {
+            url: config.redisUrl,
+            socket: {
+                reconnectStrategy: (retries) => {
+                    if (retries > 3) return new Error('Max retries reached');
+                    return Math.min(retries * 50, 500);
+                }
+            }
+        };
+        const pubClient = createClient(redisOptions);
         const subClient = pubClient.duplicate();
+        
+        pubClient.on('error', (err) => {
+            if (!redisFailed && err && err.message) {
+                logger.warn('Redis pubClient error', { error: err.message });
+            }
+        });
+        subClient.on('error', (err) => {
+            if (!redisFailed && err && err.message) {
+                logger.warn('Redis subClient error', { error: err.message });
+            }
+        });
+
         await Promise.all([pubClient.connect(), subClient.connect()]);
         io.adapter(createAdapter(pubClient, subClient));
         logger.info('Socket.io Redis adapter connected');
@@ -146,8 +169,34 @@ const bootstrap = async () => {
 
         // Resume any ongoing quizzes (Resilience)
         await rebootQuizzes(io);
+        
+        // Start session cleanup job
+        const { startSessionCleanupJob } = require('./jobs/sessionCleanup');
+        startSessionCleanupJob(io);
+        
+        // Start failed operations queue processor
+        const statePersistence = require('./services/session/statePersistence');
+        setInterval(() => {
+            statePersistence.processFailedOperationsQueue().catch(error => {
+                logger.error('Failed operations queue processing error', { error: error.message });
+            });
+        }, 5 * 60 * 1000).unref(); // Process every 5 minutes
     } catch (err) {
+        redisFailed = true;
         logger.warn('Redis unavailable, falling back to in-memory session store', { error: err.message });
+        
+        // Ensure the HTTP API and basic server functionalities still start without Redis
+        // Start session cleanup job (in-memory mode)
+        const { startSessionCleanupJob } = require('./jobs/sessionCleanup');
+        startSessionCleanupJob(io);
+
+        // Start failed operations queue processor (in-memory mode)
+        const statePersistence = require('./services/session/statePersistence');
+        setInterval(() => {
+            statePersistence.processFailedOperationsQueue().catch(error => {
+                logger.error('Failed operations queue processing error', { error: error.message });
+            });
+        }, 5 * 60 * 1000).unref();
     }
 
     // API Routes — rate limiters applied inline on every router group
@@ -158,6 +207,7 @@ const bootstrap = async () => {
     app.use('/api/host-onboarding', apiLimiter, hostOnboardingRoutes);
     app.use('/api/analytics', apiLimiter, analyticsRoutes);
     app.use('/api/ai', apiLimiter, aiRoutes);
+    app.use('/api/rbac', apiLimiter, rbacRoutes);
 
     // Health check
     app.get('/api/health', (req, res) => {
@@ -208,6 +258,10 @@ const bootstrap = async () => {
         });
     });
 
+    // Initialize permission revocation service
+    const permissionRevocationService = require('./services/rbac/permissionRevocation.service');
+    await permissionRevocationService.initialize(io);
+
     // Socket auth middleware — verify JWT and attach full user to socket.data
     io.use(async (socket, next) => {
         try {
@@ -232,11 +286,33 @@ const bootstrap = async () => {
     io.on('connection', (socket) => {
         socketConnectionsActive.set(io.engine.clientsCount);
         logger.debug('Socket connected', { socketId: socket.id, userId: socket.data.user?._id });
+        
+        // Register socket connection for permission revocation tracking
+        const permissionRevocationService = require('./services/rbac/permissionRevocation.service');
+        if (socket.data.user?._id) {
+            permissionRevocationService.registerConnection(
+                socket.data.user._id.toString(),
+                socket.id
+            ).catch(err => {
+                logger.error('Failed to register socket connection', { error: err.message });
+            });
+        }
+        
         registerQuizSocket(io, socket);
         socket.on('disconnect', (reason) => {
             socketSessionDropsTotal.inc({ reason: reason || 'unknown' });
             socketConnectionsActive.set(io.engine.clientsCount);
             logger.debug('Socket disconnected', { socketId: socket.id, reason });
+            
+            // Unregister socket connection
+            if (socket.data.user?._id) {
+                permissionRevocationService.unregisterConnection(
+                    socket.data.user._id.toString(),
+                    socket.id
+                ).catch(err => {
+                    logger.error('Failed to unregister socket connection', { error: err.message });
+                });
+            }
         });
     });
 
@@ -253,8 +329,9 @@ const bootstrap = async () => {
 };
 
 bootstrap().catch((err) => {
+    console.error('SERVER FATAL ERROR:', err);
     logger.error('Server failed to start', { message: err.message, stack: err.stack });
-    process.exit(1);
+    setTimeout(() => process.exit(1), 500); // give time to flush
 });
 
 // ── Graceful Shutdown ───────────────────────────────────────────────────────
@@ -268,6 +345,15 @@ const shutdown = (signal) => {
 
     server.close(async () => {
         logger.info('HTTP server closed');
+        
+        // Cleanup permission revocation service
+        try {
+            const permissionRevocationService = require('./services/rbac/permissionRevocation.service');
+            await permissionRevocationService.cleanup();
+        } catch (err) {
+            logger.error('Error cleaning up permission revocation service', { error: err.message });
+        }
+        
         process.exit(0);
     });
     setTimeout(() => {
@@ -279,7 +365,18 @@ const shutdown = (signal) => {
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
 
-// Catch unhandled promise rejections (not caught by winston rejectionHandlers in some environments)
-process.on('unhandledRejection', (reason) => {
-    logger.error('Unhandled promise rejection', { reason: String(reason) });
+process.on('uncaughtException', (err) => {
+    console.error('FATAL UNCAUGHT EXCEPTION:', err);
+    logger.error('uncaughtException', { message: err.message, stack: err.stack });
+    process.exit(1);
 });
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('FATAL UNHANDLED REJECTION:', reason);
+    logger.error('unhandledRejection', { reason: String(reason), stack: reason?.stack });
+});
+
+process.on('exit', (code) => {
+    console.log(`Process exiting with code: ${code}`);
+});
+
