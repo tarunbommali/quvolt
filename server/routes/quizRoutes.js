@@ -7,6 +7,7 @@ const validate = require('../middleware/validate');
 const quizController = require('../controllers/quiz.controller');
 const questionController = require('../controllers/question.controller');
 const sessionController = require('../controllers/session.controller');
+const sessionControllerOop = require('../controllers/session.controller.oop');
 const analyticsController = require('../controllers/analytics.controller');
 const accessController = require('../controllers/access.controller');
 
@@ -97,14 +98,14 @@ router.post('/:id/start', [
     body('sharedWith.*').optional().isMongoId().withMessage('Each sharedWith ID must be a valid MongoDB ID'),
     validate
 ], sessionController.startQuizSession);
-router.post('/:id/start-live', requireRole(['host', 'admin']), requireQuizOwnership, sessionController.startLiveSession);
+router.post('/:id/start-live', requireRole(['host', 'admin']), requireQuizOwnership, sessionControllerOop.startLiveSession);
 router.post('/:id/abort', requireRole(['host', 'admin']), requireQuizOwnership, sessionController.abortSession);
-router.post('/:id/pause', requireRole(['host', 'admin']), requireQuizOwnership, sessionController.pauseSession);
-router.post('/:id/resume', requireRole(['host', 'admin']), requireQuizOwnership, sessionController.resumeSession);
+router.post('/:id/pause', requireRole(['host', 'admin']), requireQuizOwnership, sessionControllerOop.pauseSession);
+router.post('/:id/resume', requireRole(['host', 'admin']), requireQuizOwnership, sessionControllerOop.resumeSession);
 router.post('/:id/next-question', requireRole(['host', 'admin']), requireQuizOwnership, sessionController.nextQuestion);
 router.post('/:id/reveal-answer', requireRole(['host', 'admin']), requireQuizOwnership, sessionController.revealAnswer);
-router.post('/:id/end', requireRole(['host', 'admin']), requireQuizOwnership, sessionController.endQuizSession);
-router.post('/:id/complete', requireRole(['host', 'admin']), requireQuizOwnership, sessionController.endQuizSession);
+router.post('/:id/end', requireRole(['host', 'admin']), requireQuizOwnership, sessionControllerOop.endSession);
+router.post('/:id/complete', requireRole(['host', 'admin']), requireQuizOwnership, sessionControllerOop.endSession);
 router.post('/:id/schedule', [
     requireRole(['host', 'admin']),
     requireQuizOwnership,

@@ -15,6 +15,7 @@ const config = require('./config/env');
 const User = require('./models/User');
 const registerQuizSocket = require('./sockets/quiz.socket');
 const { rebootQuizzes, startDistributedTimerWorker } = require('./services/quiz/quiz.service');
+const { socketManager } = require('./modules');
 const logger = require('./utils/logger');
 const requestContext = require('./middleware/requestContext');
 const {
@@ -55,6 +56,9 @@ const io = socketio(server, {
     pingInterval: 25000,
 });
 app.set('io', io);
+
+// Initialize OOPRealtime Infrastructure
+socketManager.initialize(io);
 
 // ── Security Middleware ─────────────────────────────────────────────────────
 app.use(helmet());

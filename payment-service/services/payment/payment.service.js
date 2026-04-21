@@ -185,8 +185,50 @@ async function createQuizOrder({ quizId, userId }) {
   };
 }
 
+async function verifyQuizPayment({ orderId, paymentId, signature }) {
+  const { ensureIdempotent } = require('../../utils/idempotency');
+  const idempotencyKey = `verify:payment:${orderId}`;
+
+  return ensureIdempotent(idempotencyKey, async () => {
+    const payment = await Payment.findOne({ razorpayOrderId: orderId });
+    if (!payment) {
+      const error = new Error('Order not found');
+      error.code = 'PAYMENT_NOT_FOUND';
+      error.status = 404;
+      throw error;
+    }
+
+    if (payment.status === 'completed') return payment;
+
+    const isMock = config.mockPaymentsEnabled && isMockMarketplaceOrder(orderId);
+
+    if (!isMock) {
+      const crypto = require('crypto');
+      const expected = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET).update(`${orderId}|${paymentId}`).digest('hex');
+      if (!crypto.timingSafeEqual(Buffer.from(signature, 'hex'), Buffer.from(expected, 'hex'))) {
+        const error = new Error('Signature mismatch');
+        error.code = 'INVALID_SIGNATURE';
+        error.status = 400;
+        throw error;
+      }
+    }
+
+    const razorpayPayment = await razorpay.payments.fetch(paymentId).catch(() => null);
+    
+    payment.razorpayPaymentId = paymentId;
+    payment.razorpaySignature = signature;
+    payment.status = 'completed';
+    payment.gatewayFeeAmount = toRupees(razorpayPayment?.fee || 0);
+    payment.taxAmount = toRupees(razorpayPayment?.tax || 0);
+    await payment.save();
+
+    return payment;
+  });
+}
+
 module.exports = {
   createQuizOrder,
+  verifyQuizPayment,
   buildMarketplaceReceipt,
   buildMockMarketplaceOrderId,
   isMockMarketplaceOrder,

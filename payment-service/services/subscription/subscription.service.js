@@ -1,3 +1,5 @@
+const razorpay = require('../../config/razorpay');
+const config = require('../../config/env');
 const Subscription = require('../../models/Subscription');
 const { getPlanConfig } = require('../../utils/subscriptionPlans');
 const logger = require('../../utils/logger');
@@ -316,6 +318,80 @@ async function getSubscriptionStats() {
   return stats[0];
 }
 
+const buildSubscriptionReceipt = (hostId, planId) => {
+  const compactHost = String(hostId).slice(-8);
+  const compactPlan = String(planId).slice(0, 3);
+  const compactTime = Date.now().toString().slice(-8);
+  return `sub_${compactHost}_${compactPlan}_${compactTime}`;
+};
+
+const buildMockSubscriptionOrderId = (hostId, planId) =>
+  `mock_sub_${String(hostId).slice(-6)}_${String(planId).toLowerCase()}_${Date.now().toString().slice(-6)}`;
+
+const isMockSubscriptionOrder = (orderId) => String(orderId || '').startsWith('mock_sub_');
+
+async function createSubscriptionOrder(hostId, planId) {
+  const planConfig = getPlanConfig(planId);
+  if (!planConfig) {
+    const error = new Error('Invalid plan ID');
+    error.code = 'INVALID_PLAN';
+    error.status = 400;
+    throw error;
+  }
+
+  if (planId === 'FREE') {
+    const result = await createSubscription(hostId, 'FREE');
+    return { type: 'FREE', subscription: result.subscription };
+  }
+
+  if (!planConfig.monthlyAmount || planConfig.monthlyAmount <= 0) {
+    const error = new Error(`Invalid amount for plan ${planId}`);
+    error.code = 'INVALID_AMOUNT';
+    error.status = 400;
+    throw error;
+  }
+
+  try {
+    const order = await razorpay.orders.create({
+      amount: planConfig.monthlyAmount,
+      currency: 'INR',
+      receipt: buildSubscriptionReceipt(hostId, planId),
+      notes: { hostId: String(hostId), planId, planName: planConfig.name },
+    });
+    return { type: 'PAID', orderId: order.id, amount: planConfig.monthlyAmount / 100, key: process.env.RAZORPAY_KEY_ID };
+  } catch (error) {
+    if (config.mockPaymentsEnabled) {
+      const mockOrderId = buildMockSubscriptionOrderId(hostId, planId);
+      return { type: 'PAID', orderId: mockOrderId, amount: planConfig.monthlyAmount / 100, key: 'mock_key', mock: true };
+    }
+    throw error;
+  }
+}
+
+async function verifySubscriptionPayment({ hostId, orderId, paymentId, signature, planId }) {
+  const { ensureIdempotent } = require('../../utils/idempotency');
+  const idempotencyKey = `verify:subscription:${orderId}`;
+
+  return ensureIdempotent(idempotencyKey, async () => {
+    const isMockMode = config.mockPaymentsEnabled && isMockSubscriptionOrder(orderId);
+
+    if (!isMockMode) {
+      const crypto = require('crypto');
+      const generatedSignature = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET).update(`${orderId}|${paymentId}`).digest('hex');
+      const sig1 = Buffer.from(signature, 'hex');
+      const sig2 = Buffer.from(generatedSignature, 'hex');
+      if (sig1.length !== sig2.length || !crypto.timingSafeEqual(sig1, sig2)) {
+        const error = new Error('Payment verification failed');
+        error.code = 'INVALID_SIGNATURE';
+        error.status = 400;
+        throw error;
+      }
+    }
+
+    return createSubscription(hostId, planId, paymentId);
+  });
+}
+
 module.exports = {
   getActiveSubscription,
   getHostCurrentPlan,
@@ -324,5 +400,7 @@ module.exports = {
   cancelSubscription,
   processSubscriptionPayment,
   handleFailedSubscriptionPayment,
-  getSubscriptionStats
+  getSubscriptionStats,
+  createSubscriptionOrder,
+  verifySubscriptionPayment,
 };

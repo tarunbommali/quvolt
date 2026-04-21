@@ -18,27 +18,38 @@ const handleWebhook = async (req, res) => {
     }
 
     const expectedSignature = crypto.createHmac('sha256', webhookSecret).update(buildWebhookSignaturePayload(req)).digest('hex');
-    if (!crypto.timingSafeEqual(Buffer.from(webhookSignature, 'hex'), Buffer.from(expectedSignature, 'hex'))) {
+    
+    const sig1 = Buffer.from(webhookSignature, 'hex');
+    const sig2 = Buffer.from(expectedSignature, 'hex');
+
+    if (sig1.length !== sig2.length || !crypto.timingSafeEqual(sig1, sig2)) {
       logger.error('Invalid webhook signature');
       return res.status(401).json({ error: { code: 'UNAUTHORIZED', message: 'Invalid webhook signature' } });
     }
 
     const event = req.body.event;
-    const paymentEntity = req.body.payload?.payment?.entity;
-    const idempotencyKey = `${event}:${paymentEntity?.id || paymentEntity?.order_id || 'unknown'}`;
+    const payload = req.body.payload;
+    const idempotencyKey = `webhook:${event}:${req.body.account_id || ''}:${req.body.created_at || Date.now()}`;
 
     res.status(200).json({ success: true });
 
-    // Background processing
-    try {
-      if (event === 'payment.captured') await webhookService.reconcileCapturedPayment(paymentEntity);
-      else if (event === 'payment.failed') await webhookService.handlePaymentFailed(paymentEntity);
-      else if (event === 'payment.refunded') await webhookService.handlePaymentRefunded(paymentEntity);
-      else if (event.startsWith('transfer.')) await webhookService.handleTransferUpdate(req.body.payload?.transfer?.entity, event);
-    } catch (err) {
-      logger.error('Webhook processing failed', { event, idempotencyKey, error: err.message });
-      await webhookService.logFailedWebhookJob(idempotencyKey, req.body, err);
-    }
+    const { ensureIdempotent } = require('../utils/idempotency');
+
+    // Background processing with Idempotency
+    ensureIdempotent(idempotencyKey, async () => {
+      try {
+        if (event === 'payment.captured') await webhookService.reconcileCapturedPayment(payload?.payment?.entity);
+        else if (event === 'payment.failed') await webhookService.handlePaymentFailed(payload?.payment?.entity);
+        else if (event === 'payment.refunded') await webhookService.handlePaymentRefunded(payload?.payment?.entity);
+        else if (event === 'subscription.charged') await webhookService.handleSubscriptionCharged(payload?.subscription?.entity);
+        else if (event === 'subscription.cancelled') await webhookService.handleSubscriptionCancelled(payload?.subscription?.entity);
+        else if (event.startsWith('transfer.')) await webhookService.handleTransferUpdate(payload?.transfer?.entity, event);
+      } catch (err) {
+        logger.error('Webhook processing failed', { event, idempotencyKey, error: err.message });
+        await webhookService.logFailedWebhookJob(idempotencyKey, req.body, err);
+        throw err;
+      }
+    }).catch(err => logger.error('Webhook idempotency wrapper failed', { error: err.message }));
   } catch (error) {
     logger.error('Webhook controller error', { error: error.message });
     if (!res.headersSent) res.status(500).json({ error: { code: 'SERVER_ERROR', message: 'Error processing webhook' } });

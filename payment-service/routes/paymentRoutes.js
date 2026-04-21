@@ -2,12 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { protect, authorize } = require('../middleware/authMiddleware');
 const { checkPermission, checkRevenueOwnership } = require('../middleware/checkPermission');
-const {
-  createOrder,
-  verifyPayment,
-  getPaymentStatus,
-  getBatchPaymentStatus,
-} = require('../controllers/paymentController');
+const paymentController = require('../controllers/paymentController');
 const { handleWebhook } = require('../controllers/webhook.controller');
 const {
   upsertHostAccount,
@@ -20,10 +15,10 @@ const paymentRouter = require('../services/router/PaymentRouter');
 
 // Payment routes
 // Requirement 11.1: Require process_payment permission for creating payment orders
-router.post('/create-order', protect, checkPermission('process_payment'), createOrder);
-router.post('/verify', protect, verifyPayment);
-router.get('/status/:quizId', protect, getPaymentStatus);
-router.post('/status/batch', protect, getBatchPaymentStatus);
+router.post('/create-order', protect, checkPermission('process_payment'), (req, res) => paymentController.createOrder(req, res));
+router.post('/verify', protect, (req, res) => paymentController.verifyPayment(req, res));
+router.get('/status/:quizId', protect, (req, res) => paymentController.getPaymentStatus(req, res));
+router.post('/status/batch', protect, (req, res) => paymentController.getBatchPaymentStatus(req, res));
 router.post('/webhook', handleWebhook); // Webhook usually uses signature, not JWT
 
 // Requirement 11.3: Require manage_payouts permission for payout operations
@@ -32,9 +27,9 @@ router.get('/host/account', protect, authorize('host', 'admin'), getMyHostAccoun
 router.get('/host/payout-summary', protect, authorize('host', 'admin'), checkPermission('manage_payouts'), getHostPayoutSummary);
 
 // Host KYC Onboarding (Razorpay Route)
-router.post('/host/onboarding', protect, authorize('host', 'admin'), checkPermission('manage_payouts'), kycController.createSubAccount);
-router.post('/host/onboarding/link', protect, authorize('host', 'admin'), checkPermission('manage_payouts'), kycController.getOnboardingLink);
-router.get('/host/onboarding/status', protect, authorize('host', 'admin'), checkPermission('manage_payouts'), kycController.checkKycStatus);
+router.post('/host/onboarding', protect, authorize('host', 'admin'), checkPermission('manage_payouts'), (req, res) => kycController.createSubAccount(req, res));
+router.post('/host/onboarding/link', protect, authorize('host', 'admin'), checkPermission('manage_payouts'), (req, res) => kycController.getOnboardingLink(req, res));
+router.get('/host/onboarding/status', protect, authorize('host', 'admin'), checkPermission('manage_payouts'), (req, res) => kycController.checkKycStatus(req, res));
 
 // Revenue routes
 // Requirements 11.2, 11.4, 11.5: Require view_revenue permission and enforce ownership checks

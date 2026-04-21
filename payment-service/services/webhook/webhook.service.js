@@ -82,6 +82,31 @@ const handleTransferUpdate = async (transferEntity, event) => {
   }
 };
 
+const handleSubscriptionCharged = async (subscriptionEntity) => {
+  const { createSubscription } = require('../subscription/subscription.service');
+  const hostId = subscriptionEntity.notes?.hostId;
+  const planId = subscriptionEntity.notes?.planId;
+  const paymentId = subscriptionEntity.payment_id;
+
+  if (hostId && planId) {
+    await createSubscription(hostId, planId, paymentId);
+    logger.info('handleSubscriptionCharged: processed', { hostId, planId, paymentId });
+  }
+};
+
+const handleSubscriptionCancelled = async (subscriptionEntity) => {
+  const Subscription = require('../../models/Subscription');
+  const hostId = subscriptionEntity.notes?.hostId;
+
+  if (hostId) {
+    await Subscription.updateMany(
+      { hostId, status: 'active' },
+      { $set: { status: 'cancelled', cancelledAt: new Date() } }
+    );
+    logger.info('handleSubscriptionCancelled: processed', { hostId });
+  }
+};
+
 const logFailedWebhookJob = async (idempotencyKey, payload, error) => {
   await FailedJob.findOneAndUpdate(
     { idempotencyKey },
@@ -106,5 +131,7 @@ module.exports = {
   handlePaymentFailed,
   handlePaymentRefunded,
   handleTransferUpdate,
+  handleSubscriptionCharged,
+  handleSubscriptionCancelled,
   logFailedWebhookJob
 };

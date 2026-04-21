@@ -8,6 +8,7 @@ const logger = require('./utils/logger');
 const config = require('./config/env');
 const { initSubscriptionJobs } = require('./jobs/subscriptionExpiryJob');
 const { initFailedJobWorker } = require('./jobs/failedJobWorker');
+const { initPayoutJob } = require('./jobs/payout.job');
 const FailedJob = require('./models/FailedJob');
 const { loadGatewayConfigs } = require('./config/gateways');
 const paymentRouter = require('./services/router/PaymentRouter');
@@ -195,6 +196,11 @@ const bootWorkers = () => {
     logger.info('Failed job retry worker enabled');
   } else {
     logger.info('Failed job retry worker disabled');
+  }
+
+  if (String(process.env.PAYOUT_JOBS_ENABLED || 'true').toLowerCase() === 'true') {
+    initPayoutJob();
+    logger.info('Payout jobs enabled');
   }
 };
 
