@@ -9,9 +9,13 @@ const connectRedis = async () => {
         url,
         socket: {
             reconnectStrategy: (retries) => {
-                if (retries > 3) return new Error('Max retries reached');
+                const maxRetries = process.env.NODE_ENV === 'development' ? 1 : 3;
+                if (retries >= maxRetries) {
+                    return new Error('Max retries reached');
+                }
                 return Math.min(retries * 50, 500);
-            }
+            },
+            connectTimeout: 5000 // 5 second timeout for initial connection
         }
     });
 

@@ -93,7 +93,6 @@ const Studio = () => {
                 <StudioDashboardToolbar
                     showCreate={showCreate}
                     onToggleCreate={handleToggleCreate}
-                    onGlobalDefaults={() => navigate('/studio/settings')}
                     viewMode={effectiveViewMode}
                     onViewModeChange={handleViewModeChange}
                     isMobileView={dashboard.isMobileView}

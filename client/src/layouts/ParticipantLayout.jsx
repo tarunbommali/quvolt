@@ -1,11 +1,14 @@
 import { Outlet } from 'react-router-dom';
+import Footer from '../components/common/Footer';
 
-import { Link } from 'react-router-dom';
 const ParticipantLayout = () => {
   return (
-    <>
-      <Outlet />
-    </>
+    <div className="flex flex-col min-h-screen">
+      <div className="flex-1">
+        <Outlet />
+      </div>
+      <Footer />
+    </div>
   );
 };
 export default ParticipantLayout;

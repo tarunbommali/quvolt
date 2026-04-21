@@ -1,17 +1,19 @@
-import { Outlet } from 'react-router-dom';
+import { Outlet, Link } from 'react-router-dom';
+import Footer from '../components/common/Footer';
 
-import { Link } from 'react-router-dom';
 const AdminLayout = () => (
-  <div>
-    <nav className="p-4 border-b theme-border mb-4 theme-surface flex gap-3 text-sm font-medium">
-      <Link to="/dashboard" className="theme-text-primary hover:theme-primary">Admin</Link>
-      <span className="theme-text-muted">|</span>
-      <Link to="/studio" className="theme-text-secondary hover:theme-text-primary">Host</Link>
-      <span className="theme-text-muted">|</span>
-      <Link to="/join" className="theme-text-secondary hover:theme-text-primary">Participant</Link>
-    </nav>
-    {/* Admin-specific navbar/sidebar here */}
-    <Outlet />
+  <div className="flex flex-col min-h-screen">
+    <div className="flex-1">
+      <nav className="p-4 border-b theme-border mb-4 theme-surface flex gap-3 text-sm font-medium">
+        <span className="theme-text-primary font-bold">ADMIN PANEL</span>
+        <span className="theme-text-muted">|</span>
+        <Link to="/dashboard" className="theme-text-secondary hover:theme-primary">Dashboard</Link>
+        <Link to="/users" className="theme-text-secondary hover:theme-primary">Users</Link>
+        <Link to="/billing" className="theme-text-secondary hover:theme-primary">Billing</Link>
+      </nav>
+      <Outlet />
+    </div>
+    <Footer />
   </div>
 );
 export default AdminLayout;

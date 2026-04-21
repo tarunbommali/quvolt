@@ -26,8 +26,10 @@ const PublicLandingPage = () => {
       </div>
 
       <HomeHero user={user} />
+      <HomeTrustGrid trustPoints={trustPoints} />
       <HomeFeatureGrid features={features} />
       <HomeStepsGrid steps={steps} />
+      <Subscription plans={plans} />
       <HomeCtaBanner user={user} />
 
       <FAQ />

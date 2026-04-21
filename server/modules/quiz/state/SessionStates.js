@@ -36,6 +36,7 @@ class WaitingState extends SessionState {
         if (action === 'ABORT') {
             return context.transitionTo(new AbortedState());
         }
+        return super.handleAction(context, action);
     }
 }
 
@@ -76,6 +77,7 @@ class LiveState extends SessionState {
         if (action === 'ABORT') {
             return context.transitionTo(new AbortedState());
         }
+        return super.handleAction(context, action);
     }
 }
 
@@ -101,6 +103,7 @@ class PausedState extends SessionState {
         if (action === 'END') {
             return context.transitionTo(new CompletedState());
         }
+        return super.handleAction(context, action);
     }
 }
 
@@ -124,6 +127,7 @@ class CompletedState extends SessionState {
         if (action === 'RESTART') {
             return context.transitionTo(new WaitingState());
         }
+        return super.handleAction(context, action);
     }
 }
 
@@ -146,6 +150,7 @@ class AbortedState extends SessionState {
         if (action === 'RESTART') {
             return context.transitionTo(new WaitingState());
         }
+        return super.handleAction(context, action);
     }
 }
 

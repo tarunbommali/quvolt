@@ -40,20 +40,23 @@ const ProfileTemplate = ({
                             )}
                         </div>
 
-                        <div className={template.titleWrap}>
-                            <h1 className={template.titleRow}>
-                                <span className={template.title}>{name || 'User'}</span>
-                                {role !== 'participant' && (plan === 'CREATOR' || plan === 'TEAMS') && (
-                                    <span className={cx(
-                                        "ml-3 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-300 hover:scale-105",
-                                        theme.colors.badgeBg,
-                                        theme.colors.badgeText,
-                                        isPro ? 'shadow-sm shadow-indigo-500/10' : ''
-                                    )}>
-                                        {theme.label}
-                                    </span>
-                                )}
-                            </h1>
+                <div className={template.titleWrap}>
+                            <div className="flex items-center justify-between">
+                                <h1 className={template.titleRow}>
+                                    <span className={template.title}>{name || 'User'}</span>
+                                    {role !== 'participant' && (plan === 'CREATOR' || plan === 'TEAMS') && (
+                                        <span className={cx(
+                                            "ml-3 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-300 hover:scale-105",
+                                            theme.colors.badgeBg,
+                                            theme.colors.badgeText,
+                                            isPro ? 'shadow-sm shadow-indigo-500/10' : ''
+                                        )}>
+                                            {theme.label}
+                                        </span>
+                                    )}
+                                </h1>
+                                {actions}
+                            </div>
                             <p className={template.email}>{email || 'No email available'}</p>
                         </div>
                     </div>

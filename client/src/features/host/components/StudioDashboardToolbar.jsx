@@ -28,32 +28,24 @@ const StudioDashboardToolbar = ({
             </div>
 
             <div className="flex items-center gap-3">
-                <div className="flex items-center bg-slate-100 p-1 rounded-xl">
+                <div className="flex items-center theme-bg-secondary p-1 rounded-xl border theme-border">
                     <button
                         onClick={() => onViewModeChange('grid')}
-                        className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'theme-surface theme-text-primary shadow-sm' : 'theme-text-muted hover:theme-text-primary'}`}
                         title="Grid View"
                     >
                         <LayoutGrid size={18} />
                     </button>
                     <button
                         onClick={() => onViewModeChange('list')}
-                        className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'theme-surface theme-text-primary shadow-sm' : 'theme-text-muted hover:theme-text-primary'}`}
                         title="List View"
                     >
                         <List size={18} />
                     </button>
                 </div>
 
-                <div className="h-8 w-[1px] bg-slate-200 mx-1 hidden md:block" />
-
-                <button
-                    onClick={onGlobalDefaults}
-                    title="Global session defaults"
-                    className="flex items-center gap-2 px-3.5 py-3 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-2xl font-semibold transition-all shadow-sm active:scale-95"
-                >
-                    <Settings2 size={17} />
-                </button>
+                <div className="h-8 w-[1px] theme-border border-r mx-1 hidden md:block" />
 
                 <button
                     onClick={onToggleCreate}

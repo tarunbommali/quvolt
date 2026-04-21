@@ -144,9 +144,13 @@ const bootstrap = async () => {
             url: config.redisUrl,
             socket: {
                 reconnectStrategy: (retries) => {
-                    if (retries > 3) return new Error('Max retries reached');
+                    const maxRetries = process.env.NODE_ENV === 'development' ? 1 : 3;
+                    if (retries >= maxRetries) {
+                        return new Error('Max retries reached');
+                    }
                     return Math.min(retries * 50, 500);
-                }
+                },
+                connectTimeout: 5000
             }
         };
         const pubClient = createClient(redisOptions);
@@ -300,6 +304,11 @@ const bootstrap = async () => {
             next();
         } catch (err) {
             logger.warn('Socket auth failed', { error: err.message });
+            
+            if (err.name === 'TokenExpiredError') {
+                socket.emit('auth_error', { message: 'Token expired', code: 'TOKEN_EXPIRED' });
+            }
+
             // Allow them to connect as guest anyway, the service will handle restrictions per-room
             socket.data.user = { _id: `err_${socket.id.slice(0, 8)}`, name: 'Guest', role: 'participant', isAnonymous: true };
             next();

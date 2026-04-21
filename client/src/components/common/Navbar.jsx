@@ -96,7 +96,8 @@ const Navbar = () => {
     // /profile and /profile/edit are registered for all roles in AppRoutes.
     const accountItems = isHost ? [
         { label: 'Profile', to: '/profile' },
-        { label: 'Settings', to: '/profile/edit' },
+        { label: 'Studio Settings', to: '/studio/settings' },
+        { label: 'Account Settings', to: '/profile/edit' },
         { label: 'Upgrade', to: '/upgrade' },
     ] : [
         { label: 'Profile', to: '/profile' },
@@ -262,11 +263,11 @@ const Navbar = () => {
                                             
                                             {isLearnMoreOpen && (
                                                 <div className="pl-6 py-1 pr-2 space-y-0.5 bg-[var(--qb-surface-2)]/50 border-y theme-border my-1">
-                                                    <Link to="/terms" onClick={closeAllMenus} className="block px-3 py-1.5 text-[13px] theme-text-muted hover:theme-text-primary transition-colors rounded-md hover:bg-[var(--qb-surface-soft)]">Terms & Conditions</Link>
-                                                    <Link to="/privacy" onClick={closeAllMenus} className="block px-3 py-1.5 text-[13px] theme-text-muted hover:theme-text-primary transition-colors rounded-md hover:bg-[var(--qb-surface-soft)]">Privacy Policy</Link>
-                                                    <Link to="/refund" onClick={closeAllMenus} className="block px-3 py-1.5 text-[13px] theme-text-muted hover:theme-text-primary transition-colors rounded-md hover:bg-[var(--qb-surface-soft)]">Refund & Cancellation</Link>
-                                                    <Link to="/cookies" onClick={closeAllMenus} className="block px-3 py-1.5 text-[13px] theme-text-muted hover:theme-text-primary transition-colors rounded-md hover:bg-[var(--qb-surface-soft)]">Cookie Policy</Link>
-                                                    <Link to="/disclaimer" onClick={closeAllMenus} className="block px-3 py-1.5 text-[13px] theme-text-muted hover:theme-text-primary transition-colors rounded-md hover:bg-[var(--qb-surface-soft)]">Disclaimer</Link>
+                                                    <Link to="/legal/terms-and-conditions" target="_blank" rel="noopener noreferrer" onClick={closeAllMenus} className="block px-3 py-1.5 text-[13px] theme-text-muted hover:theme-text-primary transition-colors rounded-md hover:bg-[var(--qb-surface-soft)]">Terms & Conditions</Link>
+                                                    <Link to="/legal/privacy-policy" target="_blank" rel="noopener noreferrer" onClick={closeAllMenus} className="block px-3 py-1.5 text-[13px] theme-text-muted hover:theme-text-primary transition-colors rounded-md hover:bg-[var(--qb-surface-soft)]">Privacy Policy</Link>
+                                                    <Link to="/legal/refund-policy" target="_blank" rel="noopener noreferrer" onClick={closeAllMenus} className="block px-3 py-1.5 text-[13px] theme-text-muted hover:theme-text-primary transition-colors rounded-md hover:bg-[var(--qb-surface-soft)]">Refund & Cancellation</Link>
+                                                    <Link to="/legal/cookie-policy" target="_blank" rel="noopener noreferrer" onClick={closeAllMenus} className="block px-3 py-1.5 text-[13px] theme-text-muted hover:theme-text-primary transition-colors rounded-md hover:bg-[var(--qb-surface-soft)]">Cookie Policy</Link>
+                                                    <Link to="/legal/disclaimer" target="_blank" rel="noopener noreferrer" onClick={closeAllMenus} className="block px-3 py-1.5 text-[13px] theme-text-muted hover:theme-text-primary transition-colors rounded-md hover:bg-[var(--qb-surface-soft)]">Disclaimer</Link>
                                                 </div>
                                             )}
                                         </div>

@@ -31,6 +31,7 @@ const PrivacyPolicyPage = lazy(() => import('../pages/public/legal/PrivacyPolicy
 const RefundPolicyPage = lazy(() => import('../pages/public/legal/RefundPolicyPage'));
 const CookiePolicyPage = lazy(() => import('../pages/public/legal/CookiePolicyPage'));
 const DisclaimerPage = lazy(() => import('../pages/public/legal/DisclaimerPage'));
+const LegalDynamicPage = lazy(() => import('../pages/public/legal/LegalDynamicPage'));
 
 // Participant
 const ParticipantLayout = lazy(() => import('../layouts/ParticipantLayout'));
@@ -88,6 +89,7 @@ export default function AppRoutes() {
       <Route path="/refund" element={<RefundPolicyPage />} />
       <Route path="/cookies" element={<CookiePolicyPage />} />
       <Route path="/disclaimer" element={<DisclaimerPage />} />
+      <Route path="/legal/:title" element={<LegalDynamicPage />} />
 
       {/* Join Route */}
       <Route path="/join" element={<JoinSessionPage />} />

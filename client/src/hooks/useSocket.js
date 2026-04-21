@@ -18,6 +18,13 @@ export const useSocket = () => {
       console.error("Socket Connection Error:", err.message);
     });
 
+    socket.on("auth_error", (data) => {
+      console.warn("Socket Auth Error:", data.message);
+      if (data.code === 'TOKEN_EXPIRED') {
+        useAuthStore.getState().clearAuth();
+      }
+    });
+
     return () => {
       // Avoid disconnecting on every re-render if token is stable
       // but if the hook unmounts (app close), we cleanup.

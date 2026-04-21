@@ -23,11 +23,11 @@ const Footer = () => {
                     <div className="space-y-4">
                         <h4 className="text-xs font-black uppercase tracking-widest text-[var(--qb-text-1)]">Legal</h4>
                         <ul className="space-y-3 text-sm">
-                            <li><Link to="/terms" className="theme-text-muted hover:text-[var(--qb-primary)] font-semibold transition-colors">Terms & Conditions</Link></li>
-                            <li><Link to="/privacy" className="theme-text-muted hover:text-[var(--qb-primary)] font-semibold transition-colors">Privacy Policy</Link></li>
-                            <li><Link to="/refund" className="theme-text-muted hover:text-[var(--qb-primary)] font-semibold transition-colors">Refund Policy</Link></li>
-                            <li><Link to="/cookies" className="theme-text-muted hover:text-[var(--qb-primary)] font-semibold transition-colors">Cookie Policy</Link></li>
-                            <li><Link to="/disclaimer" className="theme-text-muted hover:text-[var(--qb-primary)] font-semibold transition-colors">Disclaimer</Link></li>
+                            <li><Link to="/legal/terms-and-conditions" target="_blank" rel="noopener noreferrer" className="theme-text-muted hover:text-[var(--qb-primary)] font-semibold transition-colors">Terms & Conditions</Link></li>
+                            <li><Link to="/legal/privacy-policy" target="_blank" rel="noopener noreferrer" className="theme-text-muted hover:text-[var(--qb-primary)] font-semibold transition-colors">Privacy Policy</Link></li>
+                            <li><Link to="/legal/refund-policy" target="_blank" rel="noopener noreferrer" className="theme-text-muted hover:text-[var(--qb-primary)] font-semibold transition-colors">Refund & Cancellation</Link></li>
+                            <li><Link to="/legal/cookie-policy" target="_blank" rel="noopener noreferrer" className="theme-text-muted hover:text-[var(--qb-primary)] font-semibold transition-colors">Cookie Policy</Link></li>
+                            <li><Link to="/legal/disclaimer" target="_blank" rel="noopener noreferrer" className="theme-text-muted hover:text-[var(--qb-primary)] font-semibold transition-colors">Disclaimer</Link></li>
                         </ul>
                     </div>
                     <div className="space-y-4">

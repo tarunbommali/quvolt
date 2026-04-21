@@ -20,6 +20,11 @@ const routeLabel = {
     '/refund': 'Refund & Cancellation',
     '/cookies': 'Cookie Policy',
     '/disclaimer': 'Disclaimer',
+    '/legal/terms-and-conditions': 'Terms & Conditions',
+    '/legal/privacy-policy': 'Privacy Policy',
+    '/legal/refund-policy': 'Refund & Cancellation',
+    '/legal/cookie-policy': 'Cookie Policy',
+    '/legal/disclaimer': 'Disclaimer',
 };
 
 /**

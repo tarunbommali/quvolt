@@ -121,6 +121,16 @@ const UserProfilePage = () => {
             email={user?.email}
             role={user?.role}
             plan={user?.subscription?.plan || user?.plan}
+            actions={!isEditing && (
+                <Button 
+                    variant="secondary" 
+                    size="sm" 
+                    onClick={() => navigate('/profile/edit')}
+                    className="flex items-center gap-2"
+                >
+                    Edit Profile
+                </Button>
+            )}
         >
             {isEditing ? (
                 <div className="space-y-6">
