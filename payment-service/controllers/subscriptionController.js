@@ -11,11 +11,14 @@ const buildSubscriptionReceipt = (hostId, planId) => {
   const compactTime = Date.now().toString().slice(-8);
   return `sub_${compactHost}_${compactPlan}_${compactTime}`;
 };
+exports.buildSubscriptionReceipt = buildSubscriptionReceipt;
 
 const buildMockSubscriptionOrderId = (hostId, planId) =>
   `mock_sub_${String(hostId).slice(-6)}_${String(planId).toLowerCase()}_${Date.now().toString().slice(-6)}`;
+exports.buildMockSubscriptionOrderId = buildMockSubscriptionOrderId;
 
 const isMockSubscriptionOrder = (orderId) => String(orderId || '').startsWith('mock_sub_');
+exports.isMockSubscriptionOrder = isMockSubscriptionOrder;
 
 exports.getAllSubscriptionPlans = async (req, res) => {
   try {

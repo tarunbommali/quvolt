@@ -92,6 +92,28 @@ const loginUser = async (req, res) => {
     }
 };
 
+const guestLogin = async (req, res) => {
+    try {
+        const { name } = req.body;
+        if (!name || typeof name !== 'string' || name.trim().length < 2) {
+            return sendError(res, 400, 'Name must be at least 2 characters');
+        }
+
+        const { user, accessToken, refreshToken } = await authService.guestLogin({ name });
+
+        res.cookie('refreshToken', refreshToken, COOKIE_OPTIONS);
+
+        return sendSuccess(res, {
+            ...mapUserPayload(user),
+            token: accessToken,
+        }, 'Guest login successful');
+
+    } catch (error) {
+        logger.error('[AuthController] guestLogin', { message: error.message, stack: error.stack });
+        return sendError(res, 500, 'Server Error');
+    }
+};
+
 const refresh = async (req, res) => {
     try {
         const refreshToken = req.cookies.refreshToken;
@@ -201,6 +223,7 @@ const updateMyProfile = async (req, res) => {
 module.exports = {
     registerUser,
     loginUser,
+    guestLogin,
     refresh,
     logoutUser,
     getMyProfile,

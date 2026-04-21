@@ -94,10 +94,13 @@ const Navbar = () => {
 
     // Profile dropdown items — same for every authenticated role.
     // /profile and /profile/edit are registered for all roles in AppRoutes.
-    const accountItems = [
+    const accountItems = isHost ? [
         { label: 'Profile', to: '/profile' },
         { label: 'Settings', to: '/profile/edit' },
         { label: 'Upgrade', to: '/upgrade' },
+    ] : [
+        { label: 'Profile', to: '/profile' },
+        { label: 'Settings', to: '/profile/edit' },
     ];
 
 
@@ -219,7 +222,7 @@ const Navbar = () => {
                                         <div className="px-3 py-2 border-b theme-border mb-1">
                                             <p className="text-sm font-semibold theme-text-primary truncate">{user.name || 'User'}</p>
                                             <p className="text-xs theme-text-muted truncate">{user.email}</p>
-                                            {plan && (
+                                            {plan && (plan !== 'FREE' || isHost) && (
                                                 <span className={cx(
                                                     "mt-1 inline-block text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border",
                                                     plan === 'TEAMS'

@@ -97,9 +97,31 @@ const logout = async (refreshToken) => {
     }
 };
 
+const guestLogin = async ({ name }) => {
+    const timestamp = Date.now();
+    const guestEmail = `guest_${timestamp}_${Math.random().toString(36).substring(2, 7)}@guest.quvolt.com`;
+    
+    const user = await User.create({
+        name: name.trim(),
+        email: guestEmail,
+        password: `guest_${timestamp}`, // Dummy password
+        role: 'participant',
+        isGuest: true
+    });
+
+    const accessToken = generateAccessToken(user._id, user.role, 'FREE');
+    const refreshToken = generateRefreshToken(user._id);
+
+    await user.setRefreshToken(refreshToken);
+    await user.save();
+
+    return { user, accessToken, refreshToken };
+};
+
 module.exports = {
     register,
     login,
+    guestLogin,
     refreshSession,
     logout,
     generateAccessToken,

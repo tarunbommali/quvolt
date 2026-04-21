@@ -75,9 +75,9 @@ export const useAuthStore = create()(devtools(persist((set) => ({
 }), {
   name: 'qb_auth_store',
   partialize: (state) => ({
-    user: state.user,
-    token: state.token,
-    isAuthenticated: state.isAuthenticated,
+    user: state.user?.isGuest ? null : state.user,
+    token: state.user?.isGuest ? null : state.token,
+    isAuthenticated: state.user?.isGuest ? false : state.isAuthenticated,
     loading: state.loading,
     initialized: state.initialized,
   }),

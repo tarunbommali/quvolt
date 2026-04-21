@@ -1,9 +1,17 @@
+jest.mock('../services/router/PaymentRouter', () => ({
+  routeCreateOrder: jest.fn(),
+}));
 jest.mock('../config/razorpay', () => ({
   orders: { create: jest.fn() },
   payments: { fetch: jest.fn() },
 }));
 
 jest.mock('../models/Payment', () => ({
+  create: jest.fn().mockImplementation((data) => ({
+    ...data,
+    _id: require('mongoose').Types.ObjectId(),
+    save: jest.fn().mockResolvedValue(true)
+  })),
   findOne: jest.fn(),
   create: jest.fn(),
   findOneAndUpdate: jest.fn(),
@@ -37,12 +45,11 @@ const Payment = require('../models/Payment');
 const HostAccount = require('../models/HostAccount');
 const QuizSnapshot = require('../models/QuizSnapshot');
 const subscriptionService = require('../services/subscription/subscription.service');
-const {
-  createOrder,
-  handleWebhook,
-  // computeSplit,
-  // buildMarketplaceReceipt,
-} = require('../controllers/paymentController');
+const paymentRouter = require('../services/router/PaymentRouter');
+const { createOrder } = require('../controllers/paymentController');
+const { handleWebhook } = require('../controllers/webhook.controller');
+const { computeSplit } = require('../services/payment/split.service');
+const { buildMarketplaceReceipt } = require('../services/payment/payment.service');
 
 const makeRes = () => {
   const res = {};
@@ -57,6 +64,11 @@ const mockLeanQuery = (value) => ({
 
 describe('paymentController', () => {
   beforeEach(() => {
+    paymentRouter.routeCreateOrder.mockResolvedValue({
+      id: 'rzp_test_order',
+      gatewayUsed: 'razorpay_primary',
+      routingMetadata: { totalAttempts: 1, usedFallback: false }
+    });
     jest.clearAllMocks();
     // Set required environment variables
     process.env.DATABASE_URL = 'mongodb://test:test@localhost:27017/payment-test';
@@ -71,8 +83,8 @@ describe('paymentController', () => {
 
   test.each([
     ['FREE', 25, 100, { platformFeeAmount: 25, hostAmount: 75 }],
-    ['PRO', 10, 499, { platformFeeAmount: 49.9, hostAmount: 449.1 }],
-    ['PREMIUM', 5, 999, { platformFeeAmount: 49.95, hostAmount: 949.05 }],
+    ['CREATOR', 10, 499, { platformFeeAmount: 49.9, hostAmount: 449.1 }],
+    ['TEAMS', 5, 999, { platformFeeAmount: 49.95, hostAmount: 949.05 }],
   ])('applies %s commission dynamically at order creation', async (plan, expectedCommission, price, expectedSplit) => {
     const req = {
       body: { quizId: '507f1f77bcf86cd799439011' },
@@ -105,7 +117,7 @@ describe('paymentController', () => {
 
     await createOrder(req, res);
 
-    expect(razorpay.orders.create).toHaveBeenCalledWith(
+    expect(paymentRouter.routeCreateOrder).toHaveBeenCalledWith(
       expect.objectContaining({
         amount: price * 100,
       })

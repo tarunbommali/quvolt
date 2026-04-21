@@ -2,6 +2,9 @@ import api from '../../../services/apiClient';
 
 export const loginUser = (email, password) =>
     api.post('auth/login', { email, password }, { withCredentials: true }).then(r => r.data);
+
+export const guestLogin = (name) =>
+    api.post('auth/guest-login', { name }, { withCredentials: true }).then(r => r.data);
  
 export const registerUser = (name, email, password, role) =>
     api.post('auth/register', { name, email, password, role }, { withCredentials: true }).then(r => r.data);

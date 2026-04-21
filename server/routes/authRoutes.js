@@ -19,6 +19,11 @@ router.post('/login', [
     validate
 ], authController.loginUser);
 
+router.post('/guest-login', [
+    body('name').notEmpty().withMessage('Name is required'),
+    validate
+], authController.guestLogin);
+
 router.post('/refresh', authController.refresh);
 router.post('/logout', authController.logoutUser);
 // protectFull: getMyProfile reads req.user.name/email/profilePhoto directly from middleware

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Hash, AlertCircle, CreditCard, Loader2 } from 'lucide-react';
 import { getPaymentStatus, createPaymentOrder, verifyPayment } from '../../billing/services/billing.service';
+import { guestLogin } from '../../auth/services/auth.service';
 import { useAuthStore } from '../../../stores/useAuthStore';
 import { useQuizStore } from '../../../stores/useQuizStore';
 import useRazorpay from '../../../hooks/useRazorpay';
@@ -25,6 +26,8 @@ const QuizJoinRoom = () => {
     const [paymentQuiz, setPaymentQuiz] = useState(null);
     const [paying, setPaying] = useState(false);
     const [lastRoomCode, setLastRoomCode] = useState('');
+    const [guestName, setGuestName] = useState('');
+    const [showGuestForm, setShowGuestForm] = useState(false);
 
     const navigate = useNavigate();
     const user = useAuthStore((state) => state.user);
@@ -77,6 +80,13 @@ const QuizJoinRoom = () => {
                 // Ignore localStorage failure.
             }
 
+            // If not logged in, show guest form
+            if (!user) {
+                setShowGuestForm(true);
+                setLoading(false);
+                return;
+            }
+
             if (quiz?.isPaid && quiz?.price > 0 && user?.role !== 'host') {
                 const status = await getPaymentStatus(quiz._id);
                 if (status?.data?.paid) {
@@ -90,6 +100,30 @@ const QuizJoinRoom = () => {
         } catch (err) {
             const message = err?.response?.data?.message;
             setError(message || 'Room not found. Please check the code and try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleGuestJoin = async (e) => {
+        e.preventDefault();
+        if (!guestName.trim()) return;
+
+        setLoading(true);
+        try {
+            const response = await guestLogin(guestName);
+            useAuthStore.getState().setAuthData(response);
+            
+            const cleanedCode = sanitizeRoomCode(roomCode);
+            const quiz = await getQuizByCodeCached(cleanedCode);
+
+            if (quiz?.isPaid && quiz?.price > 0) {
+                setPaymentQuiz(quiz);
+            } else {
+                navigate(`/quiz/${cleanedCode}`);
+            }
+        } catch (err) {
+            setError(err?.response?.data?.message || 'Failed to join as guest');
         } finally {
             setLoading(false);
         }
@@ -203,7 +237,7 @@ const QuizJoinRoom = () => {
                     </div>
                 )}
 
-                {!paymentQuiz && (
+                {!paymentQuiz && !showGuestForm && (
                     <form onSubmit={handleJoin} className="space-y-4">
                         {lastRoomCode && lastRoomCode !== roomCode && (
                             <button
@@ -253,6 +287,43 @@ const QuizJoinRoom = () => {
                         >
                             {loading ? <><Loader2 className="animate-spin" size={24} /> Verifying...</> : 'JOIN ROOM'}
                         </Button>
+                    </form>
+                )}
+
+                {showGuestForm && (
+                    <form onSubmit={handleGuestJoin} className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div className="text-left space-y-2">
+                            <p className="text-sm font-bold theme-text-secondary uppercase tracking-wider">Join as Guest</p>
+                            <p className="text-xs theme-text-muted">Enter your name to join the session. No account needed.</p>
+                        </div>
+                        
+                        <InputField
+                            id="guest-name-input"
+                            type="text"
+                            placeholder="Your Display Name"
+                            className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-slate-900 focus:border-indigo-500 focus:bg-white transition-all"
+                            value={guestName}
+                            onChange={(e) => setGuestName(e.target.value)}
+                            required
+                            autoFocus
+                        />
+
+                        <div className="flex flex-col gap-3">
+                            <Button
+                                type="submit"
+                                disabled={loading || guestName.trim().length < 2}
+                                className="btn-premium w-full py-4 text-lg font-bold"
+                            >
+                                {loading ? <Loader2 className="animate-spin mx-auto" /> : 'JOIN AS GUEST'}
+                            </Button>
+                            <button
+                                type="button"
+                                onClick={() => setShowGuestForm(false)}
+                                className="text-sm font-bold theme-text-muted hover:theme-text-primary transition-colors"
+                            >
+                                Back
+                            </button>
+                        </div>
                     </form>
                 )}
             </Card>
