@@ -48,14 +48,22 @@ class LiveState extends SessionState {
     }
 
     async enter(context) {
-        const questionManager = require('../QuestionManager');
-        eventBus.emit('SESSION_START', {
-            roomCode: context.roomCode,
-            data: { status: 'live' }
+        // Use setImmediate to prevent recursive transition errors during initialization
+        setImmediate(async () => {
+            try {
+                const questionManager = require('../QuestionManager');
+                eventBus.emit('SESSION_START', {
+                    roomCode: context.roomCode,
+                    data: { status: 'live' }
+                });
+                
+                // Start the first question when entering Live state
+                await questionManager.broadcastQuestion(context);
+            } catch (err) {
+                const logger = require('../../../utils/logger');
+                logger.error(`[LiveState] Failed to initialize live session ${context.roomCode}`, { error: err.message });
+            }
         });
-        
-        // Start the first question when entering Live state
-        await questionManager.broadcastQuestion(context);
     }
 
     async handleAction(context, action) {

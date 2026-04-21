@@ -1,6 +1,6 @@
-const { WaitingState, LiveState, PausedState, CompletedState, AbortedState } = require('./SessionStates');
-const eventBus = require('../../core/EventBus');
-const logger = require('../../../utils/logger');
+const { WaitingState, LiveState, PausedState, CompletedState, AbortedState } = require('./state/SessionStates');
+const eventBus = require('../core/EventBus');
+const logger = require('../../utils/logger');
 
 /**
  * Session Lifecycle Manager (Context for State Pattern)
@@ -21,13 +21,14 @@ class SessionManager {
      * Map string status to State object
      */
     _mapStatusToState(status) {
-        switch (status) {
-            case 'waiting': return new WaitingState();
-            case 'live':    return new LiveState();
-            case 'paused':  return new PausedState();
+        const normalized = String(status || 'waiting').toLowerCase();
+        switch (normalized) {
+            case 'waiting':   return new WaitingState();
+            case 'live':      return new LiveState();
+            case 'paused':    return new PausedState();
             case 'completed': return new CompletedState();
             case 'aborted':   return new AbortedState();
-            default: return new WaitingState();
+            default:          return new WaitingState();
         }
     }
 

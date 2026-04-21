@@ -23,8 +23,16 @@ The platform is divided into three major architectural pillars:
 - **Redis**: Fast ephemeral store for active live sessions, distributed locks, rate limiting, and pub/sub.
 
 ### Real-Time Engine
-- **Socket.IO**: Bi-directional event stream. 
-- See `REALTIME_ENGINE.md` for a deep dive into synchronization and the event model.
+The real-time engine is built on an **OOP-driven, event-based architecture**:
+
+```
+SessionManager (State Pattern)  →  Manages transitions (Waiting, Live, Completed)
+EventBus (Observer Pattern)     →  Backbone for internal domain events
+SocketManager (Bridge)          →  Broadcasts EventBus events to Socket.io
+QuestionManager (Logic)         →  Handles sequencing and authoritative timing
+```
+
+All timer and scoring decisions are **server-authoritative**. Clients only display state — they never calculate scores or advance questions.
 
 ---
 
@@ -102,13 +110,14 @@ Features and capacity are controlled by the user's subscription tier (`Free`, `C
 
 ## 4. Key Workflows
 
-### Session Launch Flow
-1. Host triggers `POST /api/quiz/:id/start-live`.
-2. Backend creates `QuizSession` in Mongo.
-3. Backend snapshots Template config into Redis.
-4. Server emits `session:start` to room.
-5. Clients receive `session:start` and emit `session:syncState`.
-6. Server sends `question:sync` and `timer:start`.
+### Session Launch Flow (OOP)
+1. Host clicks "Launch" in the Invite Room.
+2. Frontend triggers `POST /api/quiz/:id/start-live`.
+3. `SessionControllerOop` retrieves the waiting session and instantiates `SessionManager`.
+4. `SessionManager` transitions to `LiveState`.
+5. `LiveState.enter()` hook triggers the first question broadcast via `QuestionManager`.
+6. `EventBus` emits `SESSION_START` and `QUESTION_START`.
+7. `SocketManager` captures these and broadcasts to the Socket.io room.
 
 ### Webhook Flow (Payments)
 1. Razorpay fires webhook to `payment-service`.
@@ -138,18 +147,16 @@ Quvolt's architecture is designed to evolve gracefully from a single-server MVP 
 - **Key Change:** Introduce **BullMQ** (Redis-based queue) to offload heavy tasks (AI generation, analytics processing, payout webhooks).
 - **Focus:** Event-driven decoupling, high availability, and performance under massive load.
 
-### 5.2 System Design Concepts Applied
+---
 
-1. **Caching & Ephemeral State:** 
-   - Strict separation of data: MongoDB for persistent truth (templates, billing), Redis for volatile speed (leaderboards, active sessions).
-2. **CAP Theorem:**
-   - Real-time quiz gameplay prioritizes **Availability** and **Partition Tolerance**. The quiz must not stop, even if eventual consistency is needed for analytics.
-3. **Rate Limiting:**
-   - Tiered security: Strict limits on AI generation and auth, moderate limits on session joins to prevent DDoS attacks while maintaining UX.
-4. **Event-Driven Resilience:**
-   - `answer:submitted` → queue → `scoring worker` → updates Redis → broadcasts `leaderboard:update`. Decoupling prevents slow DB writes from blocking the WebSocket thread.
+## 6. Key Source Files
 
-### 5.3 Performance Strategy
-- **Redis First:** All live gameplay reads/writes (leaderboard updates, session state) hit Redis, not MongoDB.
-- **Snapshot System:** Session configurations are snapshotted to Redis at launch, avoiding complex DB joins during live gameplay.
-- **Async Processing:** Post-session analytics and email notifications are offloaded to background workers.
+| File | Role |
+|------|------|
+| `server/modules/quiz/SessionManager.js` | State Pattern context; manages lifecycle transitions |
+| `server/modules/quiz/state/SessionStates.js` | Concrete states (Waiting, Live, Paused, etc.) |
+| `server/modules/core/EventBus.js` | Internal observer backbone |
+| `server/modules/realtime/SocketManager.js` | Bridge between EventBus and Socket.io |
+| `server/modules/quiz/QuestionManager.js` | Question sequencing and authoritative timing |
+| `server/services/session/session.service.js` | Persistence layer for live session state (Redis) |
+| `server/services/session/session.timer.service.js` | Autoritative timer execution and drift correction |

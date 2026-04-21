@@ -8,7 +8,7 @@ class EventBus {
     }
 
     /**
-     * Subscribe to an event
+     * Subscribe to an event (alias: on)
      * @param {string} event - Event name
      * @param {Function} handler - Handler function
      */
@@ -18,6 +18,10 @@ class EventBus {
         }
         this.listeners.get(event).push(handler);
         return () => this.unsubscribe(event, handler);
+    }
+
+    on(event, handler) {
+        return this.subscribe(event, handler);
     }
 
     /**

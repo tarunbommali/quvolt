@@ -15,25 +15,39 @@ class SessionController {
         try {
             const { id } = req.params;
             const quizResult = await getManagedQuizOrError(req, id);
-            if (quizResult.error) return sendError(res, quizResult.statusCode, quizResult.error);
+            if (quizResult.error) return sendError(res, quizResult.error, quizResult.statusCode);
 
+            // Fetch the most recent waiting session for this quiz
             const session = await QuizSession.findOne({ 
                 quizId: id, 
                 status: 'waiting' 
             }).sort({ createdAt: -1 });
 
-            if (!session) return sendError(res, 404, 'No waiting session found');
+            if (!session) {
+                return sendError(res, 'No waiting session found for this quiz. Please start a session first.', 404);
+            }
 
             const manager = new SessionManager(session);
+            
+            // Hard Guard: Ensure we are actually in WAITING state before starting
+            if (session.status !== 'waiting') {
+                return sendError(res, `Cannot start session: current status is ${session.status}`, 409);
+            }
+
             await manager.start();
 
             return sendSuccess(res, {
                 roomCode: session.sessionCode,
-                status: 'live'
+                status: 'live',
+                sessionId: session._id
             }, 'Quiz started successfully');
         } catch (error) {
-            logger.error('[OOP SessionController] startLiveSession', { error: error.message });
-            return sendError(res, 500, error.message);
+            logger.error('[OOP SessionController] startLiveSession', { 
+                quizId: req.params.id,
+                error: error.message,
+                stack: error.stack 
+            });
+            return sendError(res, error.message, 500);
         }
     }
 
