@@ -18,7 +18,7 @@ const {
   getHostCurrentPlan,
   createSubscription,
   cancelSubscription,
-} = require('../services/subscriptionService');
+} = require('../services/subscription/subscription.service');
 
 describe('subscriptionService', () => {
   beforeEach(() => {

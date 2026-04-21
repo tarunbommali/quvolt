@@ -53,7 +53,7 @@ let PaymentRouterClass;
 
 function makeRouter() {
   if (!PaymentRouterClass) {
-    const singleton = require('../services/PaymentRouter');
+    const singleton = require('../services/router/PaymentRouter');
     PaymentRouterClass = singleton.constructor;
   }
   return new PaymentRouterClass();

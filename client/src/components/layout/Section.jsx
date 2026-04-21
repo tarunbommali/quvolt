@@ -1,6 +1,11 @@
-/* eslint-disable no-unused-vars */
-const Section = ({ as: Tag = 'section', className = '', children }) => {
-    return <Tag className={`app-section ${className}`.trim()}>{children}</Tag>;
+import React from 'react';
+
+const Section = ({ children, className = '', id = '' }) => {
+  return (
+    <section id={id} className={`relative overflow-hidden ${className}`}>
+      {children}
+    </section>
+  );
 };
 
 export default Section;

@@ -16,9 +16,13 @@ const hostAccountSchema = new mongoose.Schema({
   },
   accountStatus: {
     type: String,
-    enum: ['pending_kyc', 'active', 'suspended'],
-    default: 'pending_kyc',
+    enum: ['not_started', 'pending', 'verified', 'suspended', 'rejected'],
+    default: 'not_started',
     index: true,
+  },
+  payoutEnabled: {
+    type: Boolean,
+    default: false,
   },
   settlementMode: {
     type: String,

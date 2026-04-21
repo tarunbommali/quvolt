@@ -1,89 +1,83 @@
-# QuizBolt
+# Quvolt
 
-QuizBolt is a real-time quiz platform with host and participant flows, live session orchestration, analytics, payment support, and AI-assisted quiz generation.
+A SaaS real-time quiz platform. Hosts create and run live quiz sessions; participants join, answer MCQs, and see a live leaderboard.
+
+---
 
 ## Repository Layout
 
-- client: React + Vite frontend
-- server: main API and realtime orchestration service
-- payment-service: payment, subscriptions, and revenue service
-- docs: architecture and API references
+```
+quiz/
+  client/           React + Vite frontend
+  server/           Express API + Socket.IO + Redis
+  payment-service/  Razorpay subscriptions & payouts
+  docs/             Architecture, API, and engine references
+```
 
-## Current Project Status (April 2026)
-
-Implemented and active:
-- backend-owned session lifecycle state machine with guarded transitions
-- resolver-based host routing by session status
-- realtime session orchestration over Socket.IO
-- payment order/verify/webhook flow with idempotent handling
-- host onboarding and payout state support
-- subscription and failed-job workers (toggleable by env)
-- AI quiz generation with 5% difficulty distribution controls
-- Redesigned Legal pages (Terms, Privacy, etc.) with unified layout and breadcrumbs
-- Theme-aware Billing Analytics with consistent typographic standards
-
-Validation in place:
-- server unit and integration suites for lifecycle, auth, and middleware contracts
-- payment-service Jest suite with coverage
-- client lint, build, and e2e harness
-
-Still required before full production sign-off:
-- live gateway validation in staging (checkout, webhook retries, refunds, payouts)
-- sustained load and concurrency testing for live sessions
-
-## Session Lifecycle
-
-Session states:
-- draft
-- scheduled
-- waiting
-- live
-- completed
-- aborted
-
-host route mapping:
-- draft -> /launch/:id
-- scheduled or waiting -> /invite/:id
-- live -> /live/:id
-- completed -> /results/:id
-- aborted -> /studio
+---
 
 ## Tech Stack
 
-- Frontend: React 19, Vite 7, Tailwind, Zustand, React Query, Socket.IO client
-- Backend: Node.js, Express, Mongoose, Socket.IO, Redis, JWT
-- Payments: Razorpay via payment-service
-- AI: OpenAI-compatible generation endpoint
+| Layer      | Tech                                              |
+|------------|---------------------------------------------------|
+| Frontend   | React 19, Vite, Zustand, Socket.IO client         |
+| Backend    | Node.js, Express, Mongoose, Socket.IO, Redis      |
+| Realtime   | Socket.IO + Redis session store + pub/sub         |
+| Payments   | Razorpay via payment-service                      |
+| AI         | OpenAI-compatible quiz generation                 |
+
+---
 
 ## Local Setup
 
-1. Copy env template:
-
 ```bash
+# 1. Copy env
 copy .env.example .env
-```
 
-2. Install dependencies from repo root:
-
-```bash
+# 2. Install
 npm install
 npm run install:all
-```
 
-3. Start all services from root:
-
-```bash
+# 3. Start all services
 npm run dev
 ```
 
-Default local ports:
-- client: 5173
-- server: 5000
-- payment-service: 5001
+Default ports: client `5173` · server `5000` · payment-service `5001`
 
-## Test and Validation Commands
+---
 
-From repo root:
+## Session Lifecycle
+
+```
+draft → waiting → live → completed
+                       → aborted
+```
+
+Host page routing:
+
+| Status       | Route              |
+|--------------|--------------------|
+| `draft`      | `/launch/:id`      |
+| `waiting`    | `/invite/:id`      |
+| `live`       | `/live/:id`        |
+| `completed`  | `/results/:id`     |
+| `aborted`    | `/studio`          |
+
+---
+
+## Features
+
+- Template-based quiz configuration (timer, scoring, negative marks, anti-cheat)
+- Server-authoritative timer with clock-drift correction
+- Late-join recovery (snapshot includes active question + remaining time)
+- Idempotent session start (no duplicate timer resets)
+- Plan-gated features (Free / Creator / Teams)
+- AI quiz generation with difficulty distribution
+- Leaderboard, answer distribution, fastest-user tracking
+
+---
+
+## Tests & Validation
 
 ```bash
 npm run lint:client
@@ -94,39 +88,30 @@ npm run test:realtime-smoke
 npm run validate:full
 ```
 
-From server:
+---
+
+## Deployment
+
+- EC2 guide: `DEPLOYMENT_AWS.md`
+- PM2 config: `ecosystem.config.js`
+- Docker option: `docker-compose.yml`
 
 ```bash
-cd server
-node --test tests
-npm run test:integration
+npm run prod:start   # start all processes
+npm run prod:status  # check PM2 status
+npm run prod:save    # save PM2 process list
 ```
 
-## Deployment Docs
+---
 
-- EC2 production guide: DEPLOYMENT_AWS.md
-- PM2 process file: ecosystem.config.js
-- Future container stack option: docker-compose.yml
+## Documentation Index
 
-## Production Commands (PM2)
-
-Use these on EC2 production hosts:
-
-```bash
-npm run prod:stop
-npm run prod:start
-npm run prod:save
-npm run prod:status
-```
-
-Do not use npm run dev on production hosts.
-
-## References
-
-- client README: client/README.md
-- server README: server/README.md
-- payment README: payment-service/README.md
-- documentation index: docs/README.md
-- architecture docs: docs/QUIZBOLT_HLD.md and docs/QUIZBOLT_LLD.md
-- API surface: docs/QUIZBOLT_API_LIST.md
-- release roadmap: docs/ROADMAP.md
+| File                          | Contents                              |
+|-------------------------------|---------------------------------------|
+| `docs/REALTIME_ENGINE.md`     | Real-time engine, events, state flow  |
+| `docs/QUIZBOLT_HLD.md`        | High-level architecture               |
+| `docs/QUIZBOLT_LLD.md`        | Low-level design & module breakdown   |
+| `docs/QUIZBOLT_API_LIST.md`   | Full REST API surface                 |
+| `docs/ROADMAP.md`             | Feature roadmap                       |
+| `FRONTEND_GUIDE.md`           | Client architecture guide             |
+| `DEPLOYMENT_AWS.md`           | Production deployment on EC2          |

@@ -1,7 +1,7 @@
 export const navbar = {
     container: 'relative sticky top-0 z-[var(--z-nav)] h-14 border-b theme-border theme-surface',
     inner: 'mx-auto flex h-14 w-full max-w-7xl items-center justify-between px-6',
-    brandLink: 'flex items-center gap-3',
+    brandLink: 'flex items-center gap-3 select-none outline-none focus:outline-none',
     brandTitle: 'text-4xl font-semibold tracking-tight theme-text-primary',
     brandAccent: 'theme-primary',
     navLink: 'text-xs sm:text-sm font-medium theme-text-secondary hover:theme-text-primary',
@@ -31,7 +31,7 @@ export const navbar = {
     secondaryButton: 'inline-flex items-center justify-center rounded-lg border theme-border px-4 py-2 text-sm font-medium theme-text-secondary transition-colors hover:theme-surface-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--qb-primary)] focus-visible:ring-offset-2',
     badge: 'text-xs px-2.5 py-1 rounded-full font-medium inline-flex items-center gap-1.5',
     badgeDot: 'h-1.5 w-1.5 rounded-full bg-current',
-    iconButton: 'inline-flex h-9 w-9 items-center justify-center rounded-full theme-text-secondary transition-colors hover:theme-surface-soft hover:theme-text-primary',
+    iconButton: 'inline-flex h-9 w-9 items-center justify-center rounded-full theme-text-secondary transition-colors hover:theme-surface-soft hover:theme-text-primary select-none outline-none focus:outline-none',
     profileMenuWrap: 'relative',
     avatarTrigger: 'inline-flex h-9 items-center gap-1 rounded-full border theme-border theme-surface pr-1 theme-text-secondary transition-colors hover:theme-surface-soft hover:theme-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--qb-primary)] focus-visible:ring-offset-2',
     avatarCaret: 'theme-text-muted',

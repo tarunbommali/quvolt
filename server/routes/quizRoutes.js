@@ -4,42 +4,11 @@ const { body } = require('express-validator');
 const rateLimit = require('express-rate-limit');
 const analyticsService = require('../services/analytics/analytics.service');
 const validate = require('../middleware/validate');
-const {
-    createQuiz,
-    addQuestion,
-    getQuizByCode,
-    getMyQuizzes,
-    getUserHistory,
-    gethostStats,
-    getSubjectLeaderboard,
-    getQuizLeaderboard,
-    updateQuiz,
-    deleteQuiz,
-    updateQuestion,
-    deleteQuestion,
-    startQuizSession,
-    startLiveSession,
-    abortSession,
-    pauseSession,
-    resumeSession,
-    nextQuestion,
-    revealAnswer,
-    endQuizSession,
-    getAnswerStats,
-    getSessionState,
-    scheduleQuiz,
-    joinScheduledSession,
-    getMyScheduledJoins,
-    getSessionResults,
-    getSessionParticipants,
-    exportSessionParticipants,
-    getQuizSessions,
-    updateQuizFullState,
-    grantQuizAccess,
-    revokeQuizAccess,
-    getQuizAccessList,
-    updateSessionAccessPolicy,
-} = require('../controllers/quizController');
+const quizController = require('../controllers/quiz.controller');
+const questionController = require('../controllers/question.controller');
+const sessionController = require('../controllers/session.controller');
+const analyticsController = require('../controllers/analytics.controller');
+const accessController = require('../controllers/access.controller');
 
 const quizService = require('../services/quiz/quiz.service');
 const requireRole = require('../middleware/requireRole');
@@ -74,23 +43,23 @@ const createQuizValidators = [
 ];
 
 
-router.post('/templates/new', createQuizValidators, createQuiz);
-router.post('/', createQuizValidators, createQuiz);
-router.get('/templates', requireRole(['host', 'admin']), getMyQuizzes);
-router.get('/subject/:subjectId/leaderboard', requireRole(['host', 'admin', 'participant']), getSubjectLeaderboard);
-router.get('/host/history', requireRole(['host', 'admin']), gethostStats);
-router.get('/user/history', requireRole(['participant', 'host', 'admin']), getUserHistory);
+router.post('/templates/new', createQuizValidators, quizController.createQuiz);
+router.post('/', createQuizValidators, quizController.createQuiz);
+router.get('/templates', requireRole(['host', 'admin']), quizController.getMyQuizzes);
+router.get('/subject/:subjectId/leaderboard', requireRole(['host', 'admin', 'participant']), analyticsController.getSubjectLeaderboard);
+router.get('/host/history', requireRole(['host', 'admin']), analyticsController.gethostStats);
+router.get('/user/history', requireRole(['participant', 'host', 'admin']), analyticsController.getUserHistory);
 
 // Participant scheduled-session routes
-router.get('/user/scheduled-joins', requireRole(['participant', 'host', 'admin']), getMyScheduledJoins);
-router.post('/join-scheduled/:roomCode', joinLimiter, requireRole(['participant', 'host', 'admin']), joinScheduledSession);
+router.get('/user/scheduled-joins', requireRole(['participant', 'host', 'admin']), sessionController.getMyScheduledJoins);
+router.post('/join-scheduled/:roomCode', joinLimiter, requireRole(['participant', 'host', 'admin']), sessionController.joinScheduledSession);
 
 // Session results
-router.get('/session/:sessionCode/results', requireRole(['host', 'admin']), getSessionResults);
-router.get('/session/:sessionCode/participants', requireRole(['host', 'admin']), getSessionParticipants);
-router.get('/session/:sessionCode/participants/export', requireRole(['host', 'admin']), exportSessionParticipants);
-router.get('/session/:sessionCode/stats', requireRole(['host', 'admin', 'participant']), getAnswerStats);
-router.get('/session/:code/state', requireRole(['host', 'admin', 'participant']), getSessionState);
+router.get('/session/:sessionCode/results', requireRole(['host', 'admin']), analyticsController.getSessionResults);
+router.get('/session/:sessionCode/participants', requireRole(['host', 'admin']), analyticsController.getSessionParticipants);
+router.get('/session/:sessionCode/participants/export', requireRole(['host', 'admin']), analyticsController.exportSessionParticipants);
+router.get('/session/:sessionCode/stats', requireRole(['host', 'admin', 'participant']), sessionController.getAnswerStats);
+router.get('/session/:code/state', requireRole(['host', 'admin', 'participant']), sessionController.getSessionState);
 
 // Session access control (Requirements 10.3, 10.5)
 router.put('/session/:sessionCode/access', [
@@ -101,9 +70,9 @@ router.put('/session/:sessionCode/access', [
     body('sharedWith').optional().isArray().withMessage('sharedWith must be an array'),
     body('sharedWith.*').optional().isMongoId().withMessage('Each sharedWith ID must be a valid MongoDB ID'),
     validate
-], updateSessionAccessPolicy);
+], accessController.updateSessionAccessPolicy);
 
-router.get('/templates/:templateId/sessions', requireRole(['host', 'admin']), requireQuizOwnership, getQuizSessions);
+router.get('/templates/:templateId/sessions', requireRole(['host', 'admin']), requireQuizOwnership, quizController.getQuizSessions);
 router.post('/templates/:templateId/session', [
     requireRole(['host', 'admin']),
     requireQuizOwnership,
@@ -113,11 +82,11 @@ router.post('/templates/:templateId/session', [
     body('sharedWith').optional().isArray().withMessage('sharedWith must be an array'),
     body('sharedWith.*').optional().isMongoId().withMessage('Each sharedWith ID must be a valid MongoDB ID'),
     validate
-], startQuizSession);
+], sessionController.startQuizSession);
 
 // Quiz CRUD
-router.put('/:id', requireRole(['host', 'admin']), updateQuiz);
-router.put('/:id/full-state', requireRole(['host', 'admin']), requireQuizOwnership, updateQuizFullState);
+router.put('/:id', requireRole(['host', 'admin']), quizController.updateQuiz);
+router.put('/:id/full-state', requireRole(['host', 'admin']), requireQuizOwnership, questionController.updateQuizFullState);
 router.post('/:id/start', [
     requireRole(['host', 'admin']),
     requireQuizOwnership,
@@ -127,15 +96,15 @@ router.post('/:id/start', [
     body('sharedWith').optional().isArray().withMessage('sharedWith must be an array'),
     body('sharedWith.*').optional().isMongoId().withMessage('Each sharedWith ID must be a valid MongoDB ID'),
     validate
-], startQuizSession);
-router.post('/:id/start-live', requireRole(['host', 'admin']), requireQuizOwnership, startLiveSession);
-router.post('/:id/abort', requireRole(['host', 'admin']), requireQuizOwnership, abortSession);
-router.post('/:id/pause', requireRole(['host', 'admin']), requireQuizOwnership, pauseSession);
-router.post('/:id/resume', requireRole(['host', 'admin']), requireQuizOwnership, resumeSession);
-router.post('/:id/next-question', requireRole(['host', 'admin']), requireQuizOwnership, nextQuestion);
-router.post('/:id/reveal-answer', requireRole(['host', 'admin']), requireQuizOwnership, revealAnswer);
-router.post('/:id/end', requireRole(['host', 'admin']), requireQuizOwnership, endQuizSession);
-router.post('/:id/complete', requireRole(['host', 'admin']), requireQuizOwnership, endQuizSession);
+], sessionController.startQuizSession);
+router.post('/:id/start-live', requireRole(['host', 'admin']), requireQuizOwnership, sessionController.startLiveSession);
+router.post('/:id/abort', requireRole(['host', 'admin']), requireQuizOwnership, sessionController.abortSession);
+router.post('/:id/pause', requireRole(['host', 'admin']), requireQuizOwnership, sessionController.pauseSession);
+router.post('/:id/resume', requireRole(['host', 'admin']), requireQuizOwnership, sessionController.resumeSession);
+router.post('/:id/next-question', requireRole(['host', 'admin']), requireQuizOwnership, sessionController.nextQuestion);
+router.post('/:id/reveal-answer', requireRole(['host', 'admin']), requireQuizOwnership, sessionController.revealAnswer);
+router.post('/:id/end', requireRole(['host', 'admin']), requireQuizOwnership, sessionController.endQuizSession);
+router.post('/:id/complete', requireRole(['host', 'admin']), requireQuizOwnership, sessionController.endQuizSession);
 router.post('/:id/schedule', [
     requireRole(['host', 'admin']),
     requireQuizOwnership,
@@ -146,9 +115,9 @@ router.post('/:id/schedule', [
     body('sharedWith').optional().isArray().withMessage('sharedWith must be an array'),
     body('sharedWith.*').optional().isMongoId().withMessage('Each sharedWith ID must be a valid MongoDB ID'),
     validate
-], scheduleQuiz);
-router.get('/:id/sessions', requireRole(['host', 'admin']), requireQuizOwnership, getQuizSessions);
-router.delete('/:id', requireRole(['host', 'admin']), requireQuizOwnership, deleteQuiz);
+], sessionController.scheduleQuiz);
+router.get('/:id/sessions', requireRole(['host', 'admin']), requireQuizOwnership, quizController.getQuizSessions);
+router.delete('/:id', requireRole(['host', 'admin']), requireQuizOwnership, quizController.deleteQuiz);
 
 // Access grant management endpoints (Requirements 8.6, 8.7)
 router.post('/:id/access/grant', [
@@ -157,9 +126,9 @@ router.post('/:id/access/grant', [
     body('userId').optional().isMongoId().withMessage('Invalid user ID'),
     body('email').optional().isEmail().withMessage('Invalid email'),
     validate
-], grantQuizAccess);
-router.delete('/:id/access/revoke/:userId', requireRole(['host', 'admin']), requireQuizOwnership, revokeQuizAccess);
-router.get('/:id/access', requireRole(['host', 'admin']), requireQuizOwnership, getQuizAccessList);
+], accessController.grantQuizAccess);
+router.delete('/:id/access/revoke/:userId', requireRole(['host', 'admin']), requireQuizOwnership, accessController.revokeQuizAccess);
+router.get('/:id/access', requireRole(['host', 'admin']), requireQuizOwnership, accessController.getQuizAccessList);
 
 router.post('/:id/questions', [
     requireRole(['host', 'admin']),
@@ -167,13 +136,13 @@ router.post('/:id/questions', [
     body('options').isArray({ min: 4, max: 4 }).withMessage('Exactly 4 options are required'),
     body('correctOption').isInt({ min: 0, max: 3 }).withMessage('Correct option must be between 0 and 3'),
     validate
-], addQuestion);
-router.put('/:quizId/questions/:questionId', requireRole(['host', 'admin']), updateQuestion);
-router.delete('/:quizId/questions/:questionId', requireRole(['host', 'admin']), deleteQuestion);
+], questionController.addQuestion);
+router.put('/:quizId/questions/:questionId', requireRole(['host', 'admin']), questionController.updateQuestion);
+router.delete('/:quizId/questions/:questionId', requireRole(['host', 'admin']), questionController.deleteQuestion);
 
-router.get('/:id/leaderboard', requireRole(['host', 'admin', 'participant']), checkQuizAccess, getQuizLeaderboard);
+router.get('/:id/leaderboard', requireRole(['host', 'admin', 'participant']), checkQuizAccess, analyticsController.getQuizLeaderboard);
 
 // Room code lookup - Requirements 8.3, 8.4, 8.5: Check access policy
-router.get('/:roomCode', requireRole(['host', 'admin', 'participant']), checkQuizAccess, getQuizByCode);
+router.get('/:roomCode', requireRole(['host', 'admin', 'participant']), checkQuizAccess, quizController.getQuizByCode);
 
 module.exports = router;

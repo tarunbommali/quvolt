@@ -1,4 +1,4 @@
-# Session Route Test Matrix
+# Quvolt Session Route Test Matrix
 
 Date: 2026-04-10
 Scope: host session flow route resolution and guard normalization.

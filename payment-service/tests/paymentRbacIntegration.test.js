@@ -165,7 +165,7 @@ describe('Payment RBAC Middleware', () => {
 
 describe('Dynamic Gateway Configuration (Requirements 14.2, 14.5, 14.6)', () => {
   test('should enable a gateway dynamically', async () => {
-    const PaymentRouter = require('../services/PaymentRouter');
+    const PaymentRouter = require('../services/router/PaymentRouter');
     const GatewayInterface = require('../services/gateways/GatewayInterface');
 
     class TestGateway extends GatewayInterface {
@@ -190,7 +190,7 @@ describe('Dynamic Gateway Configuration (Requirements 14.2, 14.5, 14.6)', () => 
   });
 
   test('should disable a gateway dynamically', async () => {
-    const PaymentRouter = require('../services/PaymentRouter');
+    const PaymentRouter = require('../services/router/PaymentRouter');
     const GatewayInterface = require('../services/gateways/GatewayInterface');
 
     class TestGateway extends GatewayInterface {
@@ -214,7 +214,7 @@ describe('Dynamic Gateway Configuration (Requirements 14.2, 14.5, 14.6)', () => 
   });
 
   test('should return error for non-existent gateway', async () => {
-    const PaymentRouter = require('../services/PaymentRouter');
+    const PaymentRouter = require('../services/router/PaymentRouter');
     const router = new PaymentRouter.constructor();
     router.initialize([]);
 
@@ -224,7 +224,7 @@ describe('Dynamic Gateway Configuration (Requirements 14.2, 14.5, 14.6)', () => 
   });
 
   test('getGatewayConfig should NOT include credentials', async () => {
-    const PaymentRouter = require('../services/PaymentRouter');
+    const PaymentRouter = require('../services/router/PaymentRouter');
     const GatewayInterface = require('../services/gateways/GatewayInterface');
 
     class TestGateway extends GatewayInterface {

@@ -6,48 +6,37 @@ const logger = require('../../utils/logger');
  * Handles database writes with retry logic and transaction support
  */
 
-// Failed operations queue
-const failedOperationsQueue = [];
+const { getRedisClient } = require('../../config/redis');
+
+// Failed operations queue key in Redis
+const FAILED_OPS_KEY = 'quiz:failed_ops';
+
+const getRedis = () => {
+    try {
+        return getRedisClient();
+    } catch {
+        return null;
+    }
+};
 
 /**
  * Execute a database operation with exponential backoff retry
  * @param {Function} operation - Async function to execute
  * @param {Object} context - Context for logging
  * @param {Number} maxRetries - Maximum retry attempts (default: 3)
+ * @param {Object} serialized - Serialized operation for the queue if fully failed
  * @returns {Promise<any>} Operation result
  */
-const executeWithRetry = async (operation, context = {}, maxRetries = 3) => {
+const executeWithRetry = async (operation, context = {}, maxRetries = 3, serialized = null) => {
     let lastError = null;
     
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
-            const result = await operation();
-            
-            if (attempt > 1) {
-                logger.info('Operation succeeded after retry', {
-                    ...context,
-                    attempt,
-                    totalAttempts: maxRetries
-                });
-            }
-            
-            return result;
+            return await operation();
         } catch (error) {
             lastError = error;
+            if (error.name === 'ValidationError' || error.name === 'CastError') throw error;
             
-            logger.warn('Operation failed, will retry', {
-                ...context,
-                attempt,
-                maxRetries,
-                error: error.message
-            });
-            
-            // Don't retry on validation errors or other non-transient errors
-            if (error.name === 'ValidationError' || error.name === 'CastError') {
-                throw error;
-            }
-            
-            // If this isn't the last attempt, wait before retrying
             if (attempt < maxRetries) {
                 const delayMs = calculateBackoffDelay(attempt);
                 await sleep(delayMs);
@@ -55,120 +44,123 @@ const executeWithRetry = async (operation, context = {}, maxRetries = 3) => {
         }
     }
     
-    // All retries failed, queue the operation
-    logger.error('Operation failed after all retries', {
-        ...context,
-        attempts: maxRetries,
-        error: lastError.message
-    });
-    
-    queueFailedOperation(operation, context);
+    logger.error('Operation fully failed, sending to Redis queue', context);
+    if (serialized) await queueFailedOperation(serialized);
     throw lastError;
 };
 
-/**
- * Calculate exponential backoff delay
- * @param {Number} attempt - Current attempt number (1-indexed)
- * @returns {Number} Delay in milliseconds
- */
 const calculateBackoffDelay = (attempt) => {
-    // Exponential backoff: 100ms, 200ms, 400ms, etc.
     const baseDelay = 100;
     const maxDelay = 5000;
     const delay = Math.min(baseDelay * Math.pow(2, attempt - 1), maxDelay);
-    
-    // Add jitter to prevent thundering herd
-    const jitter = Math.random() * 0.3 * delay;
-    return delay + jitter;
+    return delay + (Math.random() * 0.3 * delay);
 };
 
-/**
- * Sleep for specified milliseconds
- * @param {Number} ms - Milliseconds to sleep
- * @returns {Promise<void>}
- */
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
- * Queue a failed operation for later processing
- * @param {Function} operation - Failed operation
- * @param {Object} context - Operation context
+ * Queue a failed operation for later processing (Redis-backed)
  */
-const queueFailedOperation = (operation, context) => {
-    failedOperationsQueue.push({
-        operation,
-        context,
-        queuedAt: Date.now(),
-        retryCount: 0
-    });
+const queueFailedOperation = async (opData) => {
+    const client = getRedis();
+    const item = { ...opData, queuedAt: Date.now(), retryCount: opData.retryCount || 0 };
+
+    if (client) {
+        try {
+            await client.rPush(FAILED_OPS_KEY, JSON.stringify(item));
+            return;
+        } catch (err) {
+            logger.error('Redis queue failed', { error: err.message });
+        }
+    }
     
-    logger.info('Operation queued for later processing', {
-        ...context,
-        queueSize: failedOperationsQueue.length
-    });
+    if (!global.failedOpsMemoryQueue) global.failedOpsMemoryQueue = [];
+    global.failedOpsMemoryQueue.push(item);
 };
 
 /**
- * Process queued failed operations
- * Should be called periodically by a background job
- * @returns {Promise<Object>} Processing statistics
+ * Process queued failed operations from Redis
  */
 const processFailedOperationsQueue = async () => {
-    if (failedOperationsQueue.length === 0) {
-        return { processed: 0, succeeded: 0, failed: 0 };
-    }
+    const client = getRedis();
+    const stats = { processed: 0, succeeded: 0, failed: 0 };
     
-    logger.info('Processing failed operations queue', {
-        queueSize: failedOperationsQueue.length
-    });
+    const items = [];
     
-    const stats = {
-        processed: 0,
-        succeeded: 0,
-        failed: 0
-    };
-    
-    const operations = [...failedOperationsQueue];
-    failedOperationsQueue.length = 0; // Clear queue
-    
-    for (const item of operations) {
-        stats.processed++;
-        
+    // Pull from Redis
+    if (client) {
         try {
-            await item.operation();
-            stats.succeeded++;
-            
-            logger.info('Queued operation succeeded', {
-                ...item.context,
-                retryCount: item.retryCount,
-                queuedDuration: Date.now() - item.queuedAt
-            });
+            let item;
+            while (item = await client.lPop(FAILED_OPS_KEY)) {
+                items.push(JSON.parse(item));
+            }
+        } catch (err) {
+            logger.error('Failed to pull ops from Redis', { error: err.message });
+        }
+    }
+
+    // Pull from memory fallback
+    if (global.failedOpsMemoryQueue?.length) {
+        items.push(...global.failedOpsMemoryQueue);
+        global.failedOpsMemoryQueue = [];
+    }
+
+    if (items.length === 0) return stats;
+
+    const Submission = require('../../models/Submission');
+    const Quiz = require('../../models/Quiz');
+    const QuizSession = require('../../models/QuizSession');
+
+    for (const item of items) {
+        stats.processed++;
+        let success = false;
+
+        try {
+            switch (item.type) {
+                case 'persistSubmission':
+                    await Submission.create(item.data);
+                    success = true;
+                    break;
+                case 'persistSessionStateTransition':
+                    await QuizSession.findOneAndUpdate(
+                        { sessionCode: item.data.sessionCode },
+                        { status: item.data.newStatus, ...item.data.updates }
+                    );
+                    success = true;
+                    break;
+                case 'persistQuizStateTransition':
+                    await Quiz.findByIdAndUpdate(item.data.quizId, {
+                        status: item.data.newStatus,
+                        ...item.data.updates
+                    });
+                    success = true;
+                    break;
+                case 'persistSessionUpdates':
+                    await QuizSession.findOneAndUpdate({ sessionCode: item.data.sessionCode }, item.data.updates);
+                    success = true;
+                    break;
+            }
+
+            if (success) {
+                stats.succeeded++;
+                logger.info('Queued operation succeeded', { type: item.type });
+            }
         } catch (error) {
             stats.failed++;
             item.retryCount++;
-            
-            // Re-queue if not too old (max 1 hour in queue)
-            const queuedDuration = Date.now() - item.queuedAt;
-            if (queuedDuration < 60 * 60 * 1000 && item.retryCount < 10) {
-                failedOperationsQueue.push(item);
-                
-                logger.warn('Queued operation failed, re-queuing', {
-                    ...item.context,
-                    retryCount: item.retryCount,
-                    error: error.message
-                });
+
+            // Exponential backoff or age-based skip logic
+            if (item.retryCount < 5) {
+                await queueFailedOperation(item);
             } else {
-                logger.error('Queued operation permanently failed', {
-                    ...item.context,
-                    retryCount: item.retryCount,
-                    queuedDuration,
-                    error: error.message
+                logger.error('Queued operation permanently failed (Max Retries)', { 
+                    type: item.type, 
+                    error: error.message 
                 });
             }
         }
     }
-    
-    logger.info('Failed operations queue processing completed', stats);
+
     return stats;
 };
 
@@ -285,11 +277,28 @@ const persistSessionStateTransition = async (sessionCode, newStatus, updates = {
     
     return await executeWithRetry(
         operation,
-        {
-            operation: 'persistSessionStateTransition',
-            sessionCode,
-            newStatus
-        }
+        { operation: 'persistSessionStateTransition', sessionCode, newStatus },
+        3,
+        { type: 'persistSessionStateTransition', data: { sessionCode, newStatus, updates } }
+    );
+};
+
+/**
+ * Persist generic session updates with retry logic
+ * @param {String} sessionCode - Session code
+ * @param {Object} updates - Updates to apply
+ */
+const persistSessionUpdates = async (sessionCode, updates = {}) => {
+    const QuizSession = require('../../models/QuizSession');
+    const operation = async () => {
+        return await QuizSession.findOneAndUpdate({ sessionCode }, updates, { returnDocument: 'after' });
+    };
+    
+    return await executeWithRetry(
+        operation,
+        { operation: 'persistSessionUpdates', sessionCode },
+        3,
+        { type: 'persistSessionUpdates', data: { sessionCode, updates } }
     );
 };
 
@@ -327,11 +336,9 @@ const persistQuizStateTransition = async (quizId, newStatus, updates = {}) => {
     
     return await executeWithRetry(
         operation,
-        {
-            operation: 'persistQuizStateTransition',
-            quizId,
-            newStatus
-        }
+        { operation: 'persistQuizStateTransition', quizId, newStatus },
+        3,
+        { type: 'persistQuizStateTransition', data: { quizId, newStatus, updates } }
     );
 };
 
@@ -353,26 +360,56 @@ const persistSubmission = async (submissionData) => {
             operation: 'persistSubmission',
             userId: submissionData.userId,
             questionId: submissionData.questionId
-        }
+        },
+        3,
+        { type: 'persistSubmission', data: submissionData }
     );
 };
 
 /**
- * Get failed operations queue size
- * @returns {Number} Queue size
+ * Get failed operations queue size (Redis + Memory)
+ * @returns {Promise<Number>} Total queue size
  */
-const getQueueSize = () => failedOperationsQueue.length;
+const getQueueSize = async () => {
+    const client = getRedis();
+    let redisSize = 0;
+    if (client) {
+        try {
+            redisSize = await client.lLen(FAILED_OPS_KEY);
+        } catch {}
+    }
+    
+    const memSize = global.failedOpsMemoryQueue?.length || 0;
+    return redisSize + memSize;
+};
 
 /**
- * Get failed operations queue (for monitoring)
- * @returns {Array} Queue items
+ * Get failed operations queue items (for monitoring)
+ * @returns {Promise<Array>} Combined queue items
  */
-const getQueue = () => [...failedOperationsQueue];
+const getQueue = async () => {
+    const client = getRedis();
+    const items = [];
+    
+    if (client) {
+        try {
+            const redisItems = await client.lRange(FAILED_OPS_KEY, 0, -1);
+            items.push(...redisItems.map(JSON.parse));
+        } catch {}
+    }
+    
+    if (global.failedOpsMemoryQueue) {
+        items.push(...global.failedOpsMemoryQueue);
+    }
+    
+    return items;
+};
 
 module.exports = {
     executeWithRetry,
     executeInTransaction,
     persistSessionStateTransition,
+    persistSessionUpdates,
     persistQuizStateTransition,
     persistSubmission,
     processFailedOperationsQueue,

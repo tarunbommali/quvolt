@@ -2,7 +2,9 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../stores/useAuthStore';
 
 const Spinner = () => (
-  <div style={{ textAlign: 'center', padding: '2rem' }}>Loading...</div>
+  <div className="p-12 text-center theme-text-muted font-medium animate-pulse">
+    Loading...
+  </div>
 );
 
 

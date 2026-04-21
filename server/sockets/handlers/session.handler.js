@@ -1,98 +1,152 @@
 const logger = require('../../utils/logger');
 const sessionStore = require('../../services/session/session.service');
 const quizService = require('../../services/quiz/quiz.service');
+const crypto = require('crypto');
+const { formatQuestion, republishCurrentQuestion } = require('../../services/gameplay/question.service');
+const { 
+    publishJoinSuccess, 
+    publishSessionState, 
+    publishParticipantUpdate, 
+    publishSessionStart,
+    publishSessionRedirect,
+    publishSessionModeChange,
+    publishQuizPaused,
+    publishRejoinSuccess
+} = require('../../services/session/session.publisher');
+const { publishNewQuestion, publishLeaderboardUpdate, publishAnswerStats } = require('../../services/gameplay/gameplay.publisher');
+const { publishTimerStart } = require('../../services/timer/timer.publisher');
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
 /**
- * Debounce helper keyed by roomCode — prevents participant-update floods
- * when multiple joins happen within the same tick.
+ * Build a lightweight session:state snapshot for late-joiners.
+ * Includes the current question when the session is already live.
  */
-const participantDebounceTimers = new Map();
+const buildSessionStateSnapshot = (session, roomCode) => {
+    const snapshot = {
+        sessionCode: roomCode,
+        status: session.status,
+        mode: session.mode || 'auto',
+        currentQuestionIndex: session.currentQuestionIndex ?? 0,
+        isPaused: session.isPaused || false,
+        participantCount: Object.keys(session.participants || {}).length,
+        participants: Object.values(session.participants || []),
+        questionExpiry: session.questionExpiry || null,
+        questionState: session.questionState || 'waiting',
+    };
 
-const debouncedParticipantUpdate = (io, roomCode, participants, delayMs = 150) => {
-    if (participantDebounceTimers.has(roomCode)) {
-        clearTimeout(participantDebounceTimers.get(roomCode));
+    // Include active question for participants who join while session is live
+    if (session.status === 'live' && session.questionState === 'live') {
+        const questions = session.questions || [];
+        const q = questions[session.currentQuestionIndex ?? 0];
+        if (q) {
+            snapshot.currentQuestion = formatQuestion(
+                q,
+                session.currentQuestionIndex,
+                questions.length,
+                session.questionExpiry
+            );
+            if (session.questionExpiry) {
+                snapshot.timeLeft = Math.max(0, Math.floor((session.questionExpiry - Date.now()) / 1000));
+                snapshot.expiry = session.questionExpiry;
+            }
+        }
     }
 
-    const timer = setTimeout(() => {
-        io.to(roomCode).emit('session:updateParticipants', {
-            participants,
-            count: participants.length,
-        });
-        participantDebounceTimers.delete(roomCode);
-    }, delayMs);
-
-    participantDebounceTimers.set(roomCode, timer);
+    return snapshot;
 };
-
-/**
- * Build a lightweight session:state snapshot for late-joiners and
- * broadcast to a specific socket (not the whole room).
- */
-const buildSessionStateSnapshot = (session, roomCode) => ({
-    sessionCode: roomCode,
-    status: session.status,
-    mode: session.mode || 'auto',
-    currentQuestionIndex: session.currentQuestionIndex ?? 0,
-    isPaused: session.isPaused || false,
-    participantCount: Object.keys(session.participants || {}).length,
-    participants: Object.values(session.participants || []),
-    questionExpiry: session.questionExpiry || null,
-    questionState: session.questionState || 'waiting',
-});
 
 // ── Handler Registration ─────────────────────────────────────────────────────
 
 const registerSessionHandler = (io, socket) => {
     const user = socket.data.user;
+    const joinRateLimits = new Map();
 
-    // ── Unified joining logic (join_room / participant:join) ─────────────────────
-    const handleJoin = async ({ sessionCode, roomCode, sessionId } = {}) => {
+    /**
+     * Core join logic (shared by join_quiz, join_room, participant:join)
+     */
+    const handleJoin = async ({ sessionCode, roomCode, sessionId, quizId } = {}) => {
+        const traceId = crypto.randomUUID();
         try {
-            const finalCode = sessionCode || roomCode;
-            if (!finalCode && !sessionId) {
-                return socket.emit('session:error', { message: 'sessionCode is required' });
+            // ── Join Storm Protection ──────────────────────────────────────────
+            const now = Date.now();
+            const attempts = joinRateLimits.get(socket.id) || [];
+            const recentAttempts = attempts.filter(t => now - t < 5000);
+            
+            if (recentAttempts.length >= 3) {
+                logger.warn('[JOIN] Rate limit exceeded', { userId: user?._id, socketId: socket.id, traceId });
+                return socket.emit('join_error', { message: 'Too many join attempts. Please wait.' });
             }
+            recentAttempts.push(now);
+            joinRateLimits.set(socket.id, recentAttempts);
 
-            const result = await quizService.joinRoom({
-                io,
-                socket,
-                roomCode: finalCode,
-                sessionId,
-            });
+            const finalCode = (sessionCode || roomCode || '').toUpperCase();
+            if (!finalCode && !sessionId) return socket.emit('join_error', { message: 'roomCode is required' });
 
-            if (result.error) {
-                return socket.emit('session:error', { message: result.error });
-            }
+            const result = await quizService.joinRoom({ io, socket, roomCode: finalCode, sessionId });
+            if (result.error) return socket.emit('join_error', { message: result.error });
 
             socket.join(result.roomCode);
             socket.data.roomCode = result.roomCode;
 
-            // 1. Emit full state to the JOINER (late-join sync)
-            socket.emit('room_state', result.state); // Legacy
-            socket.emit('session:state', buildSessionStateSnapshot(result.session, result.roomCode)); // New
+            // 🔥 Use Publisher for responses and broadcasts
+            publishJoinSuccess(socket, result.roomCode, {
+                roomCode: result.roomCode,
+                sessionId: result.session?.sessionId || null,
+                session: buildSessionStateSnapshot(result.session, result.roomCode),
+                user: { id: user?._id, name: user?.name, role: user?.role }
+            });
 
-            // 2. Broadcast updated list to the ROOM (debounced)
             const participants = Object.values(result.session.participants || {});
-            debouncedParticipantUpdate(io, result.roomCode, participants);
-            
-            // Immediate legacy broadcast for count-sensitive components
-            const payload = { participants, count: participants.length };
-            io.to(result.roomCode).emit('participants:update', payload);
-            io.to(result.roomCode).emit('participants_update', participants);
+            publishParticipantUpdate(result.roomCode, participants);
 
-            logger.debug('participant join success', { userId: user?._id, roomCode: result.roomCode });
+            logger.info('[JOIN] Success', { userId: user?._id, roomCode: result.roomCode, traceId });
         } catch (err) {
-            logger.error('session.handler join error', { error: err.message, stack: err.stack });
-            socket.emit('session:error', { message: 'Failed to join session' });
+            logger.error('[ERROR] session.handler join', { error: err.message, stack: err.stack });
+            socket.emit('join_error', { message: 'Failed to join session' });
         }
     };
 
-    socket.on('join_room', (data) => handleJoin(data));
-    socket.on('participant:join', (data) => handleJoin(data));
+    socket.on('join_quiz', handleJoin);
+    socket.on('join_room', handleJoin);
+    socket.on('participant:join', handleJoin);
 
-    // ── participant:leave ────────────────────────────────────────────────────
+    /**
+     * Rejoin after network drop
+     */
+    socket.on('rejoin_quiz', async ({ roomCode, sessionCode, sessionId } = {}) => {
+        try {
+            const finalCode = (roomCode || sessionCode || '').toUpperCase();
+            const { handleParticipantReconnection } = require('../../services/session/sessionRecovery');
+            
+            socket.join(finalCode);
+            socket.data.roomCode = finalCode;
+
+            const reconnectData = await handleParticipantReconnection(socket, finalCode, user);
+            if (!reconnectData.reconnected) return handleJoin({ roomCode: finalCode, sessionId });
+
+            const session = await sessionStore.getSession(finalCode);
+            publishRejoinSuccess(socket, finalCode, {
+                sessionCode: finalCode,
+                sessionStatus: reconnectData.sessionStatus,
+                isPaused: reconnectData.isPaused,
+                currentQuestion: reconnectData.currentQuestion,
+                userStats: reconnectData.userStats,
+                timerExpiry: session?.questionExpiry || null,
+            });
+
+            if (session) {
+                publishSessionState(socket, finalCode, buildSessionStateSnapshot(session, finalCode));
+            }
+        } catch (err) {
+            logger.error('rejoin_quiz error', { error: err.message });
+            socket.emit('join_error', { message: 'Failed to rejoin session' });
+        }
+    });
+
+    /**
+     * Participant explicitly leaves
+     */
     socket.on('participant:leave', async ({ sessionCode } = {}) => {
         try {
             const roomCode = sessionCode || socket.data.roomCode;
@@ -102,156 +156,102 @@ const registerSessionHandler = (io, socket) => {
             if (session && session.participants?.[user?._id]) {
                 delete session.participants[user._id];
                 await sessionStore.setSession(roomCode, session);
-
-                const participants = Object.values(session.participants);
-                debouncedParticipantUpdate(io, roomCode, participants);
+                publishParticipantUpdate(roomCode, Object.values(session.participants));
             }
 
             socket.leave(roomCode);
             socket.data.roomCode = null;
-
-            logger.debug('participant:leave', { userId: user?._id, roomCode });
         } catch (err) {
-            logger.error('session.handler participant:leave error', { error: err.message });
+            logger.error('participant:leave error', { error: err.message });
         }
     });
 
-    // ── session:start ────────────────────────────────────────────────────────
-    // Host emits this to transition the session from LOBBY → LIVE.
-    // Mode is stored in the session at quiz creation time; the host can  
-    // optionally override it here before launch.
+    /**
+     * Host starts the session via socket (called after HTTP start-live).
+     * Re-broadcasts the first question to ensure all connected participants receive it.
+     */
     socket.on('session:start', async ({ sessionCode, sessionId, mode } = {}) => {
         try {
-            if (user?.role !== 'host' && user?.role !== 'admin') {
-                return socket.emit('session:error', { message: 'Only the host can start the session' });
-            }
+            if (user?.role !== 'host' && user?.role !== 'admin') return;
 
-            const result = await quizService.startQuizSession({
-                io,
-                roomCode: sessionCode,
-                sessionId,
-                user,
-                mode,
-            });
+            const result = await quizService.startQuizSession({ io, roomCode: sessionCode, sessionId, user, mode });
+            if (result.error) return socket.emit('session:error', { message: result.error });
 
-            if (result.error) {
-                return socket.emit('session:error', { message: result.error });
-            }
-
-            // Broadcast session:start to every client in the room with
-            // enough context for them to switch to quiz UI.
-            io.to(result.roomCode).emit('session:start', {
+            const resolvedMode = result.session?.mode || mode || 'auto';
+            publishSessionStart(result.roomCode, {
                 sessionCode: result.roomCode,
                 sessionId: result.sessionId,
-                mode: result.session?.mode || mode || 'auto',
+                mode: resolvedMode,
             });
 
-            // If we have a permanent waiting room, redirect everyone there to the new session room
-            const quiz = result.quiz || {};
-            const waitingRoomCode = quiz.roomCode;
+            const waitingRoomCode = result.quiz?.roomCode;
             if (waitingRoomCode && waitingRoomCode !== result.roomCode) {
-                io.to(waitingRoomCode).emit('session_redirect', { 
-                    roomCode: result.roomCode, 
-                    sessionId: result.sessionId 
-                });
-                // Legacy support for start_quiz event which some older participant pages might listen for
-                io.to(waitingRoomCode).emit('start_quiz', { 
-                    roomCode: result.roomCode, 
-                    sessionId: result.sessionId 
-                });
+                publishSessionRedirect(waitingRoomCode, { roomCode: result.roomCode, sessionId: result.sessionId });
             }
 
-            // Also emit legacy start_quiz to the new room just in case
-            io.to(result.roomCode).emit('start_quiz', { 
-                roomCode: result.roomCode, 
-                sessionId: result.sessionId, 
-                mode: result.session?.mode || mode || 'auto' 
-            });
-
-            logger.info('session:start broadcast', { roomCode: result.roomCode, mode, waitingRoomCode });
+            // ── Idempotent broadcast: avoid duplicate timer resets ─────────────
+            // If the session question is already LIVE (HTTP start already fired),
+            // re-publish existing state WITHOUT resetting timers.
+            // Otherwise do a full broadcast (starts new timers for Q0).
+            setTimeout(async () => {
+                try {
+                    const session = await sessionStore.getSession(result.roomCode);
+                    if (session?.questionState === 'live') {
+                        // Safe re-publish — no timer reset
+                        await republishCurrentQuestion(io, result.roomCode);
+                    } else {
+                        // Session waiting for first question — full broadcast
+                        await quizService.broadcastQuestionEnhanced(io, result.roomCode);
+                    }
+                } catch (err) {
+                    logger.error('[session:start] broadcast failed', { roomCode: result.roomCode, error: err.message });
+                }
+            }, 400);
         } catch (err) {
-            logger.error('session.handler session:start error', { error: err.message, stack: err.stack });
-            socket.emit('session:error', { message: 'Failed to start session' });
+            logger.error('session:start error', { error: err.message });
         }
     });
 
-    // ── session:syncState ────────────────────────────────────────────────────
-    // A client can request a fresh state snapshot (e.g. after reconnect).
+    /**
+     * Sync request
+     */
     socket.on('session:syncState', async ({ sessionCode } = {}) => {
-        try {
-            const roomCode = sessionCode || socket.data.roomCode;
-            if (!roomCode) return;
-
-            const session = await sessionStore.getSession(roomCode);
-            if (!session) {
-                return socket.emit('session:error', { message: 'Session not found' });
-            }
-
-            socket.emit('session:state', buildSessionStateSnapshot(session, roomCode));
-        } catch (err) {
-            logger.error('session.handler session:syncState error', { error: err.message });
-        }
+        const roomCode = sessionCode || socket.data.roomCode;
+        const session = await sessionStore.getSession(roomCode);
+        if (session) publishSessionState(socket, roomCode, buildSessionStateSnapshot(session, roomCode));
     });
 
-    // ── session:modeToggle ───────────────────────────────────────────────────
-    // Host can toggle mode even while in the lobby (before launch).
+    /**
+     * Host toggles mode
+     */
     socket.on('session:modeToggle', async ({ sessionCode, mode } = {}) => {
-        try {
-            if (user?.role !== 'host' && user?.role !== 'admin') {
-                return socket.emit('session:error', { message: 'Unauthorized' });
-            }
-
-            const roomCode = sessionCode || socket.data.roomCode;
-            if (!roomCode) return;
-
-            const validModes = ['auto', 'tutor'];
-            if (!validModes.includes(mode)) {
-                return socket.emit('session:error', { message: `Invalid mode: ${mode}` });
-            }
-
-            const session = await sessionStore.getSession(roomCode);
-            if (!session) {
-                return socket.emit('session:error', { message: 'Session not found' });
-            }
-
+        if (user?.role !== 'host' && user?.role !== 'admin') return;
+        const roomCode = sessionCode || socket.data.roomCode;
+        const session = await sessionStore.getSession(roomCode);
+        if (session) {
             session.mode = mode;
             await sessionStore.setSession(roomCode, session);
-
-            // Notify all clients in the room about the mode change
-            io.to(roomCode).emit('session:modeChanged', { mode });
-
-            logger.debug('session:modeToggle', { roomCode, mode, userId: user?._id });
-        } catch (err) {
-            logger.error('session.handler session:modeToggle error', { error: err.message });
+            publishSessionModeChange(roomCode, mode);
         }
     });
 
-    // ── Host disconnect: pause session ───────────────────────────────────────
+    /**
+     * Cleanup and auto-pause on disconnect
+     */
     socket.on('disconnect', async () => {
         try {
+            await quizService.leaveRoom({ io, socket });
             const roomCode = socket.data.roomCode;
-            if (!roomCode || (user?.role !== 'host' && user?.role !== 'admin')) return;
+            if (!roomCode) return;
 
             const session = await sessionStore.getSession(roomCode);
-            if (!session || session.status !== 'live') return;
-
-            // Auto-pause on host disconnect to prevent a "runaway" quiz
-            session.isPaused = true;
-            session.pausedAt = Date.now();
-            session.timeLeftOnPause = Math.max(0, (session.questionExpiry || Date.now()) - Date.now());
-            await sessionStore.setSession(roomCode, session);
-
-            io.to(roomCode).emit('quiz_paused', {
-                message: 'Host disconnected — quiz paused',
-                hostDisconnected: true,
-            });
-
-            logger.warn('Host disconnected — session auto-paused', {
-                roomCode,
-                userId: user?._id,
-            });
+            if ((user?.role === 'host' || user?.role === 'admin') && session?.status === 'live') {
+                session.isPaused = true;
+                await sessionStore.setSession(roomCode, session);
+                publishQuizPaused(roomCode, { message: 'Host disconnected', hostDisconnected: true });
+            }
         } catch (err) {
-            logger.error('session.handler host-disconnect pause error', { error: err.message });
+            logger.error('disconnect cleanup error', { error: err.message });
         }
     });
 };

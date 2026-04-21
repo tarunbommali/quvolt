@@ -5,33 +5,33 @@ export const SUBSCRIPTION_THEMES = {
         colors: {
             primary: '#1E293B',
             accent: '#334155',
-            gradient: 'linear-gradient(135deg, #475569 0%, #1E293B 100%)',
-            bgGlow: 'transparent',
-            badgeBg: 'bg-slate-100 dark:bg-slate-800',
-            badgeText: 'text-slate-600 dark:text-slate-300',
-            borderGlow: 'transparent',
+            gradient: 'bg-gradient-to-br from-slate-600 to-slate-800 dark:from-slate-700 dark:to-slate-900',
+            bgGlow: 'shadow-none',
+            badgeBg: 'theme-surface-soft',
+            badgeText: 'theme-text-muted',
+            borderGlow: 'border-transparent',
         },
         typography: {
             logoWeight: 'font-medium',
-            logoStyle: 'text-slate-600 dark:text-slate-400',
+            logoStyle: 'theme-text-secondary',
             letterSpacing: 'tracking-normal',
             bodyWeight: 'font-medium',
         },
         ui: {
             elevation: 'shadow-sm',
             glass: '',
-            hover: 'hover:bg-slate-50 dark:hover:bg-slate-800/50',
+            hover: 'hover:theme-surface-soft',
             transition: 'transition-all duration-200 ease-in-out',
         }
     },
-    PRO: {
+    CREATOR: {
         id: 'creator',
         label: 'Creator',
         colors: {
             primary: '#2563EB',
             accent: '#7C3AED',
-            gradient: 'linear-gradient(135deg, #2563EB 0%, #7C3AED 100%)',
-            bgGlow: '0 4px 14px 0 rgba(37, 99, 235, 0.15)',
+            gradient: 'bg-gradient-to-br from-blue-600 to-indigo-600',
+            bgGlow: 'shadow-[0_4px_14px_0_rgba(37,99,235,0.15)] dark:shadow-[0_4px_20px_0_rgba(37,99,235,0.2)]',
             badgeBg: 'bg-blue-50 dark:bg-blue-900/30',
             badgeText: 'text-blue-600 dark:text-blue-400',
             borderGlow: 'border-blue-500/30',
@@ -49,23 +49,23 @@ export const SUBSCRIPTION_THEMES = {
             transition: 'transition-all duration-300 ease-out',
         }
     },
-    PREMIUM: {
+    TEAMS: {
         id: 'teams',
         label: 'Teams',
         colors: {
             primary: '#7C3AED',
             accent: '#3B82F6',
-            gradient: 'linear-gradient(135deg, #7C3AED 0%, #4F46E5 50%, #3B82F6 100%)',
-            bgGlow: '0 4px 24px 0 rgba(124, 58, 237, 0.25)',
+            gradient: 'bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-600',
+            bgGlow: 'shadow-[0_4px_24px_0_rgba(124,58,237,0.25)] dark:shadow-[0_4px_30px_0_rgba(124,58,237,0.35)]',
             badgeBg: 'bg-gradient-to-r from-violet-500/10 to-blue-500/10 dark:from-violet-500/20 dark:to-blue-500/20',
             badgeText: 'text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-blue-600 dark:from-violet-400 dark:to-blue-400',
             borderGlow: 'border-violet-500/50',
         },
         typography: {
-            logoWeight: 'font-bold',
+            logoWeight: 'font-semibold',
             logoStyle: 'text-transparent bg-clip-text bg-gradient-to-r from-violet-600 via-indigo-500 to-blue-600 dark:from-violet-400 dark:via-indigo-400 dark:to-blue-400',
             letterSpacing: 'tracking-tight',
-            bodyWeight: 'font-bold',
+            bodyWeight: 'font-semibold',
         },
         ui: {
             elevation: 'shadow-xl shadow-violet-500/10',

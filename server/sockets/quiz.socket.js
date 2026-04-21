@@ -15,18 +15,23 @@ const logger = require('../utils/logger');
 const registerSessionHandler = require('./handlers/session.handler');
 const registerQuestionHandler = require('./handlers/question.handler');
 const { registerTimerHandler } = require('./handlers/timer.handler');
-const sessionStore = require('../services/session/session.service');
+const { initTimerPublisher } = require('../services/timer/timer.publisher');
+const { initSessionPublisher, publishSessionStart, publishSessionRedirect, publishQuizPaused } = require('../services/session/session.publisher');
+const { initGameplayPublisher, publishNewQuestion, publishAnswerResult, publishLeaderboardUpdate } = require('../services/gameplay/gameplay.publisher');
 
 const registerQuizSocket = (io, socket) => {
+    // ── Initialize Infra Layers ──────────────────────────────────────────────
+    initTimerPublisher(io);
+    initSessionPublisher(io);
+    initGameplayPublisher(io);
+
     // ── New handlers (spec-compliant event names) ─────────────────────────────
     registerSessionHandler(io, socket);
     registerQuestionHandler(io, socket);
-    registerTimerHandler(io, socket, () => sessionStore);
+    registerTimerHandler(io, socket);
 
     // ── Legacy handlers (backward-compatible) ─────────────────────────────────
-    // These remain untouched so existing host/participant pages continue to work
-    // while the frontend migrates to the new event names.
-
+    
     socket.on('start_quiz', async ({ roomCode, sessionId, mode }) => {
         try {
             const result = await quizService.startQuizSession({ io, roomCode, sessionId, user: socket.data.user, mode: mode || 'auto' });
@@ -36,26 +41,24 @@ const registerQuizSocket = (io, socket) => {
             const waitingRoomCode = result.waitingRoomCode || roomCode;
 
             if (waitingRoomCode && waitingRoomCode !== result.roomCode) {
-                io.to(waitingRoomCode).emit('session_redirect', { roomCode: result.roomCode, sessionId: result.sessionId });
-                io.to(waitingRoomCode).emit('start_quiz', { roomCode: result.roomCode, sessionId: result.sessionId });
+                publishSessionRedirect(waitingRoomCode, { roomCode: result.roomCode, sessionId: result.sessionId });
             }
 
-            io.to(result.roomCode).emit('start_quiz', { roomCode: result.roomCode, sessionId: result.sessionId, mode: result.session.mode });
-            // Emit spec-compliant alias
-            io.to(result.roomCode).emit('session:start', {
+            publishSessionStart(result.roomCode, {
                 sessionCode: result.roomCode,
                 sessionId: result.sessionId,
                 mode: result.session.mode,
             });
+
             socket.emit('session_redirect', { roomCode: result.roomCode, sessionId: result.sessionId });
 
             setTimeout(() => {
                 quizService.broadcastQuestionEnhanced(io, result.roomCode).catch((err) => {
-                    logger.error('broadcastQuestionEnhanced failed on start', { roomCode: result.roomCode, error: err.message, stack: err.stack });
+                    logger.error('broadcastQuestionEnhanced failed on start', { roomCode: result.roomCode, error: err.message });
                 });
             }, 300);
         } catch (error) {
-            logger.error('Socket start_quiz error', { roomCode, sessionId, error: error.message, stack: error.stack });
+            logger.error('Socket start_quiz error', { roomCode, sessionId, error: error.message });
             socket.emit('error', 'Failed to start quiz');
         }
     });
@@ -65,9 +68,9 @@ const registerQuizSocket = (io, socket) => {
             const result = await quizService.pauseQuizSession({ io, quizId, sessionCode: sessionCode || roomCode, user: socket.data.user });
             if (result.error) return socket.emit('error', result.error);
 
-            io.to(sessionCode || roomCode).emit('quiz_paused', { roomCode: sessionCode || roomCode });
+            publishQuizPaused(sessionCode || roomCode, { roomCode: sessionCode || roomCode });
         } catch (error) {
-            logger.error('Socket pause_quiz error', { quizId, sessionCode, error: error.message, stack: error.stack });
+            logger.error('Socket pause_quiz error', { quizId, sessionCode, error: error.message });
         }
     });
 
@@ -76,7 +79,7 @@ const registerQuizSocket = (io, socket) => {
             const result = await quizService.resumeQuizSession({ io, quizId, sessionCode, user: socket.data.user });
             if (result.error) return socket.emit('error', result.error);
         } catch (error) {
-            logger.error('Socket resume_quiz error', { quizId, sessionCode, error: error.message, stack: error.stack });
+            logger.error('Socket resume_quiz error', { quizId, sessionCode, error: error.message });
         }
     });
 
@@ -91,7 +94,7 @@ const registerQuizSocket = (io, socket) => {
             });
             if (result.error) return socket.emit('error', result.error);
         } catch (error) {
-            logger.error('Socket next_question error', { quizId, sessionId, sessionCode, error: error.message, stack: error.stack });
+            logger.error('Socket next_question error', { quizId, sessionId, sessionCode, error: error.message });
         }
     });
 
@@ -106,7 +109,7 @@ const registerQuizSocket = (io, socket) => {
             const result = await quizService.revealAnswer({ io, roomCode: room, user });
             if (result.error) return socket.emit('error', result.error);
         } catch (error) {
-            logger.error('Socket reveal_answer error', { error: error.message, stack: error.stack });
+            logger.error('Socket reveal_answer error', { error: error.message });
         }
     });
 
@@ -120,7 +123,7 @@ const registerQuizSocket = (io, socket) => {
             const result = await quizService.endQuizSession({ io, quizId, sessionCode: sessionCode || roomCode, user });
             if (result.error) return socket.emit('error', result.error);
         } catch (error) {
-            logger.error('Socket end_quiz error', { error: error.message, stack: error.stack });
+            logger.error('Socket end_quiz error', { error: error.message });
         }
     });
 
@@ -129,43 +132,24 @@ const registerQuizSocket = (io, socket) => {
             const result = await quizService.submitAnswer({ io, socket, roomCode, sessionId, questionId, selectedOption });
             if (result.error) return socket.emit('error', result.error);
             if (result.ignored) {
-                socket.emit('answer_result', { ignored: true, message: 'Answer already submitted for this question.' });
+                publishAnswerResult(socket, { ignored: true, message: 'Already submitted.' });
                 return;
             }
 
-            // Legacy answer_result shape
-            socket.emit('answer_result', {
+            publishAnswerResult(socket, {
                 isCorrect: result.isCorrect,
                 correctAnswer: result.correctAnswer,
                 score: result.score,
                 totalScore: result.totalScore,
                 streak: result.streak,
                 bestStreak: result.bestStreak,
-            });
-
-            // Spec-compliant alias
-            socket.emit('answer:result', {
-                correct: result.isCorrect,
-                correctOption: result.correctAnswer,
                 timeTaken: result.timeTaken ?? 0,
-                score: result.score,
-                totalScore: result.totalScore,
-                streak: result.streak,
-                bestStreak: result.bestStreak,
             });
 
-            io.to(result.room).emit('update_leaderboard', result.leaderboard);
+            publishLeaderboardUpdate(result.room, result.leaderboard);
         } catch (error) {
-            logger.error('Socket submit_answer error', { roomCode, sessionId, error: error.message, stack: error.stack });
+            logger.error('Socket submit_answer error', { roomCode, error: error.message });
             socket.emit('error', 'Failed to submit answer');
-        }
-    });
-
-    socket.on('disconnect', async () => {
-        try {
-            await quizService.leaveRoom({ io, socket });
-        } catch (error) {
-            logger.error('Socket disconnect leaveRoom error', { error: error.message });
         }
     });
 };

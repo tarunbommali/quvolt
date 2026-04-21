@@ -145,6 +145,24 @@ router.get('/host/account', requireRole(['host', 'admin']), (req, res) => {
     proxy(req, res, 'get', '/payment/host/account');
 });
 
+// @route   POST /api/payment/host/onboarding
+// @desc    Create Razorpay sub-merchant account
+router.post('/host/onboarding', requireRole(['host', 'admin']), (req, res) => {
+    proxy(req, res, 'post', '/payment/host/onboarding', req.body);
+});
+
+// @route   POST /api/payment/host/onboarding/link
+// @desc    Generate Razorpay KYC onboarding link
+router.post('/host/onboarding/link', requireRole(['host', 'admin']), (req, res) => {
+    proxy(req, res, 'post', '/payment/host/onboarding/link', req.body);
+});
+
+// @route   GET /api/payment/host/onboarding/status
+// @desc    Check Razorpay KYC status
+router.get('/host/onboarding/status', requireRole(['host', 'admin']), (req, res) => {
+    proxy(req, res, 'get', '/payment/host/onboarding/status');
+});
+
 // @route   GET /api/payment/host/payout-summary
 // @desc    Get host payout summary
 

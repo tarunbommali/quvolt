@@ -1,12 +1,12 @@
-# QuizBolt Documentation Index
+# Quvolt Documentation Index
 
-This directory contains the canonical product and engineering documentation for QuizBolt.
+This directory contains the canonical product and engineering documentation for Quvolt.
 
 ## Core Documents
 
-- [QUIZBOLT_HLD.md](QUIZBOLT_HLD.md): High-level architecture, system context, and NFRs.
-- [QUIZBOLT_LLD.md](QUIZBOLT_LLD.md): Module-level design and implementation details.
-- [QUIZBOLT_API_LIST.md](QUIZBOLT_API_LIST.md): Practical API surface with trace anchors.
+- [REALTIME_ENGINE.md](REALTIME_ENGINE.md): Real-time engine, socket events, timer sync, and state flow.
+- [SYSTEM_DESIGN.MD](SYSTEM_DESIGN.MD): High-level architecture, module breakdown, data models, and SaaS limits.
+- [API_REFERENCE.md](API_REFERENCE.md): Practical API surface and REST contracts.
 - [SESSION_ROUTE_TEST_MATRIX.md](SESSION_ROUTE_TEST_MATRIX.md): Route/state test coverage matrix.
 - [ROADMAP.md](ROADMAP.md): Prioritized product and platform roadmap.
 

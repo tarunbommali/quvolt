@@ -78,36 +78,59 @@ const restoreActiveSessions = async (io) => {
 };
 
 /**
- * Restore a single session to Redis
- * @param {Object} io - Socket.io instance
- * @param {Object} dbSession - Session document from MongoDB
+ * Restore a single session to Redis with Snapshot Optimization
  */
 const restoreSingleSession = async (io, dbSession) => {
     const sessionCode = dbSession.sessionCode;
     
-    // Check if session already exists in Redis (shouldn't happen, but be safe)
+    // Check if session already exists in Redis
     const existingSession = await sessionStore.getSession(sessionCode);
-    if (existingSession) {
-        logger.warn('Session already exists in Redis, skipping', { sessionCode });
-        return;
+    if (existingSession) return;
+
+    // Snapshot Recovery - Try snapshot first to avoid heavy DB load
+    let participants = {};
+    let leaderboard = {};
+    
+    const hasValidSnapshot = dbSession.snapshot?.takenAt && 
+                            (Date.now() - new Date(dbSession.snapshot.takenAt).getTime() < 30 * 60 * 1000);
+
+    if (hasValidSnapshot) {
+        // Convert array snapshots back to maps for Redis performance
+        (dbSession.snapshot.participants || []).forEach(p => participants[p._id || p.id] = p);
+        (dbSession.snapshot.lastLeaderboard || []).forEach(l => leaderboard[l.userId] = l);
+        logger.info('Using snapshot for session recovery', { sessionCode });
+    } else {
+        // Fallback to heavy aggregation if snapshot is missing or too old
+        logger.warn('Snapshot missing or stale, rebuilding state from submissions', { sessionCode });
+        participants = await loadParticipantData(dbSession._id, sessionCode);
+        leaderboard = await loadLeaderboardData(dbSession._id, sessionCode);
+    }
+    
+    const questions = dbSession.templateSnapshot?.questions || dbSession.quizId?.questions || [];
+    if (questions.length === 0) throw new Error('No questions found for session');
+
+    // Dynamic Plan-based limits (Requirement: SaaS Scalability)
+    let participantLimit = 50; // Fallback
+    try {
+        const Subscription = require('../../models/Subscription');
+        const { getPlanConfig } = require('../../config/plans');
+        
+        const hostId = dbSession.quizId?.hostId || dbSession.hostId;
+        const subscription = await Subscription.findOne({
+            hostId,
+            status: 'active',
+        }).lean();
+        
+        const plan = subscription ? subscription.plan : 'FREE';
+        const planConfig = getPlanConfig(plan);
+        participantLimit = subscription?.participantLimit || planConfig.maxParticipantsPerSession;
+    } catch (err) {
+        logger.warn('Failed to resolve host plan during recovery', { 
+            sessionCode, 
+            error: err.message 
+        });
     }
 
-    // Load participant data from submissions
-    const participants = await loadParticipantData(dbSession._id, sessionCode);
-    
-    // Load leaderboard data from submissions
-    const leaderboard = await loadLeaderboardData(dbSession._id, sessionCode);
-    
-    // Get questions from template snapshot or quiz
-    const questions = dbSession.templateSnapshot?.questions || 
-                     dbSession.quizId?.questions || 
-                     [];
-
-    if (questions.length === 0) {
-        throw new Error('No questions found for session');
-    }
-
-    // Reconstruct session state
     const sessionState = {
         status: dbSession.status,
         mode: dbSession.mode || 'auto',
@@ -123,25 +146,22 @@ const restoreSingleSession = async (io, dbSession) => {
         waitingRoomCode: dbSession.quizId?.roomCode || null,
         questions: questions.map(q => ({ ...q })),
         lastActivity: Date.now(),
-        participantLimit: 50,
+        participantLimit,
         interQuestionDelay: (dbSession.quizId?.interQuestionDelay ?? 1.5) * 1000,
         pausedAt: dbSession.pausedAt ? new Date(dbSession.pausedAt).getTime() : null,
         timeLeftOnPause: null
     };
 
-    // Calculate time left if paused
     if (sessionState.isPaused && sessionState.pausedAt && sessionState.questionExpiry) {
         sessionState.timeLeftOnPause = sessionState.questionExpiry - sessionState.pausedAt;
     }
 
-    // Store session in Redis
     await sessionStore.setSession(sessionCode, sessionState);
     
-    logger.info('Session state restored to Redis', {
+    logger.info('Session state restored', {
         sessionCode,
-        participantCount: Object.keys(participants).length,
-        currentQuestionIndex: sessionState.currentQuestionIndex,
-        status: sessionState.status
+        source: hasValidSnapshot ? 'snapshot' : 'rebuild',
+        participants: Object.keys(participants).length
     });
 };
 

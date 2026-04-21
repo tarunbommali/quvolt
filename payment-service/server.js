@@ -10,7 +10,7 @@ const { initSubscriptionJobs } = require('./jobs/subscriptionExpiryJob');
 const { initFailedJobWorker } = require('./jobs/failedJobWorker');
 const FailedJob = require('./models/FailedJob');
 const { loadGatewayConfigs } = require('./config/gateways');
-const paymentRouter = require('./services/PaymentRouter');
+const paymentRouter = require('./services/router/PaymentRouter');
 
 const httpServerEnabled = String(process.env.HTTP_SERVER_ENABLED || 'true').toLowerCase() === 'true';
 

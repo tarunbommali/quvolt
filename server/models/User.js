@@ -35,6 +35,23 @@ const UserSchema = new mongoose.Schema({
     contactPhone: { type: String, default: '', trim: true, maxlength: 30 },
   },
   refreshToken: { type: String, default: null },
+  subscription: {
+    plan: { type: String, enum: ['FREE', 'CREATOR', 'TEAMS'], default: 'FREE' },
+    status: { type: String, enum: ['active', 'inactive', 'expired'], default: 'active' },
+    expiryDate: { type: Date, default: () => new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) },
+  },
+  usage: {
+    activeSessions: { type: Number, default: 0 },
+    quizzesCreated: { type: Number, default: 0 },
+  },
+  // Razorpay Sub-Merchant / Marketplace Routing
+  razorpayAccountId: { type: String, default: null },
+  kycStatus: { 
+    type: String, 
+    enum: ['not_started', 'pending', 'verified', 'rejected'], 
+    default: 'not_started' 
+  },
+  payoutEnabled: { type: Boolean, default: false },
 }, { timestamps: true });
 
 UserSchema.index({ role: 1 });

@@ -1,6 +1,6 @@
 const cron = require('node-cron');
 const Subscription = require('../models/Subscription');
-const { handleSubscriptionExpiry } = require('../services/subscriptionService');
+const { handleSubscriptionExpiry } = require('../services/subscription/subscription.service');
 const logger = require('../utils/logger');
 
 /**

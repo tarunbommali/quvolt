@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
-import { ChevronDown, LogOut, Menu, X } from 'lucide-react';
+import { ChevronDown, LogOut, Menu, X, Info, ChevronRight } from 'lucide-react';
 import { AnimatePresence, motion as Motion } from 'framer-motion';
 import { useAuthStore } from '../../stores/useAuthStore';
-import { logout as logoutService } from '../../services/authService';
+import { logoutUser as logoutService } from '../../features/auth/services/auth.service';
 import { useSocketStore } from '../../stores/useSocketStore';
 import ThemeToggle from './ui/ThemeToggle';
 import { navbar } from '../../styles/navbar';
@@ -50,6 +50,7 @@ const Navbar = () => {
     const connectionState = useSocketStore((state) => state.connectionState);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+    const [isLearnMoreOpen, setIsLearnMoreOpen] = useState(false);
     const profileMenuRef = useRef(null);
     const isProfileMenuOpenRef = useRef(isProfileMenuOpen);
     isProfileMenuOpenRef.current = isProfileMenuOpen;
@@ -96,12 +97,14 @@ const Navbar = () => {
     const accountItems = [
         { label: 'Profile', to: '/profile' },
         { label: 'Settings', to: '/profile/edit' },
+        { label: 'Upgrade', to: '/upgrade' },
     ];
 
 
     const closeAllMenus = () => {
         setIsMobileMenuOpen(false);
         setIsProfileMenuOpen(false);
+        setIsLearnMoreOpen(false);
     };
 
     useEffect(() => {
@@ -216,16 +219,18 @@ const Navbar = () => {
                                         <div className="px-3 py-2 border-b theme-border mb-1">
                                             <p className="text-sm font-semibold theme-text-primary truncate">{user.name || 'User'}</p>
                                             <p className="text-xs theme-text-muted truncate">{user.email}</p>
-                                            <span className={cx(
-                                                "mt-1 inline-block text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border",
-                                                plan === 'PREMIUM'
-                                                    ? "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-800/50"
-                                                    : plan === 'PRO'
-                                                        ? "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800/50"
-                                                        : "bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
-                                            )}>
-                                                {theme.label}
-                                            </span>
+                                            {plan && (
+                                                <span className={cx(
+                                                    "mt-1 inline-block text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border",
+                                                    plan === 'TEAMS'
+                                                        ? "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-800/50"
+                                                        : plan === 'CREATOR'
+                                                            ? "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800/50"
+                                                            : "bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
+                                                )}>
+                                                    {plan === 'FREE' ? 'Free Plan' : `${plan} Plan`}
+                                                </span>
+                                            )}
                                         </div>
                                         {accountItems.map(({ label, to }) => (
                                             <Link
@@ -238,6 +243,31 @@ const Navbar = () => {
                                                 {label}
                                             </Link>
                                         ))}
+                                        
+                                        <div className="border-t theme-border mt-1 pt-1">
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setIsLearnMoreOpen(!isLearnMoreOpen);
+                                                }}
+                                                className="w-full text-left px-3 py-2 text-sm font-medium theme-text-secondary hover:theme-text-primary hover:bg-[var(--qb-surface-2)] transition-colors flex items-center justify-between"
+                                            >
+                                                <span className="flex items-center gap-2"><Info size={14} className="opacity-70" /> Learn more</span>
+                                                <ChevronRight size={14} className={`opacity-50 transition-transform ${isLearnMoreOpen ? 'rotate-90' : ''}`} />
+                                            </button>
+                                            
+                                            {isLearnMoreOpen && (
+                                                <div className="pl-6 py-1 pr-2 space-y-0.5 bg-[var(--qb-surface-2)]/50 border-y theme-border my-1">
+                                                    <Link to="/terms" onClick={closeAllMenus} className="block px-3 py-1.5 text-[13px] theme-text-muted hover:theme-text-primary transition-colors rounded-md hover:bg-[var(--qb-surface-soft)]">Terms & Conditions</Link>
+                                                    <Link to="/privacy" onClick={closeAllMenus} className="block px-3 py-1.5 text-[13px] theme-text-muted hover:theme-text-primary transition-colors rounded-md hover:bg-[var(--qb-surface-soft)]">Privacy Policy</Link>
+                                                    <Link to="/refund" onClick={closeAllMenus} className="block px-3 py-1.5 text-[13px] theme-text-muted hover:theme-text-primary transition-colors rounded-md hover:bg-[var(--qb-surface-soft)]">Refund & Cancellation</Link>
+                                                    <Link to="/cookies" onClick={closeAllMenus} className="block px-3 py-1.5 text-[13px] theme-text-muted hover:theme-text-primary transition-colors rounded-md hover:bg-[var(--qb-surface-soft)]">Cookie Policy</Link>
+                                                    <Link to="/disclaimer" onClick={closeAllMenus} className="block px-3 py-1.5 text-[13px] theme-text-muted hover:theme-text-primary transition-colors rounded-md hover:bg-[var(--qb-surface-soft)]">Disclaimer</Link>
+                                                </div>
+                                            )}
+                                        </div>
+
                                         <div className="border-t theme-border mt-1 pt-1">
                                             <button
                                                 type="button"

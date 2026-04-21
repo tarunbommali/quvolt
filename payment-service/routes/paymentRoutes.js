@@ -7,13 +7,16 @@ const {
   verifyPayment,
   getPaymentStatus,
   getBatchPaymentStatus,
-  handleWebhook,
+} = require('../controllers/paymentController');
+const { handleWebhook } = require('../controllers/webhook.controller');
+const {
   upsertHostAccount,
   getMyHostAccount,
-  getHostPayoutSummary
-} = require('../controllers/paymentController');
+  getHostPayoutSummary,
+} = require('../controllers/payout.controller');
+const kycController = require('../controllers/kyc.controller');
 const revenueController = require('../controllers/revenueController');
-const paymentRouter = require('../services/PaymentRouter');
+const paymentRouter = require('../services/router/PaymentRouter');
 
 // Payment routes
 // Requirement 11.1: Require process_payment permission for creating payment orders
@@ -22,10 +25,16 @@ router.post('/verify', protect, verifyPayment);
 router.get('/status/:quizId', protect, getPaymentStatus);
 router.post('/status/batch', protect, getBatchPaymentStatus);
 router.post('/webhook', handleWebhook); // Webhook usually uses signature, not JWT
+
 // Requirement 11.3: Require manage_payouts permission for payout operations
 router.post('/host/account', protect, authorize('host', 'admin'), checkPermission('manage_payouts'), upsertHostAccount);
 router.get('/host/account', protect, authorize('host', 'admin'), getMyHostAccount);
 router.get('/host/payout-summary', protect, authorize('host', 'admin'), checkPermission('manage_payouts'), getHostPayoutSummary);
+
+// Host KYC Onboarding (Razorpay Route)
+router.post('/host/onboarding', protect, authorize('host', 'admin'), checkPermission('manage_payouts'), kycController.createSubAccount);
+router.post('/host/onboarding/link', protect, authorize('host', 'admin'), checkPermission('manage_payouts'), kycController.getOnboardingLink);
+router.get('/host/onboarding/status', protect, authorize('host', 'admin'), checkPermission('manage_payouts'), kycController.checkKycStatus);
 
 // Revenue routes
 // Requirements 11.2, 11.4, 11.5: Require view_revenue permission and enforce ownership checks

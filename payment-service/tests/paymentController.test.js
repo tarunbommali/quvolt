@@ -27,7 +27,7 @@ jest.mock('../utils/logger', () => ({
   error: jest.fn(),
 }));
 
-jest.mock('../services/subscriptionService', () => ({
+jest.mock('../services/subscription/subscription.service', () => ({
   getHostCurrentPlan: jest.fn(),
 }));
 
@@ -36,12 +36,12 @@ const razorpay = require('../config/razorpay');
 const Payment = require('../models/Payment');
 const HostAccount = require('../models/HostAccount');
 const QuizSnapshot = require('../models/QuizSnapshot');
-const { getHostCurrentPlan } = require('../services/subscriptionService');
+const subscriptionService = require('../services/subscription/subscription.service');
 const {
   createOrder,
   handleWebhook,
-  computeSplit,
-  buildMarketplaceReceipt,
+  // computeSplit,
+  // buildMarketplaceReceipt,
 } = require('../controllers/paymentController');
 
 const makeRes = () => {
@@ -99,7 +99,7 @@ describe('paymentController', () => {
       accountStatus: 'active',
       settlementMode: 'scheduled',
     }));
-    getHostCurrentPlan.mockResolvedValue(plan);
+    subscriptionService.getHostCurrentPlan.mockResolvedValue(plan);
     razorpay.orders.create.mockResolvedValue({ id: `order_${plan.toLowerCase()}` });
     Payment.create.mockImplementation(async (payload) => payload);
 
@@ -159,7 +159,7 @@ describe('paymentController', () => {
       accountStatus: 'pending_kyc',
       settlementMode: 'scheduled',
     }));
-    getHostCurrentPlan.mockResolvedValue('FREE');
+    subscriptionService.getHostCurrentPlan.mockResolvedValue('FREE');
     razorpay.orders.create.mockResolvedValue({ id: 'order_kyc' });
     Payment.create.mockImplementation(async (payload) => payload);
 

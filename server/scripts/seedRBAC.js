@@ -13,7 +13,9 @@ const bcrypt = require('bcryptjs');
 const Permission = require('../models/Permission');
 const Role = require('../models/Role');
 const User = require('../models/User');
+const Subscription = require('../models/Subscription');
 const logger = require('../utils/logger');
+const { getPlanConfig } = require('../config/plans');
 
 const Users = [
   {
@@ -33,6 +35,18 @@ const Users = [
     email: 'participant@quvolt.com',
     password: 'abcd@1234',
     role: 'participant',
+  },
+  {
+    name: 'creator',
+    email: 'creator@quvolt.com',
+    password: 'abcd@1234',
+    role: 'host',
+  },
+  {
+    name: 'teams',
+    email: 'teams@quvolt.com',
+    password: 'abcd@1234',
+    role: 'host',
   },
 ]
 
@@ -289,6 +303,9 @@ async function seedRBAC() {
     // Finally seed users with role references
     const users = await seedUsers(roles);
 
+    // Seed subscriptions for creator and teams accounts
+    await seedSubscriptions(users);
+
     logger.info('✓ RBAC & User seeding completed successfully');
     logger.info(`  - ${permissions.length} permissions`);
     logger.info(`  - ${roles.length} roles`);
@@ -313,4 +330,51 @@ if (require.main === module) {
     });
 }
 
-module.exports = { seedRBAC, seedPermissions, seedRoles, seedUsers };
+/**
+ * Seed subscriptions for test users
+ */
+async function seedSubscriptions(users) {
+  logger.info('Seeding subscriptions for test users...');
+  
+  const lifetimeDate = new Date();
+  lifetimeDate.setFullYear(lifetimeDate.getFullYear() + 10); // 10 years for "lifetime"
+
+  const subMappings = [
+    { email: 'creator@quvolt.com', plan: 'CREATOR' },
+    { email: 'teams@quvolt.com', plan: 'TEAMS' }
+  ];
+
+  for (const mapping of subMappings) {
+    const user = users.find(u => u.email === mapping.email);
+    if (!user) {
+      logger.warn(`User ${mapping.email} not found for subscription seeding`);
+      continue;
+    }
+
+    const config = getPlanConfig(mapping.plan);
+    
+    try {
+      await Subscription.findOneAndUpdate(
+        { hostId: user._id },
+        {
+          hostId: user._id,
+          plan: mapping.plan,
+          status: 'active',
+          startDate: new Date(),
+          endDate: lifetimeDate,
+          expiryDate: lifetimeDate,
+          participantLimit: config.participants,
+          commission: config.commission,
+          monthlyAmount: config.monthlyAmount,
+          autoRenew: true
+        },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      );
+      logger.info(`✓ Subscription: ${mapping.plan} for ${user.email}`);
+    } catch (error) {
+      logger.error(`✗ Failed to seed subscription for ${user.email}`, { error: error.message });
+    }
+  }
+}
+
+module.exports = { seedRBAC, seedPermissions, seedRoles, seedUsers, seedSubscriptions };

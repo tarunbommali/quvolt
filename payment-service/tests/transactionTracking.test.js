@@ -17,7 +17,7 @@ const { MongoMemoryServer } = require('mongodb-memory-server');
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const Payment = require('../models/Payment');
-const PaymentRouter = require('../services/PaymentRouter');
+const PaymentRouter = require('../services/router/PaymentRouter');
 
 // Mock environment to prevent server from starting and disable rate limiting
 process.env.HTTP_SERVER_ENABLED = 'false';

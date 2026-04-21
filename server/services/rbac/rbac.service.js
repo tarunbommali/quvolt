@@ -168,7 +168,9 @@ class RBACService {
    */
   async invalidateUserCache(userId) {
     try {
-      const redis = getRedisClient();
+      const redis = this._getRedisSafe();
+      if (!redis) return;
+
       const pattern = `${this.CACHE_PREFIX}${userId}:*`;
       
       // Scan and delete all keys matching the pattern
@@ -229,7 +231,8 @@ class RBACService {
    */
   async _getFromCache(key) {
     try {
-      const redis = getRedisClient();
+      const redis = this._getRedisSafe();
+      if (!redis) return null;
       return await redis.get(key);
     } catch (error) {
       logger.warn('Redis cache get error', { error: error.message, key });
@@ -242,10 +245,19 @@ class RBACService {
    */
   async _setCache(key, value) {
     try {
-      const redis = getRedisClient();
+      const redis = this._getRedisSafe();
+      if (!redis) return;
       await redis.setEx(key, this.CACHE_TTL, value);
     } catch (error) {
       logger.warn('Redis cache set error', { error: error.message, key });
+    }
+  }
+  _getRedisSafe() {
+    try {
+      const redis = getRedisClient();
+      return (redis && redis.isOpen) ? redis : null;
+    } catch {
+      return null;
     }
   }
 }

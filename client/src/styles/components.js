@@ -349,6 +349,6 @@ export const components = {
     home: {
         page: 'relative overflow-hidden',
         glowWrap: 'absolute inset-0 -z-10',
-        glowOrb: 'absolute left-1/2 top-[-20%] h-175 w-175 -translate-x-1/2 rounded-full bg-[color-mix(in_srgb,var(--qb-primary)_20%,transparent)] blur-3xl',
+        glowOrb: 'absolute left-1/2 top-[-10%] h-[40rem] w-[40rem] -translate-x-1/2 rounded-full bg-[color-mix(in_srgb,var(--qb-primary)_15%,transparent)] blur-[100px] pointer-events-none',
     },
 };

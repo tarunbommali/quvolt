@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const subscriptionSchema = new mongoose.Schema({
     hostId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-    plan: { type: String, enum: ['FREE', 'PRO', 'PREMIUM'], default: 'FREE' },
+    plan: { type: String, enum: ['FREE', 'CREATOR', 'TEAMS'], default: 'FREE' },
     status: {
         type: String,
         enum: ['active', 'inactive', 'cancelled', 'expired', 'paused', 'replaced'],

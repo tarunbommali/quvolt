@@ -3,7 +3,8 @@ const config = require('./env');
 
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(config.databaseUrl);
+    const dbName = config.databaseUrl.includes('quizbolt') ? 'quizbolt' : 'test';
+    const conn = await mongoose.connect(config.databaseUrl, { dbName });
 
     console.log(`MongoDB Connected: ${conn.connection.host}`);
     return conn;

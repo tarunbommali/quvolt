@@ -1,472 +1,122 @@
 import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
-import {
-    getMyProfile,
-    getMyQuizzes,
-    gethostHistory,
-    getQuizByCode,
-    getQuizLeaderboard,
-    getSubjectLeaderboard,
-    getUserHistory,
-} from '../services/api';
-import { useAuthStore } from './useAuthStore';
+import { useQuizRealtimeStore } from './quiz/useQuizRealtimeStore';
+import { useQuizCacheStore } from './quiz/useQuizCacheStore';
+import { useQuizUIStore } from './quiz/useQuizUIStore';
+import { useLeaderboardStore } from './leaderboard/useLeaderboardStore';
+import { useParticipantStore } from './participant/useParticipantStore';
 
-const CACHE_TTL_MS = {
-    quizzes: 5 * 60 * 1000,
-    history: 3 * 60 * 1000,
-    quizByCode: 2 * 60 * 1000,
-    leaderboard: 30 * 1000,
-    subjectLeaderboard: 60 * 1000,
-    profile: 10 * 60 * 1000,
-};
-
-const TRANSIENT_KEYS = [
-    'quizzesCache',
-    'historyCache',
-    'quizByCodeCache',
-    'quizLeaderboardCache',
-    'subjectLeaderboardCache',
-    'profileCache',
-];
-
-const inflightQuizzes = {};
-const inflightHistory = {};
-const inflightQuizByCode = {};
-const inflightQuizLeaderboard = {};
-const inflightSubjectLeaderboard = {};
-const inflightProfile = {};
-
-const readCache = (cacheMap, key, ttl, force = false) => {
-    if (force) return null;
-    const entry = cacheMap[key];
-    if (!entry) return null;
-
-    if (Date.now() - entry.timestamp > ttl) {
-        return null;
-    }
-
-    return entry.value;
-};
-
-const setCache = (cacheMap, key, value) => ({
-    ...cacheMap,
-    [key]: { value, timestamp: Date.now() },
-});
-
-const createEmptyRealtimeState = () => ({
-    status: 'waiting',
-    mode: 'waiting',
-    sessionMode: null,  // server-authoritative runtime mode: 'auto' | 'tutor'
-    currentQuestion: null,
-    participants: [],
-    answerStats: null,
-    fastestUser: null,
-    answers: {},
-    timer: 0,
-    timeLeft: 0,
-    leaderboard: [],
-    myResult: null,
-    expiry: null,
-    quizTitle: '',
-    selectedOption: null,
-    errorMessage: null,
-    abortMessage: null,
-    view: 'loading',
-    activeQuiz: null,
-    sessionCode: null,
-    sessionId: null,
-    isPaused: false,
-});
-
-const normalizeParticipants = (payload) => {
-    if (Array.isArray(payload)) return payload;
-    if (Array.isArray(payload?.participants)) return payload.participants;
-    return [];
-};
-
-const hasRenderableQuestionPayload = (question) => {
-    if (!question || typeof question !== 'object') return false;
-    const hasText = typeof question.text === 'string' && question.text.trim().length > 0;
-    const hasOptions = Array.isArray(question.options) && question.options.length > 0;
-    const hasTimeLimit = Number.isFinite(Number(question.timeLimit)) && Number(question.timeLimit) > 0;
-    const hasIndex = Number.isFinite(Number(question.index));
-    const hasTotal = Number.isFinite(Number(question.total)) && Number(question.total) > 0;
-    return hasText && hasOptions && hasTimeLimit && hasIndex && hasTotal;
-};
-
-export const useQuizStore = create()(devtools((set, get) => ({
-    ...createEmptyRealtimeState(),
-
-    quizzesCache: {},
-    historyCache: {},
-    quizByCodeCache: {},
-    quizLeaderboardCache: {},
-    subjectLeaderboardCache: {},
-    profileCache: {},
-    // inflight moved to module-level
-
-    clearUserData: () => {
-        // Clear all API cache maps
-        set(Object.fromEntries(TRANSIENT_KEYS.map((key) => [key, {}])));
-        // Also reset real-time quiz state â€” prevents stale state leaking
-        // to the next user who logs in on the same device.
-        set(createEmptyRealtimeState());
+/**
+ * 🚨 MONOLITHIC STORE (LEGACY FACADE)
+ * 
+ * This store now acts as a bridge to modular stores to prevent breaking 
+ * existing components. 
+ * 
+ * 👉 RECOMMENDATION: Migrate components to use domain-specific stores:
+ *    - useQuizRealtimeStore
+ *    - useQuizCacheStore
+ *    - useQuizUIStore
+ */
+export const useQuizStore = create((set, get) => ({
+    // --- State Accessors (Proxies to modular stores) ---
+    // Note: These getters allow useQuizStore(s => s.status) to work if the store is subscribed.
+    // However, for reactive updates, we need to sync state or use a combined approach.
+    // For this refactor, we expose all actions.
+    
+    // --- ACTIONS (Delegated to modular stores) ---
+    
+    // Realtime Actions
+    setSessionMode: (m) => useQuizRealtimeStore.getState().setSessionMode(m),
+    setStatus: (s) => useQuizRealtimeStore.getState().setStatus(s),
+    setCurrentQuestion: (q) => useQuizRealtimeStore.getState().setCurrentQuestion(q),
+    setParticipants: (p) => {
+        useQuizRealtimeStore.getState().setParticipants(p);
+        useParticipantStore.getState().setParticipants(p);
     },
-
-    connectSocket: () => {
-        // Obsolete, handled by useSocketStore.
-        // Provided as stub to prevent crashes during migration if components still call it.
+    setAnswerStats: (a) => useQuizRealtimeStore.getState().setAnswerStats(a),
+    setFastestUser: (u) => useQuizRealtimeStore.getState().setFastestUser(u),
+    setAnswers: (a) => useQuizRealtimeStore.getState().setAnswers(a),
+    setTimeLeft: (t) => useQuizRealtimeStore.getState().setTimeLeft(t),
+    setLeaderboard: (l) => {
+        useQuizRealtimeStore.getState().setLeaderboard(l);
+        useLeaderboardStore.getState().setLeaderboard(l);
     },
+    setMyResult: (r) => useQuizRealtimeStore.getState().setMyResult(r),
+    setExpiry: (e) => useQuizRealtimeStore.getState().setExpiry(e),
+    setIsPaused: (p) => useQuizRealtimeStore.getState().setIsPaused(p),
+    setSessionId: (s) => useQuizRealtimeStore.getState().setSessionId(s),
+    setSessionCode: (s) => useQuizRealtimeStore.getState().setSessionCode(s),
+    setQuizTitle: (t) => useQuizRealtimeStore.getState().setQuizTitle(t),
+    setErrorMessage: (e) => useQuizRealtimeStore.getState().setErrorMessage(e),
+    setAbortMessage: (a) => useQuizRealtimeStore.getState().setAbortMessage(a),
 
-    disconnectSocket: () => {
-        // Obsolete stub
-    },
-
-    setSessionMode: (sessionMode) => set({ sessionMode }),
-    setView: (view) => set({ view, mode: view }),
-    setActiveQuiz: (activeQuiz) => set({ activeQuiz }),
-    setSessionCode: (sessionCode) => set({ sessionCode }),
-    setStatus: (status) => set({ status }),
-    setCurrentQuestion: (currentQuestion) => set({ currentQuestion }),
-    setParticipants: (participants) => set({ participants: normalizeParticipants(participants) }),
-    setAnswerStats: (answerStats) => set({ answerStats: answerStats || null }),
-    setFastestUser: (fastestUser) => set({ fastestUser: fastestUser || null }),
-    setAnswers: (answers) => set({ answers: answers || {} }),
-    setTimeLeft: (timeLeft) => set({ timeLeft, timer: timeLeft }),
-    setLeaderboard: (leaderboard) => set({ leaderboard: leaderboard || [] }),
-    setMyResult: (myResult) => set({ myResult }),
-    setExpiry: (expiry) => set({ expiry }),
-    setIsPaused: (isPaused) => set({ isPaused }),
-    setSessionId: (sessionId) => set({ sessionId }),
-    setQuizTitle: (quizTitle) => set({ quizTitle: quizTitle || '' }),
-    setSelectedOption: (selectedOption) => set({ selectedOption }),
-    setErrorMessage: (errorMessage) => set({ errorMessage }),
-    setAbortMessage: (abortMessage) => set({ abortMessage }),
-
-    applyRoomState: (state) => {
-        // Map server status to internal client states
-        let clientStatus = state?.status || get().status;
-        let clientView = get().view;
-
-        if (clientStatus === 'completed') {
-            clientStatus = 'finished';
-            clientView = 'results';
-        } else if (clientStatus === 'aborted') {
-            clientStatus = 'upcoming'; // or some other state
-            clientView = 'loading';
-        }
-
-        const updates = {
-            status: clientStatus,
-            view: clientView,
-        };
-        const hasQuestionPayload = hasRenderableQuestionPayload(state?.currentQuestion);
-
-        if (state?.title) updates.quizTitle = state.title;
-        if (Array.isArray(state?.leaderboard)) updates.leaderboard = state.leaderboard;
-        if (Array.isArray(state?.participants)) updates.participants = state.participants;
-        if (state?.answerStats) updates.answerStats = state.answerStats;
-        if (state?.fastestUser !== undefined) updates.fastestUser = state.fastestUser;
-
-        if (hasQuestionPayload) {
-            updates.currentQuestion = state.currentQuestion;
-            updates.timeLeft = state.timeLeft ?? get().timeLeft;
-            updates.timer = state.timeLeft ?? get().timeLeft;
-            updates.expiry = state.expiry ?? get().expiry;
-            updates.status = 'playing';
-            updates.mode = 'playing';
-            if (!updates.answerStats) {
-                const optionCounts = {};
-                for (const option of state.currentQuestion.options || []) {
-                    optionCounts[option] = 0;
-                }
-                updates.answerStats = { questionId: state.currentQuestion._id || null, optionCounts, totalAnswers: 0, fastestUser: null };
-            }
-        }
-
-        if (state?.sessionId) updates.sessionId = state.sessionId;
-        if (state?.isPaused !== undefined) updates.isPaused = state.isPaused;
-        set(updates);
-    },
-
-    applyNewQuestion: (question) => {
-        set({
-            currentQuestion: question,
-            timeLeft: question?.timeLimit || 0,
-            timer: question?.timeLimit || 0,
-            expiry: question?.expiry || null,
-            answerStats: {
-                questionId: question?._id || null,
-                optionCounts: Object.fromEntries((question?.options || []).map((option) => [option, 0])),
-                totalAnswers: 0,
-                fastestUser: null,
-            },
-            fastestUser: null,
-            myResult: null,
-            selectedOption: null,
-            status: 'playing',
-            mode: 'playing',
-        });
-    },
-
-    applyQuizFinished: () => {
-        set({
-            status: 'finished',
-            mode: 'finished',
-            view: 'results',
-        });
-    },
-
-    applyQuizPaused: (message) => {
-        set({ isPaused: true, errorMessage: message });
-    },
-
-    applyQuizResumed: (expiry) => {
-        set({ isPaused: false, expiry: expiry || get().expiry });
-    },
-
-    applyQuizAborted: (message = 'Admin aborted the quiz.') => {
-        set({
-            status: 'upcoming',
-            mode: 'waiting',
-            currentQuestion: null,
-            timeLeft: 0,
-            timer: 0,
-            expiry: null,
-            leaderboard: [],
-            participants: [],
-            answerStats: null,
-            fastestUser: null,
-            selectedOption: null,
-            myResult: null,
-            errorMessage: message,
-            abortMessage: message,
-            view: 'loading',
-        });
-    },
-
+    applyRoomState: (s) => useQuizRealtimeStore.getState().applyRoomState(s),
+    applyNewQuestion: (q) => useQuizRealtimeStore.getState().applyNewQuestion(q),
+    applyQuizFinished: (data) => useQuizRealtimeStore.getState().applyQuizFinished(data),
+    applyQuizPaused: (m) => useQuizRealtimeStore.getState().applyQuizPaused(m),
+    applyQuizResumed: (e) => useQuizRealtimeStore.getState().applyQuizResumed(e),
+    applyQuizAborted: (m) => useQuizRealtimeStore.getState().applyQuizAborted(m),
     resetRealtimeState: () => {
-        // Preserve active quiz context during page transitions (launch/invite/live)
-        // so route-state hydration is not lost before loaders run.
-        const preservedActiveQuiz = get().activeQuiz;
-        set({
-            ...createEmptyRealtimeState(),
-            activeQuiz: preservedActiveQuiz,
+        useQuizRealtimeStore.getState().resetRealtimeState();
+        useQuizUIStore.getState().resetUI();
+    },
+
+    // Cache Actions
+    getQuizzesForParent: (p, o) => useQuizCacheStore.getState().getQuizzesForParent(p, o),
+    setQuizzesForParent: (p, q) => useQuizCacheStore.getState().setQuizzesForParent(p, q),
+    prefetchQuizForParent: (p) => useQuizCacheStore.getState().prefetchQuizForParent(p),
+    getHistoryForRole: (r, o) => useQuizCacheStore.getState().getHistoryForRole(r, o),
+    setHistoryForRole: (r, h) => useQuizCacheStore.getState().setHistoryForRole(r, h),
+    getQuizByCodeCached: (c, o) => useQuizCacheStore.getState().getQuizByCodeCached(c, o),
+    getQuizLeaderboardCached: (q, o) => useQuizCacheStore.getState().getQuizLeaderboardCached(q, o),
+    getSubjectLeaderboardCached: (s, o) => useQuizCacheStore.getState().getSubjectLeaderboardCached(s, o),
+    getProfileCached: (o) => useQuizCacheStore.getState().getProfileCached(o),
+    clearUserData: () => {
+        useQuizCacheStore.getState().clearUserData();
+        useQuizRealtimeStore.getState().resetRealtimeState();
+    },
+    invalidateUserData: () => useQuizCacheStore.getState().invalidateUserData(),
+
+    // UI Actions
+    setView: (v) => useQuizUIStore.getState().setView(v),
+    setActiveQuiz: (a) => useQuizUIStore.getState().setActiveQuiz(a),
+    setSelectedOption: (o) => useQuizUIStore.getState().setSelectedOption(o),
+
+    // --- State Proxying ---
+    // This is the tricky part. For selectors like useQuizStore(s => s.status) 
+    // to work, we need to subscribe to the modular stores and update this facade.
+}));
+
+// Synchronize facade state with modular stores (Legacy support)
+const syncStores = () => {
+    // Realtime Store is the base for most fields
+    useQuizRealtimeStore.subscribe((state) => {
+        useQuizStore.setState({
+            ...state,
+            // Never let RealtimeStore overwrite these if they exist in domain stores
+            participants: useParticipantStore.getState().participants,
+            leaderboard: useLeaderboardStore.getState().leaderboard
         });
-    },
+    });
 
-    getQuizzesForParent: async (parentId = 'none', options = {}) => {
-        const { force = false } = options;
-        const userKey = useAuthStore.getState().user?._id || 'anonymous';
-        const cacheKey = `${userKey}:${parentId}`;
-        const state = get();
+    // Participant Store is source of truth for participants
+    useParticipantStore.subscribe((state) => {
+        useQuizStore.setState({ 
+            participants: state.participants,
+            joinedCount: state.joinedCount 
+        });
+    });
 
-        const cached = readCache(state.quizzesCache, cacheKey, CACHE_TTL_MS.quizzes, force);
-        if (cached) return cached;
+    // Leaderboard Store is source of truth for leaderboard
+    useLeaderboardStore.subscribe((state) => {
+        useQuizStore.setState({ 
+            leaderboard: state.leaderboard 
+        });
+    });
 
-        if (inflightQuizzes[cacheKey]) return inflightQuizzes[cacheKey];
+    // UI Store for views and selections
+    useQuizUIStore.subscribe((state) => {
+        useQuizStore.setState(state);
+    });
+};
 
-        const request = getMyQuizzes(parentId)
-            .then((data) => {
-                set((current) => ({
-                    quizzesCache: setCache(current.quizzesCache, cacheKey, data),
-                }));
-                return data;
-            })
-            .finally(() => {
-                delete inflightQuizzes[cacheKey];
-            });
-
-        inflightQuizzes[cacheKey] = request;
-
-        return request;
-    },
-
-    setQuizzesForParent: (parentId, quizzes) => {
-        const userKey = useAuthStore.getState().user?._id || 'anonymous';
-        const cacheKey = `${userKey}:${parentId}`;
-        set((current) => ({
-            quizzesCache: setCache(current.quizzesCache, cacheKey, quizzes),
-        }));
-    },
-
-    prefetchQuizForParent: async (parentId = 'none') => {
-        await get().getQuizzesForParent(parentId);
-    },
-
-    getHistoryForRole: async (role, options = {}) => {
-        const { force = false } = options;
-        const userKey = useAuthStore.getState().user?._id || 'anonymous';
-        const cacheKey = `${userKey}:${role}`;
-        const state = get();
-
-        const cached = readCache(state.historyCache, cacheKey, CACHE_TTL_MS.history, force);
-        if (cached) return cached;
-
-        if (inflightHistory[cacheKey]) return inflightHistory[cacheKey];
-
-        const request = (role === 'host' ? gethostHistory() : getUserHistory())
-            .then((data) => {
-                set((current) => ({
-                    historyCache: setCache(current.historyCache, cacheKey, data),
-                }));
-                return data;
-            })
-            .finally(() => {
-                delete inflightHistory[cacheKey];
-            });
-
-        inflightHistory[cacheKey] = request;
-
-        return request;
-    },
-
-    setHistoryForRole: (role, history) => {
-        const userKey = useAuthStore.getState().user?._id || 'anonymous';
-        const cacheKey = `${userKey}:${role}`;
-        set((current) => ({
-            historyCache: setCache(current.historyCache, cacheKey, history),
-        }));
-    },
-
-    prefetchHistoryForRole: async (role) => {
-        await get().getHistoryForRole(role);
-    },
-
-    getQuizByCodeCached: async (roomCode, options = {}) => {
-        const { force = false } = options;
-        const userKey = useAuthStore.getState().user?._id || 'anonymous';
-        const code = (roomCode || '').toUpperCase();
-        const cacheKey = `${userKey}:${code}`;
-        const state = get();
-
-        const cached = readCache(state.quizByCodeCache, cacheKey, CACHE_TTL_MS.quizByCode, force);
-        if (cached) return cached;
-
-        if (inflightQuizByCode[cacheKey]) return inflightQuizByCode[cacheKey];
-
-        const request = getQuizByCode(code)
-            .then((data) => {
-                set((current) => ({
-                    quizByCodeCache: setCache(current.quizByCodeCache, cacheKey, data),
-                }));
-                return data;
-            })
-            .finally(() => {
-                delete inflightQuizByCode[cacheKey];
-            });
-
-        inflightQuizByCode[cacheKey] = request;
-
-        return request;
-    },
-
-    setQuizByCodeCached: (roomCode, quiz) => {
-        const userKey = useAuthStore.getState().user?._id || 'anonymous';
-        const code = (roomCode || '').toUpperCase();
-        const cacheKey = `${userKey}:${code}`;
-        set((current) => ({
-            quizByCodeCache: setCache(current.quizByCodeCache, cacheKey, quiz),
-        }));
-    },
-
-    getQuizLeaderboardCached: async (quizId, options = {}) => {
-        const { force = false } = options;
-        const userKey = useAuthStore.getState().user?._id || 'anonymous';
-        const cacheKey = `${userKey}:${quizId}`;
-        const state = get();
-
-        const cached = readCache(state.quizLeaderboardCache, cacheKey, CACHE_TTL_MS.leaderboard, force);
-        if (cached) return cached;
-
-        if (inflightQuizLeaderboard[cacheKey]) return inflightQuizLeaderboard[cacheKey];
-
-        const request = getQuizLeaderboard(quizId)
-            .then((data) => {
-                set((current) => ({
-                    quizLeaderboardCache: setCache(current.quizLeaderboardCache, cacheKey, data),
-                }));
-                return data;
-            })
-            .finally(() => {
-                delete inflightQuizLeaderboard[cacheKey];
-            });
-
-        inflightQuizLeaderboard[cacheKey] = request;
-
-        return request;
-    },
-
-    prefetchQuizLeaderboard: async (quizId) => {
-        if (!quizId) return;
-        await get().getQuizLeaderboardCached(quizId);
-    },
-
-    getSubjectLeaderboardCached: async (subjectId, options = {}) => {
-        const { force = false } = options;
-        const userKey = useAuthStore.getState().user?._id || 'anonymous';
-        const cacheKey = `${userKey}:${subjectId}`;
-        const state = get();
-
-        const cached = readCache(state.subjectLeaderboardCache, cacheKey, CACHE_TTL_MS.subjectLeaderboard, force);
-        if (cached) return cached;
-
-        if (inflightSubjectLeaderboard[cacheKey]) return inflightSubjectLeaderboard[cacheKey];
-
-        const request = getSubjectLeaderboard(subjectId)
-            .then((data) => {
-                set((current) => ({
-                    subjectLeaderboardCache: setCache(current.subjectLeaderboardCache, cacheKey, data),
-                }));
-                return data;
-            })
-            .finally(() => {
-                delete inflightSubjectLeaderboard[cacheKey];
-            });
-
-        inflightSubjectLeaderboard[cacheKey] = request;
-
-        return request;
-    },
-
-    getProfileCached: async (options = {}) => {
-        const { force = false } = options;
-        const userKey = useAuthStore.getState().user?._id || 'anonymous';
-        const cacheKey = `${userKey}:profile`;
-        const state = get();
-
-        const cached = readCache(state.profileCache, cacheKey, CACHE_TTL_MS.profile, force);
-        if (cached) return cached;
-
-        if (inflightProfile[cacheKey]) return inflightProfile[cacheKey];
-
-        const request = getMyProfile()
-            .then((data) => {
-                set((current) => ({
-                    profileCache: setCache(current.profileCache, cacheKey, data),
-                }));
-                return data;
-            })
-            .finally(() => {
-                delete inflightProfile[cacheKey];
-            });
-
-        inflightProfile[cacheKey] = request;
-
-        return request;
-    },
-
-    setProfileCached: (profile) => {
-        const userKey = useAuthStore.getState().user?._id || 'anonymous';
-        const cacheKey = `${userKey}:profile`;
-        set((current) => ({
-            profileCache: setCache(current.profileCache, cacheKey, profile),
-        }));
-    },
-
-    invalidateUserData: () => {
-        get().clearUserData();
-    },
-}), { name: 'quizStore' }));
-
-
+syncStores();

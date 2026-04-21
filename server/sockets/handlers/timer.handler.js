@@ -47,54 +47,41 @@ const emitTimerEnd = (io, roomCode) => {
  * Called by the distributed worker loop if the feature is enabled.
  *
  * @param {import('socket.io').Server} io
- * @param {string} roomCode
- * @param {number} timeLeftSeconds
- * @param {number} expiryMs
- */
-const emitTimerUpdate = (io, roomCode, timeLeftSeconds, expiryMs) => {
-    io.to(roomCode).emit('timer:update', {
-        timeLeft: timeLeftSeconds,
-        expiry: expiryMs,
-        serverTime: Date.now(),
-    });
-};
+const sessionStore = require('../../services/session/session.service');
+const { publishTimerUpdate } = require('../../services/timer/timer.publisher');
 
 /**
- * Register socket-level timer event listeners.
- * Currently only logs host "timer:request" (a client asking for a fresh
- * authoritative timer snapshot).
- *
- * @param {import('socket.io').Server} io
- * @param {import('socket.io').Socket} socket
- * @param {Function} getSessionStore - lazy getter to avoid circular deps
+ * timer.handler.js
+ * 
+ * Thin adapter layer for timer requests. 
+ * Delegates logic to publisher to maintain isolation.
  */
-const registerTimerHandler = (io, socket, getSessionStore) => {
+const registerTimerHandler = (io, socket) => {
+    // ── timer:request ──────────────────────────────────────────────────────────
+    // Participant can request a sync for the current timer.
     socket.on('timer:request', async ({ sessionCode } = {}) => {
         try {
             const roomCode = sessionCode || socket.data.roomCode;
             if (!roomCode) return;
 
-            const sessionStore = getSessionStore();
             const session = await sessionStore.getSession(roomCode);
             if (!session?.questionExpiry) return;
 
-            const timeLeftSeconds = Math.max(
+            const timeLeft = Math.max(
                 0,
                 Math.floor((session.questionExpiry - Date.now()) / 1000)
             );
 
-            emitTimerUpdate(io, roomCode, timeLeftSeconds, session.questionExpiry);
+            // 🔥 use publisher instead of direct emit
+            await publishTimerUpdate(roomCode, timeLeft, session.questionExpiry);
 
-            logger.debug('timer:request serviced', { roomCode, timeLeftSeconds });
+            logger.debug('[TIMER] request serviced', { roomCode, timeLeft, userId: socket.data.user?._id });
         } catch (err) {
-            logger.error('timer.handler timer:request error', { error: err.message });
+            logger.error('[TIMER] request error', { error: err.message, roomCode: sessionCode });
         }
     });
 };
 
 module.exports = {
     registerTimerHandler,
-    emitTimerStart,
-    emitTimerEnd,
-    emitTimerUpdate,
 };

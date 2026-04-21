@@ -37,6 +37,8 @@ const hostOnboardingRoutes = require('./routes/hostOnboardingRoutes');
 const analyticsRoutes = require('./routes/analytics.routes');
 const aiRoutes = require('./routes/ai.routes');
 const rbacRoutes = require('./routes/rbac.routes');
+const templateRoutes = require('./routes/template.routes');
+const adminRoutes = require('./routes/admin/adminRoutes');
 
 // Initialize Express
 const app = express();
@@ -211,6 +213,8 @@ const bootstrap = async () => {
     app.use('/api/analytics', apiLimiter, analyticsRoutes);
     app.use('/api/ai', apiLimiter, aiRoutes);
     app.use('/api/rbac', apiLimiter, rbacRoutes);
+    app.use('/api/templates', apiLimiter, templateRoutes);
+    app.use('/api/admin', apiLimiter, adminRoutes);
 
     // Health check
     app.get('/api/health', (req, res) => {
@@ -265,23 +269,36 @@ const bootstrap = async () => {
     const permissionRevocationService = require('./services/rbac/permissionRevocation.service');
     await permissionRevocationService.initialize(io);
 
-    // Socket auth middleware — verify JWT and attach full user to socket.data
+    // Socket auth middleware — verify JWT and attach user to socket.data
     io.use(async (socket, next) => {
         try {
             const token = socket.handshake.auth?.token ||
                 socket.handshake.headers?.cookie?.match(/token=([^;]+)/)?.[1];
-            if (!token) return next(new Error('AUTH_REQUIRED'));
+            
+            if (!token) {
+                // Allow anonymous participants for public quizzes
+                // Generate a stable anonymous ID based on socket ID or random
+                const guestId = `guest_${socket.id.slice(0, 8)}`;
+                socket.data.user = { _id: guestId, name: 'Guest', role: 'participant', isAnonymous: true };
+                return next();
+            }
 
             const decoded = jwt.verify(token, config.jwtSecret);
             const user = await User.findById(decoded.id).select('-password').lean();
-            if (!user) return next(new Error('AUTH_USER_NOT_FOUND'));
+            if (!user) {
+                // Fallback to guest if token is invalid but it's a join attempt
+                socket.data.user = { _id: `invalid_${socket.id.slice(0, 8)}`, name: 'Guest', role: 'participant', isAnonymous: true };
+                return next();
+            }
 
             socket.data.user = user;
             socket.data.token = token;
             next();
         } catch (err) {
             logger.warn('Socket auth failed', { error: err.message });
-            next(new Error('AUTH_INVALID'));
+            // Allow them to connect as guest anyway, the service will handle restrictions per-room
+            socket.data.user = { _id: `err_${socket.id.slice(0, 8)}`, name: 'Guest', role: 'participant', isAnonymous: true };
+            next();
         }
     });
 

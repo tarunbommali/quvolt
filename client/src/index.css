@@ -55,14 +55,17 @@
   --qb-bg-elevated: #eef3ff;
   --qb-surface-1: #ffffff;
   --qb-surface-2: #f8fafc;
+  --qb-surface-soft: #f1f5f9;
   --qb-border: #dbe4f3;
   --qb-text-1: #0f172a;
   --qb-text-2: #475569;
-  --qb-text-3: #64748b;
-  --qb-primary: #4f46e5;
+  --qb-text-3: #6b7280;
+  --qb-primary: #6366f1;
+  --qb-primary-dark: #4f46e5;
+  --qb-accent: #22d3ee;
   --qb-primary-strong: #4338ca;
-  --qb-accent: #7c3aed;
-  --qb-accent-strong: #6d28d9;
+  --qb-glow: 0 0 40px rgba(99,102,241,0.25);
+  
   --qb-success-soft: rgba(16, 185, 129, 0.12);
   --qb-success-ink: #047857;
   --qb-danger-soft: rgba(220, 38, 38, 0.12);
@@ -70,49 +73,29 @@
 
   --color-dark: #f8fafc;
   --color-surface: #ffffff;
-  --color-surface-bright: #ffffff;
   --color-text: #0f172a;
-  --color-text-sub: #64748b;
-  --color-border: #e2e8f0;
   --ds-bg: #0b0f19;
   --ds-surface: rgba(255, 255, 255, 0.06);
-  --ds-border: rgba(255, 255, 255, 0.12);
-  --ds-primary: #6366f1;
-  --ds-primary-soft: rgba(99, 102, 241, 0.14);
-  --ds-shadow-low: 0 8px 24px -14px rgba(15, 23, 42, 0.38);
-  --ds-shadow-mid: 0 18px 40px -18px rgba(15, 23, 42, 0.48);
-  --ds-shadow-high: 0 24px 62px -24px rgba(15, 23, 42, 0.6);
-  --app-container-max: 80rem;
-  --app-page-pad-x: var(--space-4);
-  --app-page-pad-y: var(--space-6);
+  --ds-border: rgba(255, 255, 255, 0.08);
 }
 
 .dark {
-  --qb-bg-base: #050c1a;
-  --qb-bg-elevated: #0a1427;
-  --qb-surface-1: #101c31;
-  --qb-surface-2: #16253d;
-  --qb-border: #23324b;
-  --qb-text-1: #e2e8f0;
-  --qb-text-2: #cbd5e1;
-  --qb-text-3: #94a3b8;
-  --qb-primary: #7c82ff;
-  --qb-primary-strong: #8a8fff;
-  --qb-accent: #c4b5fd;
-  --qb-accent-strong: #a78bfa;
-  --qb-success-soft: rgba(16, 185, 129, 0.22);
-  --qb-success-ink: #6ee7b7;
-  --qb-danger-soft: rgba(248, 113, 113, 0.2);
-  --qb-danger-ink: #fca5a5;
+  --qb-bg-base: #0b0f19;
+  --qb-bg-elevated: #0f172a;
+  --qb-surface-1: #111827;
+  --qb-surface-2: #1f2937;
+  --qb-surface-soft: #1e293b;
+  --qb-border: rgba(255, 255, 255, 0.08);
+  --qb-text-1: #f9fafb;
+  --qb-text-2: #9ca3af;
+  --qb-text-3: #6b7280;
+  --qb-primary: #6366f1;
+  --qb-primary-strong: #4f46e5;
+  --qb-accent: #22d3ee;
 
-  --color-dark: #111827;
-  --color-surface: #1f2937;
-  --color-surface-bright: #111827;
-  --color-text: #f3f4f6;
-  --color-text-sub: #9ca3af;
-  --color-border: #374151;
-  --ds-surface: rgba(17, 24, 39, 0.72);
-  --ds-border: rgba(148, 163, 184, 0.22);
+  --color-dark: #0b0f19;
+  --color-surface: #111827;
+  --color-text: #f9fafb;
 }
 
 @keyframes ripple-wave {
@@ -155,27 +138,27 @@
   }
 
   h1 {
-    @apply text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-[1.1] text-slate-900 dark:text-gray-100;
+    @apply text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight leading-[1.1] text-slate-900 dark:text-gray-100;
   }
 
   h2 {
-    @apply text-2xl sm:text-3xl font-black tracking-tight leading-[1.15] text-slate-900 dark:text-gray-100;
+    @apply text-2xl sm:text-3xl font-semibold tracking-tight leading-[1.15] text-slate-900 dark:text-gray-100;
   }
 
   h3 {
-    @apply text-xl sm:text-2xl font-extrabold tracking-tight leading-[1.2] text-slate-900 dark:text-gray-100;
+    @apply text-xl sm:text-2xl font-semibold tracking-tight leading-[1.2] text-slate-900 dark:text-gray-100;
   }
 
   h4 {
-    @apply text-lg sm:text-xl font-bold leading-tight text-slate-900 dark:text-gray-100;
+    @apply text-lg sm:text-xl font-semibold leading-tight text-slate-900 dark:text-gray-100;
   }
 
   h5 {
-    @apply text-base sm:text-lg font-bold leading-[1.3] text-slate-900 dark:text-gray-100;
+    @apply text-base sm:text-lg font-semibold leading-[1.3] text-slate-900 dark:text-gray-100;
   }
 
   h6 {
-    @apply text-sm sm:text-base font-bold leading-[1.35] text-slate-900 dark:text-gray-100;
+    @apply text-sm sm:text-base font-semibold leading-[1.35] text-slate-900 dark:text-gray-100;
   }
 
   p {
@@ -446,41 +429,42 @@
   }
 
   /* Make legacy utility-heavy components inherit theme tokens without rewriting every file. */
-  .app-shell .bg-white {
+  /* Legacy utility overrides - now global to ensure theme tokens apply everywhere */
+  .bg-white {
     background-color: var(--qb-surface-1) !important;
   }
 
-  .app-shell .bg-gray-50,
-  .app-shell .bg-slate-50,
-  .app-shell .bg-gray-100 {
+  .bg-gray-50,
+  .bg-slate-50,
+  .bg-gray-100 {
     background-color: var(--qb-surface-2) !important;
   }
 
-  .app-shell .border-gray-100,
-  .app-shell .border-gray-200,
-  .app-shell .border-slate-200,
-  .app-shell .border-gray-300 {
+  .border-gray-100,
+  .border-gray-200,
+  .border-slate-200,
+  .border-gray-300 {
     border-color: var(--qb-border) !important;
   }
 
-  .app-shell .text-gray-900,
-  .app-shell .text-slate-900,
-  .app-shell .text-gray-800,
-  .app-shell .text-slate-800 {
+  .text-gray-900,
+  .text-slate-900,
+  .text-gray-800,
+  .text-slate-800 {
     color: var(--qb-text-1) !important;
   }
 
-  .app-shell .text-gray-700,
-  .app-shell .text-slate-700,
-  .app-shell .text-gray-600,
-  .app-shell .text-slate-600 {
+  .text-gray-700,
+  .text-slate-700,
+  .text-gray-600,
+  .text-slate-600 {
     color: var(--qb-text-2) !important;
   }
 
-  .app-shell .text-gray-500,
-  .app-shell .text-slate-500,
-  .app-shell .text-gray-400,
-  .app-shell .text-slate-400 {
+  .text-gray-500,
+  .text-slate-500,
+  .text-gray-400,
+  .text-slate-400 {
     color: var(--qb-text-3) !important;
   }
 
@@ -505,12 +489,16 @@
   }
 
   .btn-premium {
-    @apply border border-indigo-400/40 bg-linear-to-r from-indigo-600 to-indigo-500 text-white;
-    box-shadow: 0 16px 36px -16px rgba(79, 70, 229, 0.84);
+    @apply border border-indigo-400/20 bg-linear-to-br from-indigo-500 to-indigo-600 text-white transition-all duration-300;
+    box-shadow: 0 10px 40px rgba(99, 102, 241, 0.4);
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
   }
 
   .btn-premium:hover {
-    box-shadow: 0 20px 42px -16px rgba(79, 70, 229, 0.9);
+    @apply scale-[1.02];
+    box-shadow: 0 15px 50px rgba(99, 102, 241, 0.5);
   }
 
   .btn-ripple-host {

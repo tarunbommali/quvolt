@@ -11,7 +11,7 @@
  *   - Concurrent failover scenarios
  */
 
-const PaymentRouter = require('../services/PaymentRouter');
+const PaymentRouter = require('../services/router/PaymentRouter');
 const GatewayInterface = require('../services/gateways/GatewayInterface');
 
 // ─── FailedJob mock ──────────────────────────────────────────────────────────

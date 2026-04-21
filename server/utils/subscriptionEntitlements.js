@@ -1,15 +1,11 @@
 const Subscription = require('../models/Subscription');
 const { getPlanConfig } = require('../config/plans');
 
-const QUIZ_TEMPLATE_LIMITS = {
-    FREE: 5,
-    PRO: 15,
-    PREMIUM: 25,
-};
 
 const normalizePlan = (plan) => {
-    const value = String(plan || 'FREE').toUpperCase();
-    return Object.prototype.hasOwnProperty.call(QUIZ_TEMPLATE_LIMITS, value) ? value : 'FREE';
+    const p = String(plan || 'FREE').toUpperCase();
+    if (['FREE', 'CREATOR', 'TEAMS'].includes(p)) return p;
+    return 'FREE';
 };
 
 const resolveHostSubscriptionEntitlements = async (hostId) => {
@@ -27,17 +23,19 @@ const resolveHostSubscriptionEntitlements = async (hostId) => {
 
     return {
         plan,
-        maxQuizTemplates: QUIZ_TEMPLATE_LIMITS[plan],
-        participantLimit: subscription?.participantLimit || planConfig.participants,
+        maxQuizTemplates: planConfig.maxQuizzes,
+        maxConcurrentSessions: planConfig.maxConcurrentSessions,
+        maxParticipantsPerSession: planConfig.maxParticipantsPerSession,
+        participantLimitMonthly: subscription?.participantLimit || planConfig.participants,
         commissionPercent: subscription?.commissionPercent ?? planConfig.commissionPercent,
         canCreatePaidQuiz: plan !== 'FREE',
         canUsePrivateHosting: plan !== 'FREE',
         canUseAiGeneration: plan !== 'FREE',
+        level: plan === 'TEAMS' ? 3 : (plan === 'CREATOR' ? 2 : 1),
     };
 };
 
 module.exports = {
     normalizePlan,
     resolveHostSubscriptionEntitlements,
-    QUIZ_TEMPLATE_LIMITS,
 };

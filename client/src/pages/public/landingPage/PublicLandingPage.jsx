@@ -3,12 +3,13 @@ import {
   HomeTrustGrid,
   HomeFeatureGrid,
   HomeStepsGrid,
-  HomePricingGrid,
+  Subscription,
   HomeCtaBanner,
   features,
   trustPoints,
   steps,
   plans,
+  FAQ
 } from '../../../components/common/home';
 import { useAuthStore } from '../../../stores/useAuthStore';
 import { components } from '../../../styles/components';
@@ -25,11 +26,11 @@ const PublicLandingPage = () => {
       </div>
 
       <HomeHero user={user} />
-      <HomeTrustGrid trustPoints={trustPoints} />
       <HomeFeatureGrid features={features} />
       <HomeStepsGrid steps={steps} />
-      <HomePricingGrid plans={plans} />
       <HomeCtaBanner user={user} />
+
+      <FAQ />
       <Footer />
     </div>
   );

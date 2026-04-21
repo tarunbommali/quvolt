@@ -7,7 +7,7 @@ export const BrandLogo = ({ className, showBadge = true }) => {
     const isSpecialPlan = plan === 'PRO' || plan === 'PREMIUM';
 
     return (
-        <div className={cx('flex items-center gap-2 group', className)}>
+        <div className={cx('flex items-center gap-2 group select-none', className)}>
             <motion.div
                 className={cx(
                     'text-xl sm:text-2xl transition-all duration-300',

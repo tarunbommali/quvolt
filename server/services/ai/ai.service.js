@@ -1,213 +1,137 @@
-const axios = require('axios');
+/**
+ * AI Service (Refactored for Production SaaS)
+ * Handles orchestration, parallelization, rate-limiting, and caching.
+ */
 const Quiz = require('../../models/Quiz');
 const { hashAnswer } = require('../../utils/crypto');
+const logger = require('../../utils/logger');
+const { getRedisClient } = require('../../config/redis');
 
-const AI_MAX_COUNT = 20;
-const DISTRIBUTION_STEP = 5;
+// Sub-modules
+const validation = require('./utils/ai.validation');
+const { sanitizeTopic } = require('./utils/ai.prompt');
+const cache = require('./utils/ai.cache');
+const openai = require('./providers/openai.provider');
 
-const shuffleArray = (items) => {
-    const arr = [...items];
-    for (let i = arr.length - 1; i > 0; i -= 1) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    return arr;
+// Constants
+const AI_MAX_RETRIES = 2;
+const RATE_LIMITS = {
+    FREE: 5,
+    CREATOR: 100,
+    TEAMS: 500,
 };
 
-const buildPrompt = ({ topic, difficulty, count }) => `Generate ${count} multiple-choice questions on the topic '${topic}' with ${difficulty} difficulty.
+/**
+ * Plan-Aware AI Rate Limiter
+ */
+const checkRateLimit = async (user) => {
+    const redis = getRedisClient();
+    if (!redis?.isOpen) return true; // Fail open if Redis is down
 
-Return ONLY valid JSON in the following format:
-[
-  {
-    "text": "Question text",
-    "options": ["Option A", "Option B", "Option C", "Option D"],
-    "correctAnswer": "Exact correct option text",
-    "explanation": "Short explanation"
-  }
-]
+    const userId = user._id.toString();
+    const plan = user.plan || 'FREE';
+    const limit = RATE_LIMITS[plan] || RATE_LIMITS.FREE;
+    
+    const today = new Date().toISOString().split('T')[0];
+    const key = `ai_limit:${userId}:${today}`;
 
-Rules:
-- Each question must have exactly 4 options
-- correctAnswer must match one of the options exactly
-- Avoid duplicates
-- Keep questions clear and concise
-- Difficulty must reflect ${difficulty} level
-- Do NOT include any extra text outside JSON`;
-
-const sanitizeTopic = (topic) => String(topic || '')
-    .replace(/[\u0000-\u001F\u007F]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-
-const extractJSONArray = (raw) => {
-    if (Array.isArray(raw)) return raw;
-    if (!raw || typeof raw !== 'string') {
-        throw new Error('AI response did not contain valid text output');
+    const current = await redis.incr(key);
+    if (current === 1) {
+        await redis.expire(key, 86400); // 1 day
     }
 
-    const trimmed = raw.trim();
-
-    try {
-        const direct = JSON.parse(trimmed);
-        if (Array.isArray(direct)) return direct;
-        if (Array.isArray(direct?.questions)) return direct.questions;
-    } catch {
-        // Try regex extraction below
+    if (current > limit) {
+        logger.warn('AI Rate Limit Exceeded', { userId, plan, current, limit });
+        throw new Error(`Your daily AI question generation limit has been reached (${limit} for ${plan} plan).`);
     }
-
-    const match = trimmed.match(/\[[\s\S]*\]/);
-    if (!match) {
-        throw new Error('Unable to parse JSON array from AI response');
-    }
-
-    const parsed = JSON.parse(match[0]);
-    if (!Array.isArray(parsed)) {
-        throw new Error('AI response JSON was not an array');
-    }
-    return parsed;
+    return true;
 };
 
-const normalizeQuestion = (input, index, difficultyHint = 'medium') => {
-    const text = String(input?.text || '').trim();
-    const options = Array.isArray(input?.options)
-        ? input.options.map((opt) => String(opt || '').trim()).filter(Boolean)
-        : [];
-    const correctAnswer = String(input?.correctAnswer || '').trim();
-    const explanation = String(input?.explanation || '').trim();
-
-    if (!text) {
-        throw new Error(`Question ${index + 1}: missing text`);
-    }
-
-    if (options.length !== 4) {
-        throw new Error(`Question ${index + 1}: must have exactly 4 options`);
-    }
-
-    const uniqueOptions = new Set(options.map((opt) => opt.toLowerCase()));
-    if (uniqueOptions.size !== 4) {
-        throw new Error(`Question ${index + 1}: options must be unique`);
-    }
-
-    const correctOptionIndex = options.findIndex((opt) => opt === correctAnswer);
-    if (correctOptionIndex < 0) {
-        throw new Error(`Question ${index + 1}: correctAnswer must match one option exactly`);
-    }
-
-    return {
-        text,
-        options,
-        correctAnswer,
-        correctOption: correctOptionIndex,
-        explanation,
-        difficulty: difficultyHint,
-        timeLimit: 15,
-        shuffleOptions: true,
-        questionType: 'multiple-choice',
-    };
-};
-
-const normalizeQuestions = (items, difficultyHint = 'medium') => {
-    if (!Array.isArray(items) || items.length === 0) {
-        throw new Error('No questions returned by AI');
-    }
-
-    const normalized = items.map((item, index) => normalizeQuestion(item, index, difficultyHint));
-
-    const dedupedByText = new Set();
-    const result = [];
-    for (const question of normalized) {
-        const key = question.text.toLowerCase();
-        if (dedupedByText.has(key)) continue;
-        dedupedByText.add(key);
-        result.push(question);
-    }
-
-    if (!result.length) {
-        throw new Error('All generated questions were duplicates');
-    }
-
-    return result;
-};
-
-const callOpenAI = async ({ topic, difficulty, count }) => {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-        throw new Error('OPENAI_API_KEY is not configured');
-    }
-
-    const baseUrl = process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
-    const model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
-    const prompt = buildPrompt({ topic, difficulty, count });
-
-    const response = await axios.post(
-        `${baseUrl}/chat/completions`,
-        {
-            model,
-            temperature: 0.2,
-            messages: [
-                {
-                    role: 'system',
-                    content: 'You are a strict MCQ generator. Output only valid JSON.',
-                },
-                {
-                    role: 'user',
-                    content: prompt,
-                },
-            ],
-        },
-        {
-            headers: {
-                Authorization: `Bearer ${apiKey}`,
-                'Content-Type': 'application/json',
-            },
-            timeout: 45000,
-        },
-    );
-
-    const content = response?.data?.choices?.[0]?.message?.content;
-    const parsed = extractJSONArray(content);
-    return normalizeQuestions(parsed, difficulty);
-};
-
-const generateQuestionsWithRetry = async ({ topic, difficulty, count, retries = 2, avoidSet = new Set() }) => {
-    const accepted = [];
-    const used = new Set([...avoidSet].map((text) => String(text).toLowerCase()));
+/**
+ * Parallel Question Generation with Fallbacks and Retries
+ */
+const generateQuestionsWithRetry = async ({ topic, difficulty, count, avoidSet = new Set() }) => {
     let lastError = null;
+    const accepted = [];
+    const used = new Set([...avoidSet].map((t) => String(t).toLowerCase()));
 
-    for (let attempt = 0; attempt <= retries && accepted.length < count; attempt += 1) {
+    for (let attempt = 0; attempt <= AI_MAX_RETRIES && accepted.length < count; attempt += 1) {
         try {
-            const remaining = Math.max(1, count - accepted.length);
-            const generated = await callOpenAI({ topic, difficulty, count: remaining });
-            for (const question of generated) {
-                const key = question.text.toLowerCase();
+            const remaining = count - accepted.length;
+            // Strategy: Cache Check per Level
+            const cacheParams = { topic, difficulty, count: remaining };
+            let generated = await cache.getCachedQuestions(cacheParams);
+
+            if (!generated) {
+                generated = await openai.generate({ topic, difficulty, count: remaining });
+                // We only cache full successful responses at the base level if needed, 
+                // but usually, it's better to cache individual results if granularity is needed.
+                // For now, we cache the base batch.
+                await cache.setCachedQuestions(cacheParams, generated);
+            }
+
+            for (const q of generated) {
+                const key = q.text.toLowerCase();
                 if (used.has(key)) continue;
                 used.add(key);
-                accepted.push(question);
+                accepted.push(q);
                 if (accepted.length >= count) break;
             }
         } catch (error) {
+            logger.warn('AI Generation Attempt Failed', { attempt, error: error.message });
             lastError = error;
         }
     }
 
-    if (accepted.length >= count) {
-        return accepted.slice(0, count);
-    }
-
-    throw new Error(lastError?.message || 'AI generation failed');
+    if (accepted.length > 0) return accepted.slice(0, count);
+    throw lastError || new Error('AI Generation failed after retries');
 };
 
-const calculateDifficultyCounts = (count, distribution) => {
-    const ratios = {
-        easy: (Number(distribution.easy) || 0) / 100,
-        medium: (Number(distribution.medium) || 0) / 100,
-        hard: (Number(distribution.hard) || 0) / 100,
-    };
+/**
+ * Orchestrates Generation with Distribution (Parallelized)
+ */
+const generateWithDistribution = async ({ topic, count, distribution, user }) => {
+    await checkRateLimit(user);
+    
+    // 1. Calculate how many per level
+    const plan = calculateDifficultyCounts(count, distribution);
+    const levels = Object.entries(plan).filter(([, val]) => val > 0);
 
+    logger.info('Starting Parallel AI Generation', { topic, plan });
+
+    // 2. Parallelize API calls
+    const results = await Promise.all(
+        levels.map(([level, amount]) => 
+            generateQuestionsWithRetry({
+                topic,
+                difficulty: level,
+                count: amount
+            })
+        )
+    );
+
+    // 3. Merge and Shuffle Result
+    const questions = shuffleArray(results.flat());
+    
+    return {
+        questions: questions.slice(0, count),
+        meta: {
+            easy: plan.easy || 0,
+            medium: plan.medium || 0,
+            hard: plan.hard || 0,
+            provider: 'openai'
+        }
+    };
+};
+
+/**
+ * Logic to split counts based on distribution percentages
+ */
+const calculateDifficultyCounts = (count, distribution) => {
     const exact = {
-        easy: ratios.easy * count,
-        medium: ratios.medium * count,
-        hard: ratios.hard * count,
+        easy: (distribution.easy / 100) * count,
+        medium: (distribution.medium / 100) * count,
+        hard: (distribution.hard / 100) * count,
     };
 
     const base = {
@@ -218,48 +142,25 @@ const calculateDifficultyCounts = (count, distribution) => {
 
     let allocated = base.easy + base.medium + base.hard;
     const order = ['easy', 'medium', 'hard']
-        .map((key) => ({ key, frac: exact[key] - base[key] }))
+        .map((k) => ({ k, frac: exact[k] - base[k] }))
         .sort((a, b) => b.frac - a.frac);
 
     let cursor = 0;
     while (allocated < count) {
-        const target = order[cursor % order.length]?.key || 'easy';
-        base[target] += 1;
+        base[order[cursor % order.length].k] += 1;
         allocated += 1;
         cursor += 1;
     }
-
     return base;
 };
 
-const generateWithDistribution = async ({ topic, count, distribution }) => {
-    const plan = calculateDifficultyCounts(count, distribution);
-    const usedTexts = new Set();
-
-    const byDifficulty = { easy: [], medium: [], hard: [] };
-    for (const level of ['easy', 'medium', 'hard']) {
-        if (plan[level] <= 0) continue;
-        const generated = await generateQuestionsWithRetry({
-            topic,
-            difficulty: level,
-            count: plan[level],
-            avoidSet: usedTexts,
-        });
-
-        generated.forEach((question) => usedTexts.add(question.text.toLowerCase()));
-        byDifficulty[level] = generated;
+const shuffleArray = (items) => {
+    const arr = [...items];
+    for (let i = arr.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
     }
-
-    const merged = shuffleArray([...byDifficulty.easy, ...byDifficulty.medium, ...byDifficulty.hard]).slice(0, count);
-
-    return {
-        questions: merged,
-        meta: {
-            easy: byDifficulty.easy.length,
-            medium: byDifficulty.medium.length,
-            hard: byDifficulty.hard.length,
-        },
-    };
+    return arr;
 };
 
 const toQuizQuestion = (question) => ({
@@ -267,9 +168,10 @@ const toQuizQuestion = (question) => ({
     options: question.options,
     correctOption: question.correctOption,
     hashedCorrectAnswer: hashAnswer(question.correctAnswer),
-    timeLimit: question.timeLimit ?? 15,
-    shuffleOptions: question.shuffleOptions ?? true,
-    questionType: question.questionType || 'multiple-choice',
+    timeLimit: 15,
+    shuffleOptions: true,
+    questionType: 'multiple-choice',
+    explanation: question.explanation
 });
 
 const saveQuestionsToQuiz = async ({ quizId, questions, user }) => {
@@ -279,9 +181,7 @@ const saveQuestionsToQuiz = async ({ quizId, questions, user }) => {
             : { _id: quizId, hostId: user._id },
     );
 
-    if (!quiz) {
-        throw new Error('Quiz not found or not authorized');
-    }
+    if (!quiz) throw new Error('Quiz not found or not authorized');
 
     const toInsert = questions.map(toQuizQuestion);
     quiz.questions.push(...toInsert);
@@ -290,63 +190,8 @@ const saveQuestionsToQuiz = async ({ quizId, questions, user }) => {
     return quiz;
 };
 
-const validateGenerateInput = ({ topic, difficulty, count, distribution }) => {
-    const allowedDifficulty = new Set(['easy', 'medium', 'hard']);
-    const safeTopic = sanitizeTopic(topic);
-    if (!safeTopic) {
-        throw new Error('topic is required');
-    }
-
-    const numericCount = Number(count);
-    if (!Number.isInteger(numericCount) || numericCount < 1 || numericCount > AI_MAX_COUNT) {
-        throw new Error(`count must be an integer between 1 and ${AI_MAX_COUNT}`);
-    }
-
-    let normalizedDistribution = null;
-    if (difficulty !== undefined && difficulty !== null && !allowedDifficulty.has(String(difficulty || '').toLowerCase())) {
-        throw new Error('difficulty must be one of: easy, medium, hard');
-    }
-
-    if (typeof distribution === 'object' && distribution !== null) {
-        const easy = Number(distribution.easy ?? 0);
-        const medium = Number(distribution.medium ?? 0);
-        const hard = Number(distribution.hard ?? 0);
-
-        if (![easy, medium, hard].every((v) => Number.isFinite(v) && v >= 0 && v <= 100 && v % DISTRIBUTION_STEP === 0)) {
-            throw new Error('distribution values must be multiples of 5 between 0 and 100');
-        }
-
-        const total = easy + medium + hard;
-        if (Math.round(total) !== 100) {
-            throw new Error('distribution percentages must total 100');
-        }
-
-        normalizedDistribution = { easy, medium, hard };
-    } else {
-        const selectedDifficulty = String(difficulty || 'easy').toLowerCase();
-        normalizedDistribution = {
-            easy: selectedDifficulty === 'easy' ? 100 : 0,
-            medium: selectedDifficulty === 'medium' ? 100 : 0,
-            hard: selectedDifficulty === 'hard' ? 100 : 0,
-        };
-    }
-
-    return {
-        topic: safeTopic,
-        difficulty: String(difficulty || 'easy').toLowerCase(),
-        distribution: normalizedDistribution,
-        count: numericCount,
-    };
-};
-
 module.exports = {
-    AI_MAX_COUNT,
-    buildPrompt,
-    extractJSONArray,
-    normalizeQuestions,
-    validateGenerateInput,
-    generateQuestionsWithRetry,
+    validateGenerateInput: validation.validateGenerateInput,
     generateWithDistribution,
-    calculateDifficultyCounts,
     saveQuestionsToQuiz,
 };

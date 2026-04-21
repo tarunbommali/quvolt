@@ -3,14 +3,11 @@ const rateLimit = require('express-rate-limit');
 const { body } = require('express-validator');
 const validate = require('../middleware/validate');
 const requireRole = require('../middleware/requireRole');
-const {
-    AI_MAX_COUNT,
-    generateWithDistribution,
-    normalizeQuestions,
-    saveQuestionsToQuiz,
-    validateGenerateInput,
-} = require('../services/ai/ai.service');
+const aiService = require('../services/ai/ai.service');
+const validation = require('../services/ai/utils/ai.validation');
 const { resolveHostSubscriptionEntitlements } = require('../utils/subscriptionEntitlements');
+
+const AI_MAX_COUNT = validation.AI_MAX_COUNT_CREATOR;
 
 const router = express.Router();
 
@@ -64,8 +61,11 @@ router.post(
 
             let meta = null;
             const normalizedQuestions = Array.isArray(prebuiltQuestions) && prebuiltQuestions.length
-                ? normalizeQuestions(prebuiltQuestions)
-                : await generateWithDistribution(validateGenerateInput({ topic, difficulty, count, distribution }));
+                ? validation.normalizeQuestions(prebuiltQuestions)
+                : await aiService.generateWithDistribution({
+                    ...aiService.validateGenerateInput({ topic, difficulty, count, distribution, user: req.user }),
+                    user: req.user
+                });
 
             const finalQuestions = Array.isArray(normalizedQuestions)
                 ? normalizedQuestions
@@ -81,7 +81,7 @@ router.post(
                     return res.status(400).json({ message: 'quizId is required when persist=true' });
                 }
 
-                savedQuiz = await saveQuestionsToQuiz({
+                savedQuiz = await aiService.saveQuestionsToQuiz({
                     quizId,
                     questions: finalQuestions,
                     user: req.user,

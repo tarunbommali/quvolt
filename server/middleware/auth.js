@@ -17,8 +17,13 @@ const protect = (req, res, next) => {
         }
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        // Attach minimal user shape — sufficient for all CRUD + socket routes
-        req.user = { _id: decoded.id, id: decoded.id, role: decoded.role };
+        // Attach minimal user shape including subscription plan for feature gating
+        req.user = { 
+            _id: decoded.id, 
+            id: decoded.id, 
+            role: decoded.role,
+            plan: decoded.plan || 'FREE'
+        };
         next();
     } catch (error) {
         const message = error.name === 'TokenExpiredError'
@@ -72,6 +77,8 @@ const authorize = (...roles) => {
         next();
     };
 };
+
+const requireAdmin = authorize('admin');
 
 const requireQuizOwnership = async (req, res, next) => {
     try {
@@ -222,4 +229,11 @@ const checkQuizAccess = async (req, res, next) => {
     }
 };
 
-module.exports = { protect, protectFull, authorize, requireQuizOwnership, checkQuizAccess };
+module.exports = { 
+    protect, 
+    protectFull, 
+    authorize, 
+    requireAdmin,
+    requireQuizOwnership, 
+    checkQuizAccess 
+};

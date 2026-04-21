@@ -86,11 +86,11 @@ const registerQuestionHandler = (io, socket) => {
         }
     });
 
-    // ── answer:submit ─────────────────────────────────────────────────────────
-    // Spec shape: { questionId, selectedOption, timeTaken }
-    // timeTaken is supplied by the client as a hint; the authoritative value
-    // is always re-calculated server-side from questionStartTime.
-    socket.on('answer:submit', async ({ sessionCode, roomCode, questionId, selectedOption, timeTaken: _clientTimeTaken } = {}) => {
+    // ── answer:submit (+ legacy submit_answer) ────────────────────────────
+    // timeTaken from client is ignored — server re-calculates from questionStartTime.
+    // acquireAnswerLock (inside submitAnswer) ensures only the FIRST submission
+    // per userId+question is accepted; duplicates return { ignored: true }.
+    const handleAnswerSubmit = async ({ sessionCode, roomCode, questionId, selectedOption, timeTaken: _hint } = {}) => {
         try {
             const room = roomCode || sessionCode || socket.data.roomCode;
             if (!room) return socket.emit('session:error', { message: 'sessionCode is required' });
@@ -115,19 +115,17 @@ const registerQuestionHandler = (io, socket) => {
                 });
             }
 
-            // Emit answer:result to the submitting participant (spec event name)
             socket.emit('answer:result', {
                 correct: result.isCorrect,
                 correctOption: result.correctAnswer,
-                timeTaken: result.timeTaken ?? _clientTimeTaken ?? 0,
+                timeTaken: result.timeTaken ?? _hint ?? 0,
                 score: result.score,
                 totalScore: result.totalScore,
                 streak: result.streak,
                 bestStreak: result.bestStreak,
             });
 
-            // Leaderboard update to entire room
-            io.to(result.room).emit('update_leaderboard', result.leaderboard);
+            // NOTE: leaderboard broadcast is handled (and batched) inside answer.service.js
 
             logger.debug('answer:submit processed', {
                 userId: user?._id,
@@ -138,7 +136,10 @@ const registerQuestionHandler = (io, socket) => {
             logger.error('question.handler answer:submit', { error: err.message, stack: err.stack });
             socket.emit('session:error', { message: 'Failed to submit answer' });
         }
-    });
+    };
+
+    socket.on('answer:submit', handleAnswerSubmit);
+    socket.on('submit_answer', handleAnswerSubmit); // legacy alias — same anti-cheat path
 
     // ── question:update ───────────────────────────────────────────────────────
     // Host can broadcast an explicit question:update notification (e.g. after

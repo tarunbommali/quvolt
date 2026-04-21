@@ -83,43 +83,10 @@ export default function LegalLayout({ title, lastUpdated, children }) {
                         </div>
                     </div>
 
-                    {/* ── Two-column layout: sidebar + content ── */}
-                    <div className="flex flex-col md:flex-row gap-6 lg:gap-8 items-start">
-
-                        {/* Sidebar navigation */}
-                        <nav
-                            aria-label="Legal documents"
-                            className="w-full md:w-56 shrink-0 flex flex-col gap-1 p-2 rounded-2xl border theme-border theme-surface shadow-sm sticky top-[4.5rem]"
-                        >
-                            <p className="px-3 pt-2 pb-1 text-[10px] font-black uppercase tracking-[0.2em] text-[var(--qb-text-3)]">
-                                Legal Documents
-                            </p>
-
-                            {legalLinks.map((link) => {
-                                const isActive = pathname === link.path;
-                                return (
-                                    <Link
-                                        key={link.path}
-                                        to={link.path}
-                                        className={[
-                                            'px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center justify-between',
-                                            isActive
-                                                ? 'bg-[color-mix(in_srgb,var(--qb-primary)_12%,var(--qb-surface-1))] text-[var(--qb-primary)]'
-                                                : 'text-[var(--qb-text-2)] hover:bg-[var(--qb-surface-2)] hover:text-[var(--qb-text-1)]',
-                                        ].join(' ')}
-                                    >
-                                        {link.label}
-                                        {isActive && (
-                                            <span className="w-1.5 h-1.5 rounded-full bg-[var(--qb-primary)] shrink-0" />
-                                        )}
-                                    </Link>
-                                );
-                            })}
-                        </nav>
-
-                        {/* Document content */}
-                        <article className="flex-1 w-full min-w-0">
-                            <div className="surface-card rounded-3xl overflow-hidden">
+                    {/* ── Single-column content layout ── */}
+                    <div className="max-w-4xl mx-auto w-full">
+                        <article className="w-full">
+                            <div className="surface-card rounded-3xl overflow-hidden shadow-sm">
                                 <div className="p-6 md:p-8 lg:p-10 space-y-10 text-[var(--qb-text-1)]">
                                     {children}
                                 </div>

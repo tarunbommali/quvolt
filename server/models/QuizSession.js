@@ -41,6 +41,9 @@ const QuizSessionSchema = new mongoose.Schema({
     startedAt: { type: Date, default: Date.now },
     endedAt: { type: Date, default: null },
     participantCount: { type: Number, default: 0 },
+    peakParticipants: { type: Number, default: 0 }, // For SaaS billing
+    totalSubmissions: { type: Number, default: 0 }, // For usage quotas
+    sessionDuration: { type: Number, default: 0 }, // In seconds
     topWinners: [
         {
             name: { type: String },
@@ -49,6 +52,11 @@ const QuizSessionSchema = new mongoose.Schema({
             rank: { type: Number },
         }
     ],
+    snapshot: {
+        lastLeaderboard: { type: Array, default: [] },
+        participants: { type: Array, default: [] },
+        takenAt: { type: Date, default: null },
+    },
 }, { timestamps: true });
 
 QuizSessionSchema.index({ quizId: 1, createdAt: -1 });

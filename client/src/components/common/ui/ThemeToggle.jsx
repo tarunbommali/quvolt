@@ -11,7 +11,7 @@ const ThemeToggle = ({ className = '', size = 18 }) => {
         <button
             type="button"
             onClick={toggleTheme}
-            className={cx('inline-flex items-center justify-center', className)}
+            className={cx('inline-flex items-center justify-center select-none outline-none focus:outline-none', className)}
             title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
             aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
             aria-pressed={isDark}

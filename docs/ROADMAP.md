@@ -1,4 +1,4 @@
-# QuizBolt Roadmap
+# Quvolt Roadmap
 
 Updated: 2026-04
 
@@ -11,7 +11,7 @@ Updated: 2026-04
 
 2. Product and UX
 - Expand analytics dashboards with host trend drill-downs.
-- Improve participant live-room resilience and reconnect UX.
+- Improve participant live-room resilience and reconnect UX. [DONE]
 - Refine quiz authoring and AI insertion validation UX.
 - Complete design system application across all non-core pages (Legal, Billing, Analytics). [DONE]
 

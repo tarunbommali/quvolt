@@ -1,17 +1,19 @@
 const rbacService = require('../rbac/rbac.service');
 const Quiz = require('../../models/Quiz');
 const QuizSession = require('../../models/QuizSession');
+const Subscription = require('../../models/Subscription');
+const { getPlanConfig } = require('../../config/plans');
 const logger = require('../../utils/logger');
 
 /**
  * Session Access Control Service
- * Handles session-level access control with RBAC integration
+ * Handles session-level access control with RBAC integration and SaaS monetization
  * Requirements: 10.1, 10.2, 10.3, 10.4, 10.5
  */
 class SessionAccessControlService {
   /**
    * Check if a user can join a session
-   * Requirements: 10.1, 10.2, 10.4
+   * Requirements: 10.1, 10.2, 10.4, SaaS Monetization
    * 
    * @param {Object} user - User object with _id, email, role
    * @param {Object} quiz - Quiz object
@@ -20,7 +22,40 @@ class SessionAccessControlService {
    */
   async canJoinSession(user, quiz, session = null) {
     try {
-      // Admins and hosts bypass all access control checks including initial join_quiz permission
+      // 1. Resolve host subscription and plan limits (SaaS Monetization)
+      const hostId = quiz.hostId;
+      const subscription = await Subscription.findOne({
+        hostId,
+        status: 'active',
+      }).lean();
+      
+      const plan = subscription ? subscription.plan : 'FREE';
+      const planConfig = getPlanConfig(plan);
+      
+      // Determine participant limit
+      const participantLimit = subscription?.participantLimit || planConfig.maxParticipantsPerSession;
+
+      // 2. Check participant limit (unless host/admin)
+      if (user.role !== 'admin' && user.role !== 'host') {
+        const currentCount = session?.participantCount || (session?.participants ? Object.keys(session.participants).length : 0);
+        
+        if (currentCount >= participantLimit) {
+          logger.warn('Session join denied: participant limit reached', {
+            userId: user._id,
+            quizId: quiz._id,
+            limit: participantLimit,
+            currentCount,
+          });
+          return {
+            allowed: false,
+            reason: plan === 'FREE' 
+              ? 'This session has reached the free participant limit. The host needs to upgrade to allow more players.'
+              : 'This session has reached its participant limit.',
+          };
+        }
+      }
+
+      // Admins and hosts bypass further access control checks
       if (user.role === 'admin' || user.role === 'host') {
         return { allowed: true };
       }
@@ -43,8 +78,6 @@ class SessionAccessControlService {
       }
 
       // Determine effective access policy
-      // Requirement 10.4: Inherit from parent quiz if session uses 'inherit'
-      // Requirement 10.5: Session can override quiz access policy
       let effectiveAccessType = quiz.accessType || 'public';
       let effectiveAllowedEmails = quiz.allowedEmails || [];
       let effectiveSharedWith = quiz.sharedWith || [];
@@ -96,16 +129,13 @@ class SessionAccessControlService {
         }
       }
 
-      // Public access - allow any authenticated user with join_quiz permission
       return { allowed: true };
     } catch (error) {
       logger.error('Session access check error', {
         error: error.message,
         userId: user._id,
         quizId: quiz._id,
-        sessionId: session?._id,
       });
-      // Fail closed - deny access on error
       return {
         allowed: false,
         reason: 'Unable to verify session access',
@@ -116,11 +146,6 @@ class SessionAccessControlService {
   /**
    * Update session-specific access policy
    * Requirement 10.3: Allow hosts to manage session access independently
-   * 
-   * @param {string} sessionId - Session ID
-   * @param {string} hostId - Host user ID
-   * @param {Object} accessPolicy - Access policy update
-   * @returns {Promise<{success: boolean, message?: string}>}
    */
   async updateSessionAccessPolicy(sessionId, hostId, accessPolicy) {
     try {
@@ -143,17 +168,9 @@ class SessionAccessControlService {
       }
 
       // Update session access policy
-      if (accessPolicy.accessType) {
-        session.accessType = accessPolicy.accessType;
-      }
-
-      if (accessPolicy.allowedEmails) {
-        session.allowedEmails = accessPolicy.allowedEmails;
-      }
-
-      if (accessPolicy.sharedWith) {
-        session.sharedWith = accessPolicy.sharedWith;
-      }
+      if (accessPolicy.accessType) session.accessType = accessPolicy.accessType;
+      if (accessPolicy.allowedEmails) session.allowedEmails = accessPolicy.allowedEmails;
+      if (accessPolicy.sharedWith) session.sharedWith = accessPolicy.sharedWith;
 
       await session.save();
 

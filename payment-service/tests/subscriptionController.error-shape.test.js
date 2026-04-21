@@ -34,7 +34,7 @@ jest.mock('../utils/logger', () => ({
   error: jest.fn(),
 }));
 
-const { getActiveSubscription } = require('../services/subscriptionService');
+const { getActiveSubscription } = require('../services/subscription/subscription.service');
 const { getPlanConfig, getAllPlans } = require('../utils/subscriptionPlans');
 const subscriptionController = require('../controllers/subscriptionController');
 

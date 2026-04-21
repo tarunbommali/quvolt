@@ -3,7 +3,7 @@
  * Requirements: 4.1, 4.2, 4.3, 8.4
  */
 
-const PaymentRouter = require('../services/PaymentRouter');
+const PaymentRouter = require('../services/router/PaymentRouter');
 const GatewayInterface = require('../services/gateways/GatewayInterface');
 
 // Mock FailedJob model to prevent database operations in tests

@@ -17,6 +17,8 @@ const razorpay = config.paymentsEnabled
   : {
     orders: { create: paymentsDisabledError },
     payments: { fetch: paymentsDisabledError },
+    accounts: { create: paymentsDisabledError, fetch: paymentsDisabledError },
+    accountLink: { create: paymentsDisabledError },
   };
 
 module.exports = razorpay;

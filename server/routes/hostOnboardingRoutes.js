@@ -2,13 +2,7 @@ const express = require('express');
 const { body } = require('express-validator');
 const validate = require('../middleware/validate');
 const requireRole = require('../middleware/requireRole');
-const {
-    registerHost,
-    getMyHostProfile,
-    upsertMyHostProfile,
-    getAdminHostInsights,
-    getAdminHosts,
-} = require('../controllers/hostOnboardingController');
+const hostController = require('../controllers/host.controller');
 
 const router = express.Router();
 
@@ -26,16 +20,16 @@ router.post('/register', [
     body('agreements.commissionAccepted').custom((value) => value === true).withMessage('Commission agreement must be accepted'),
     body('agreements.payoutPolicyAccepted').custom((value) => value === true).withMessage('Payout policy must be accepted'),
     validate,
-], registerHost);
+], hostController.registerHost);
 
-router.get('/me', requireRole(['host', 'admin']), getMyHostProfile);
+router.get('/me', requireRole(['host', 'admin']), hostController.getMyHostProfile);
 
 router.put('/me', requireRole(['host', 'admin']), [
     body('domains').optional().isArray(),
     validate,
-], upsertMyHostProfile);
+], hostController.upsertMyHostProfile);
 
-router.get('/admin/insights', requireRole(['admin']), getAdminHostInsights);
-router.get('/admin/list', requireRole(['admin']), getAdminHosts);
+router.get('/admin/insights', requireRole(['admin']), hostController.getAdminHostInsights);
+router.get('/admin/list', requireRole(['admin']), hostController.getAdminHosts);
 
 module.exports = router;

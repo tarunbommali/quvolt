@@ -3,7 +3,7 @@ const router = express.Router();
 const { body } = require('express-validator');
 const validate = require('../middleware/validate');
 const { protect, protectFull } = require('../middleware/auth');
-const { registerUser, loginUser, refresh, logoutUser, getMyProfile, updateMyProfile } = require('../controllers/authController');
+const authController = require('../controllers/auth.controller');
 
 router.post('/register', [
     body('email').isEmail().withMessage('Enter a valid email'),
@@ -11,18 +11,18 @@ router.post('/register', [
     body('name').notEmpty().withMessage('Name is required'),
     body('role').optional().isIn(['participant', 'host']).withMessage('Invalid role'),
     validate
-], registerUser);
+], authController.registerUser);
 
 router.post('/login', [
     body('email').isEmail().withMessage('Enter a valid email'),
     body('password').exists().withMessage('Password is required'),
     validate
-], loginUser);
+], authController.loginUser);
 
-router.post('/refresh', refresh);
-router.post('/logout', logoutUser);
+router.post('/refresh', authController.refresh);
+router.post('/logout', authController.logoutUser);
 // protectFull: getMyProfile reads req.user.name/email/profilePhoto directly from middleware
-router.get('/me', protectFull, getMyProfile);
+router.get('/me', protectFull, authController.getMyProfile);
 router.put('/me', protect, [
     body('name').optional().isString().trim().isLength({ min: 2, max: 80 }).withMessage('Name must be between 2 and 80 characters'),
     body('profilePhoto').optional().isString().withMessage('profilePhoto must be a string'),
@@ -38,6 +38,6 @@ router.put('/me', protect, [
     body('hostProfile.contactEmail').optional().isString().trim().isLength({ max: 120 }).withMessage('Contact email must be 120 characters or less'),
     body('hostProfile.contactPhone').optional().isString().trim().isLength({ max: 30 }).withMessage('Contact phone must be 30 characters or less'),
     validate
-], updateMyProfile);
+], authController.updateMyProfile);
 
 module.exports = router;

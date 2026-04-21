@@ -1,19 +1,19 @@
 const QUIZ_TEMPLATE_LIMITS = {
     FREE: 5,
-    PRO: 15,
-    PREMIUM: 25,
+    CREATOR: 30,
+    TEAMS: 1000,
 };
 
 const PARTICIPANT_LIMITS = {
     FREE: 10000,
-    PRO: 15000,
-    PREMIUM: 25000,
+    CREATOR: 50000,
+    TEAMS: 1000000,
 };
 
 const COMMISSION_PERCENTS = {
     FREE: 25,
-    PRO: 10,
-    PREMIUM: 5,
+    CREATOR: 10,
+    TEAMS: 5,
 };
 
 export const normalizePlan = (plan) => {

@@ -1,62 +1,28 @@
 const express = require('express');
 const requireRole = require('../middleware/requireRole');
-const { 
-    getQuizAnalytics, 
-    getUserAnalytics, 
-    gethostAnalyticsSummary 
-} = require('../services/analytics/analytics.service');
-const Quiz = require('../models/Quiz');
+const analyticsController = require('../controllers/analytics.controller');
 
 const router = express.Router();
 
-router.get('/quiz/:quizId', requireRole(['host', 'admin']), async (req, res) => {
-    try {
-        const { quizId } = req.params;
+/**
+ * Quiz-specific analytics (Host/Admin only)
+ * Restricted by plan: advanced metrics (dropoff, correlation) gated to CREATOR+
+ */
+router.get('/quiz/:quizId', requireRole(['host', 'admin']), analyticsController.getQuizAnalytics);
 
-        if (req.user.role !== 'admin') {
-            const ownedQuiz = await Quiz.findOne({ _id: quizId, hostId: req.user._id }).select('_id').lean();
-            if (!ownedQuiz) {
-                return res.status(403).json({ message: 'Not authorized to view this quiz analytics' });
-            }
-        }
+/**
+ * Global Summary for Host (Admin can view others via query param)
+ */
+router.get('/summary', requireRole(['host', 'admin']), analyticsController.gethostAnalyticsSummary);
 
-        const data = await getQuizAnalytics(quizId);
-        return res.json(data);
-    } catch (error) {
-        const statusCode = error.message === 'Quiz not found' ? 404 : 400;
-        return res.status(statusCode).json({ message: error.message || 'Failed to load quiz analytics' });
-    }
-});
+/**
+ * User personal analytics (Participant/Host/Admin)
+ */
+router.get('/user', requireRole(['participant', 'host', 'admin']), analyticsController.getUserAnalytics);
 
-router.get('/user', requireRole(['participant', 'host', 'admin']), async (req, res) => {
-    try {
-        const data = await getUserAnalytics(req.user._id);
-        return res.json(data);
-    } catch (error) {
-        return res.status(400).json({ message: error.message || 'Failed to load user analytics' });
-    }
-});
-
-router.get('/user/:userId', requireRole(['host', 'admin']), async (req, res) => {
-    try {
-        const data = await getUserAnalytics(req.params.userId);
-        return res.json(data);
-    } catch (error) {
-        return res.status(400).json({ message: error.message || 'Failed to load user analytics' });
-    }
-});
-
-router.get('/summary', requireRole(['host', 'admin']), async (req, res) => {
-    try {
-        const targetUserId = req.user.role === 'admin' && req.query.userId
-            ? req.query.userId
-            : req.user._id;
-
-        const data = await gethostAnalyticsSummary(targetUserId);
-        return res.json(data);
-    } catch (error) {
-        return res.status(400).json({ message: error.message || 'Failed to load host analytics summary' });
-    }
-});
+/**
+ * View specific user analytics (Host/Admin only)
+ */
+router.get('/user/:userId', requireRole(['host', 'admin']), analyticsController.getUserAnalytics);
 
 module.exports = router;
