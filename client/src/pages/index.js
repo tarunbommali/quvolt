@@ -6,7 +6,6 @@ export { default as QuizResultsPage } from './participant/quiz/QuizResultsPage';
 export { default as SessionHistoryDetailPage } from './host/history/SessionHistoryDetailPage';
 export { default as BillingOverviewPage } from './host/billing/BillingOverviewPage';
 export { default as UserProfilePage } from './public/profile/UserProfilePage';
-export { default as AnalyticsDashboardPage } from './host/analytics/HostAnalyticsPage';
 export { default as StudioDashboardPage } from './host/studio/Studio';
 export { default as QuizEditorPage } from './host/template/QuizTemplateEditor';
 export { default as QuizLaunchPage } from './host/launchQuiz/LaunchQuiz';

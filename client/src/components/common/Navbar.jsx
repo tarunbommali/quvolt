@@ -75,20 +75,16 @@ const Navbar = () => {
 
     const navItems = isHost
         ? [
-            { label: 'Home', to: '/', end: true },
             { label: 'Studio', to: '/studio' },
-            { label: 'Analytics', to: '/analytics' },
             { label: 'History', to: '/history' },
             { label: 'Billing', to: '/billing' },
         ]
         : isParticipant
             ? [
-                { label: 'Home', to: '/', end: true },
                 { label: 'Join', to: '/join' },
                 { label: 'History', to: '/p/history' },
             ]
             : [
-                { label: 'Home', to: '/', end: true },
                 { label: 'Join', to: '/join' },
             ];
 
@@ -176,10 +172,7 @@ const Navbar = () => {
                 <div className={navbar.center} />
 
                 <div className={navbar.actions}>
-                    <span className={cx(navbar.badge, STATUS_STYLES[connectionState] || STATUS_STYLES.disconnected)}>
-                        <span className={navbar.badgeDot} />
-                        LIVE SYNC
-                    </span>
+
 
                     <ThemeToggle className={navbar.iconButton} />
 
@@ -196,95 +189,121 @@ const Navbar = () => {
                     {/* Logged in: avatar dropdown + inline logout button */}
                     {user ? (
                         <>
-                            <div ref={profileMenuRef} className={navbar.profileMenuWrap}>
+                            <div
+                                ref={profileMenuRef}
+                                className={navbar.profileMenuWrap}
+                                onMouseEnter={() => {
+                                    clearTimeout(profileMenuRef.current?.closeTimeout);
+                                    setIsProfileMenuOpen(true);
+                                }}
+                                onMouseLeave={() => {
+                                    profileMenuRef.current.closeTimeout = setTimeout(() => {
+                                        setIsProfileMenuOpen(false);
+                                    }, 200);
+                                }}
+                            >
                                 <button
                                     type="button"
-                                    className={navbar.avatarTrigger}
-                                    aria-label="Open account menu"
+                                    aria-label="Account menu"
                                     aria-expanded={isProfileMenuOpen}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
+                                    onClick={() => {
+                                        // Still allow click to toggle for touch screens
                                         setIsProfileMenuOpen((prev) => !prev);
                                     }}
                                 >
-                                    <span className={navbar.avatar}>
-                                        {user.profilePhoto ? (
-                                            <img src={user.profilePhoto} alt="Profile" className={navbar.avatarImage} />
-                                        ) : (
-                                            <span>{initials}</span>
-                                        )}
+                                    <span className="relative inline-block">
+                                        {/* Avatar */}
+                                        <span className={navbar.avatar}>
+                                            {user.profilePhoto ? (
+                                                <img src={user.profilePhoto} alt="Profile" className={navbar.avatarImage} />
+                                            ) : (
+                                                <span>{initials}</span>
+                                            )}
+                                        </span>
+
+                                        {/* Green status dot */}
+                                        <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-[var(--qb-background)]" />
                                     </span>
-                                    <ChevronDown size={16} className={navbar.avatarCaret} />
                                 </button>
 
-                                {isProfileMenuOpen ? (
-                                    <div className={navbar.dropdown} role="menu" aria-label="Account menu">
-                                        {/* User identity header */}
-                                        <div className="px-3 py-2 border-b theme-border mb-1">
-                                            <p className="text-sm font-semibold theme-text-primary truncate">{user.name || 'User'}</p>
-                                            <p className="text-xs theme-text-muted truncate">{user.email}</p>
-                                            {plan && (plan !== 'FREE' || isHost) && (
-                                                <span className={cx(
-                                                    "mt-1 inline-block text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border",
-                                                    plan === 'TEAMS'
-                                                        ? "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-800/50"
-                                                        : plan === 'CREATOR'
-                                                            ? "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800/50"
-                                                            : "bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
-                                                )}>
-                                                    {plan === 'FREE' ? 'Free Plan' : `${plan} Plan`}
-                                                </span>
-                                            )}
-                                        </div>
-                                        {accountItems.map(({ label, to }) => (
-                                            <Link
-                                                key={label}
-                                                to={to}
-                                                className={navbar.dropdownItem}
-                                                role="menuitem"
-                                                onClick={closeAllMenus}
-                                            >
-                                                {label}
-                                            </Link>
-                                        ))}
-                                        
-                                        <div className="border-t theme-border mt-1 pt-1">
-                                            <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setIsLearnMoreOpen(!isLearnMoreOpen);
-                                                }}
-                                                className="w-full text-left px-3 py-2 text-sm font-medium theme-text-secondary hover:theme-text-primary hover:bg-[var(--qb-surface-2)] transition-colors flex items-center justify-between"
-                                            >
-                                                <span className="flex items-center gap-2"><Info size={14} className="opacity-70" /> Learn more</span>
-                                                <ChevronRight size={14} className={`opacity-50 transition-transform ${isLearnMoreOpen ? 'rotate-90' : ''}`} />
-                                            </button>
-                                            
-                                            {isLearnMoreOpen && (
-                                                <div className="pl-6 py-1 pr-2 space-y-0.5 bg-[var(--qb-surface-2)]/50 border-y theme-border my-1">
-                                                    <Link to="/legal/terms-and-conditions" target="_blank" rel="noopener noreferrer" onClick={closeAllMenus} className="block px-3 py-1.5 text-[13px] theme-text-muted hover:theme-text-primary transition-colors rounded-md hover:bg-[var(--qb-surface-soft)]">Terms & Conditions</Link>
-                                                    <Link to="/legal/privacy-policy" target="_blank" rel="noopener noreferrer" onClick={closeAllMenus} className="block px-3 py-1.5 text-[13px] theme-text-muted hover:theme-text-primary transition-colors rounded-md hover:bg-[var(--qb-surface-soft)]">Privacy Policy</Link>
-                                                    <Link to="/legal/refund-policy" target="_blank" rel="noopener noreferrer" onClick={closeAllMenus} className="block px-3 py-1.5 text-[13px] theme-text-muted hover:theme-text-primary transition-colors rounded-md hover:bg-[var(--qb-surface-soft)]">Refund & Cancellation</Link>
-                                                    <Link to="/legal/cookie-policy" target="_blank" rel="noopener noreferrer" onClick={closeAllMenus} className="block px-3 py-1.5 text-[13px] theme-text-muted hover:theme-text-primary transition-colors rounded-md hover:bg-[var(--qb-surface-soft)]">Cookie Policy</Link>
-                                                    <Link to="/legal/disclaimer" target="_blank" rel="noopener noreferrer" onClick={closeAllMenus} className="block px-3 py-1.5 text-[13px] theme-text-muted hover:theme-text-primary transition-colors rounded-md hover:bg-[var(--qb-surface-soft)]">Disclaimer</Link>
-                                                </div>
-                                            )}
-                                        </div>
+                                <AnimatePresence>
+                                    {isProfileMenuOpen ? (
+                                        <Motion.div
+                                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                            transition={{ duration: 0.15, ease: "easeOut" }}
+                                            className={`${navbar.dropdown} shadow-2xl backdrop-blur-xl bg-white/90 dark:bg-black/80 border border-black/5 dark:border-white/10`}
+                                            role="menu"
+                                            aria-label="Account menu"
+                                        >
+                                            {/* User identity header */}
+                                            <div className="px-3 py-2 border-b theme-border mb-1">
+                                                <p className="text-sm font-semibold theme-text-primary truncate">{user.name || 'User'}</p>
+                                                <p className="text-xs theme-text-muted truncate">{user.email}</p>
+                                                {plan && (plan !== 'FREE' || isHost) && (
+                                                    <span className={cx(
+                                                        "mt-1 inline-block text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border",
+                                                        plan === 'TEAMS'
+                                                            ? "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-800/50"
+                                                            : plan === 'CREATOR'
+                                                                ? "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800/50"
+                                                                : "bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
+                                                    )}>
+                                                        {plan === 'FREE' ? 'Free Plan' : `${plan} Plan`}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {accountItems.map(({ label, to }) => (
+                                                <Link
+                                                    key={label}
+                                                    to={to}
+                                                    className={navbar.dropdownItem}
+                                                    role="menuitem"
+                                                    onClick={closeAllMenus}
+                                                >
+                                                    {label}
+                                                </Link>
+                                            ))}
 
-                                        <div className="border-t theme-border mt-1 pt-1">
-                                            <button
-                                                type="button"
-                                                onClick={handleLogout}
-                                                className={cx(navbar.dropdownItem, navbar.dropdownDanger)}
-                                                role="menuitem"
-                                            >
-                                                <LogOut size={16} />
-                                                Logout
-                                            </button>
-                                        </div>
-                                    </div>
-                                ) : null}
+                                            <div className="border-t theme-border mt-1 pt-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setIsLearnMoreOpen(!isLearnMoreOpen);
+                                                    }}
+                                                    className="w-full text-left px-3 py-2 text-sm font-medium theme-text-secondary hover:theme-text-primary hover:bg-[var(--qb-surface-2)] transition-colors flex items-center justify-between"
+                                                >
+                                                    <span className="flex items-center gap-2"><Info size={14} className="opacity-70" /> Learn more</span>
+                                                    <ChevronRight size={14} className={`opacity-50 transition-transform ${isLearnMoreOpen ? 'rotate-90' : ''}`} />
+                                                </button>
+
+                                                {isLearnMoreOpen && (
+                                                    <div className="pl-6 py-1 pr-2 space-y-0.5 bg-[var(--qb-surface-2)]/50 border-y theme-border my-1">
+                                                        <Link to="/legal/terms-and-conditions" target="_blank" rel="noopener noreferrer" onClick={closeAllMenus} className="block px-3 py-1.5 text-[13px] theme-text-muted hover:theme-text-primary transition-colors rounded-md hover:bg-[var(--qb-surface-soft)]">Terms & Conditions</Link>
+                                                        <Link to="/legal/privacy-policy" target="_blank" rel="noopener noreferrer" onClick={closeAllMenus} className="block px-3 py-1.5 text-[13px] theme-text-muted hover:theme-text-primary transition-colors rounded-md hover:bg-[var(--qb-surface-soft)]">Privacy Policy</Link>
+                                                        <Link to="/legal/refund-policy" target="_blank" rel="noopener noreferrer" onClick={closeAllMenus} className="block px-3 py-1.5 text-[13px] theme-text-muted hover:theme-text-primary transition-colors rounded-md hover:bg-[var(--qb-surface-soft)]">Refund & Cancellation</Link>
+                                                        <Link to="/legal/cookie-policy" target="_blank" rel="noopener noreferrer" onClick={closeAllMenus} className="block px-3 py-1.5 text-[13px] theme-text-muted hover:theme-text-primary transition-colors rounded-md hover:bg-[var(--qb-surface-soft)]">Cookie Policy</Link>
+                                                        <Link to="/legal/disclaimer" target="_blank" rel="noopener noreferrer" onClick={closeAllMenus} className="block px-3 py-1.5 text-[13px] theme-text-muted hover:theme-text-primary transition-colors rounded-md hover:bg-[var(--qb-surface-soft)]">Disclaimer</Link>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="border-t theme-border mt-1 pt-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={handleLogout}
+                                                    className={cx(navbar.dropdownItem, navbar.dropdownDanger)}
+                                                    role="menuitem"
+                                                >
+                                                    <LogOut size={16} />
+                                                    Logout
+                                                </button>
+                                            </div>
+                                        </Motion.div>
+                                    ) : null}
+                                </AnimatePresence>
                             </div>
                         </>
                     ) : null}
@@ -333,7 +352,10 @@ const Navbar = () => {
                         >
                             <Motion.div variants={mobileItemVariants} className={navbar.mobileBadgeRow}>
                                 <span className={cx(navbar.badge, STATUS_STYLES[connectionState] || STATUS_STYLES.disconnected)}>
-                                    <span className={navbar.badgeDot} />
+                                    <span className="relative flex h-2.5 w-2.5">
+                                        <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60 animate-pulse"></span>
+                                        <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
+                                    </span>
                                     LIVE SYNC
                                 </span>
                                 <span className={navbar.mobileHint}>Quick links</span>

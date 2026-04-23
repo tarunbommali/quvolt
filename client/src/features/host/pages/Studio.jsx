@@ -129,6 +129,7 @@ const Studio = () => {
                     onGoLive={onGoLive}
                     onPrefetch={prefetchQuizNavigation}
                     onSessionSettings={(quiz) => navigate(`/quiz/templates/${quiz._id}/settings`)}
+                    onViewHistory={(quiz) => navigate(`/quiz/templates/${quiz._id}/sessions`)}
                     viewMode={effectiveViewMode}
                 />
 

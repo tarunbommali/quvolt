@@ -16,6 +16,7 @@ const TemplateList = ({
     onGoLive,
     onPrefetch,
     onSessionSettings,
+    onViewHistory,
     viewMode
 }) => {
     if (!quizzes || quizzes.length === 0) {
@@ -52,6 +53,7 @@ const TemplateList = ({
                             onGoLive={() => onGoLive(quiz)}
                             onPrefetch={() => onPrefetch(quiz)}
                             onSessionSettings={() => onSessionSettings?.(quiz)}
+                            onViewHistory={() => onViewHistory?.(quiz)}
                         />
                     </motion.div>
                 ))}

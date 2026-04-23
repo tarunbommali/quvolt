@@ -94,6 +94,14 @@ npm run prod:status  # check health
 npm run prod:save    # persist after reboot
 ```
 
+## 📊 Analytics Engine (O(1) Scale)
+
+Quvolt features an enterprise-grade analytics pipeline designed for 10k+ concurrent users:
+- **Incremental O(1) Updates**: Answers trigger atomic `$inc` updates bypassing heavy MongoDB aggregation loops.
+- **Question Quality Score (QQS)**: An algorithmic score out of 100 weighing accuracy (50%), drop-off engagement (30%), and speed (20%).
+- **Priority Fix Order**: Automatically ranks and sorts the worst-performing questions for hosts.
+- **Participant Drilldown**: Merges real-time global averages with per-user timelines for detailed Mistake Analysis (e.g., distinguishing between Concept Gaps and Careless Errors).
+
 ---
 
 ## 📚 Documentation Index

@@ -18,6 +18,13 @@ const { registerTimerHandler } = require('./handlers/timer.handler');
 const { initTimerPublisher } = require('../services/timer/timer.publisher');
 const { initSessionPublisher, publishSessionStart, publishSessionRedirect, publishQuizPaused } = require('../services/session/session.publisher');
 const { initGameplayPublisher, publishNewQuestion, publishAnswerResult, publishLeaderboardUpdate } = require('../services/gameplay/gameplay.publisher');
+const {
+    finalizeSessionAnalytics,
+    computeAndPersistQuestionInsights,
+    computeAndPersistAudienceInsights,
+} = require('../services/analytics/analytics.service');
+const { enqueueAnswerEvent, getDistributedSequence } = require('../services/analytics/realtime.analytics.service');
+const QuizSession = require('../models/QuizSession');
 
 const registerQuizSocket = (io, socket) => {
     // ── Initialize Infra Layers ──────────────────────────────────────────────
@@ -122,8 +129,38 @@ const registerQuizSocket = (io, socket) => {
 
             const result = await quizService.endQuizSession({ io, quizId, sessionCode: sessionCode || roomCode, user });
             if (result.error) return socket.emit('error', result.error);
+
+            // ── Async analytics finalization (non-blocking, non-fatal) ─────────
+            const resolvedCode = sessionCode || roomCode;
+            if (resolvedCode) {
+                setImmediate(async () => {
+                    try {
+                        const session = await QuizSession.findOne({ sessionCode: resolvedCode }).select('_id').lean();
+                        if (session) {
+                            const sid = session._id.toString();
+                            await Promise.allSettled([
+                                finalizeSessionAnalytics(sid),
+                                computeAndPersistQuestionInsights(sid),
+                                computeAndPersistAudienceInsights(sid),
+                            ]);
+                            // Emit analytics:update so any open dashboard re-fetches
+                            io.to(resolvedCode).emit('analytics:update', {
+                                sessionId: sid,
+                                event: 'SESSION_ENDED',
+                                sequenceNumber: await getDistributedSequence(sid),
+                                serverTime: Date.now()
+                            });
+                        }
+                    } catch (analyticsErr) {
+                        logger.error('Analytics finalization failed after end_quiz', {
+                            sessionCode: resolvedCode,
+                            error: analyticsErr.message,
+                        });
+                    }
+                });
+            }
         } catch (error) {
-            logger.error('Socket end_quiz error', { error: error.message });
+            logger.error('Socket end_quiz error', { quizId, sessionCode, error: error.message });
         }
     });
 
@@ -147,6 +184,26 @@ const registerQuizSocket = (io, socket) => {
             });
 
             publishLeaderboardUpdate(result.room, result.leaderboard);
+
+            // Trigger durable queue storage for background aggregation
+            let sequenceNumber = Date.now();
+            if (sessionId) {
+                sequenceNumber = await getDistributedSequence(sessionId);
+                if (questionId) {
+                    enqueueAnswerEvent(sessionId, questionId, result.isCorrect, result.timeTaken ?? 0, sequenceNumber);
+                }
+            }
+
+            // Emit live analytics:update after each answer for real-time dashboard refresh
+            if (roomCode) {
+                io.to(roomCode).emit('analytics:update', {
+                    sessionId: sessionId || null,
+                    event: 'ANSWER_SUBMITTED',
+                    liveCount: result.leaderboard?.length ?? 0,
+                    sequenceNumber,
+                    serverTime: Date.now()
+                });
+            }
         } catch (error) {
             logger.error('Socket submit_answer error', { roomCode, error: error.message });
             socket.emit('error', 'Failed to submit answer');

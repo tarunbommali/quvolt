@@ -152,7 +152,7 @@ const SessionHistoryPage = () => {
             <SubHeader
                 title="History"
                 subtitle={user.role === 'host' ? 'Archive of your conducted sessions' : 'Recap of your quiz performances'}
-                breadcrumbs={[{ label: 'Dashboard', href: user.role === 'host' ? '/studio' : '/join' }, { label: 'History' }]}
+                breadcrumbs={[{ label: 'Dashboard', href: user.role === 'host' ? '/studio' : '/join' }, { label: 'HISTORY' }]}
                 actions={(
                     <SearchBar
                         value={searchQuery}
@@ -182,7 +182,7 @@ const SessionHistoryPage = () => {
                 <HistoryGrid
                     records={filteredHistory}
                     userRole={user.role}
-                    onNavigate={(record) => navigate(`/history/template_id/${record._id || record.roomCode || record.quizId}`, { state: { record } })}
+                    onNavigate={(record) => navigate(`/history/${record.sessionId || record._id || record.roomCode}`)}
                     onOpenLeaderboard={openLeaderboard}
                     onPrefetch={prefetchHistoryNavigation}
                 />

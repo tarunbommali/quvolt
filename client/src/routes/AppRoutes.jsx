@@ -44,9 +44,10 @@ const Studio = lazy(() => import('../features/host/pages/Studio'));
 const LaunchQuiz = lazy(() => import('../features/quiz/pages/LaunchQuiz'));
 const QuizTemplateEditor = lazy(() => import('../features/quiz/pages/QuizTemplateEditor'));
 const HostLivePage = lazy(() => import('../features/quiz/pages/LiveSessionPage'));
-const HostAnalyticsPage = lazy(() => import('../features/host/pages/HostAnalyticsPage'));
+const SessionDetailPage = lazy(() => import('../features/analytics/pages/SessionAnalyticsPage'));
+const ParticipantAnalyticsPage = lazy(() => import('../features/analytics/pages/ParticipantAnalyticsPage'));
 const SessionHistoryPage = lazy(() => import('../features/host/pages/SessionHistoryPage'));
-const TemplateQuizHistory = lazy(() => import('../features/host/pages/TemplateQuizHistory'));
+const QuizSessionHistory = lazy(() => import('../features/host/pages/DetailedQuizAnalytics'));
 const InviteRoom = lazy(() => import('../features/host/pages/InviteRoom'));
 const SessionHistoryDetailPage = lazy(() => import('../features/host/pages/SessionHistoryDetailPage'));
 const TemplateConfigPage = lazy(() => import('../features/quiz/pages/TemplateConfigPage'));
@@ -129,10 +130,11 @@ export default function AppRoutes() {
         <Route path="/invite/:id" element={<InviteRoom />} />
         <Route path="/quiz/templates/:id/session" element={<InviteRoom />} />
         <Route path="/live/:id" element={<HostLivePage />} />
-        <Route path="/analytics" element={<HostAnalyticsPage />} />
-        <Route path="/quiz/templates/:id/sessions" element={<TemplateQuizHistory />} />
-        <Route path="/history/template_id/:id" element={<SessionHistoryDetailPage />} />
-        <Route path="/billing" element={<BillingOverviewPage />} />
+        <Route path="/analytics" element={<Navigate to="/history" replace />} />
+        <Route path="/history/:sessionId" element={<SessionDetailPage />} />
+        <Route path="/history/:sessionId/participant/:userId" element={<ParticipantAnalyticsPage />} />
+        <Route path="/quiz/templates/:id/sessions" element={<QuizSessionHistory />} />
+        H        <Route path="/billing" element={<BillingOverviewPage />} />
         <Route path="/subscription-success" element={<SubscriptionSuccessPage />} />
         {/* Template Config routes */}
         <Route path="/studio/settings" element={<TemplateConfigPage />} />

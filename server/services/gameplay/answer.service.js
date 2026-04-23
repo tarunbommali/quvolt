@@ -151,6 +151,18 @@ const submitAnswer = async ({ io, socket, roomCode, sessionId, questionId, selec
         questionId: question._id?.toString()
     });
     
+    // 🔥 Fire O(1) Analytics Update asynchronously
+    const { handleAnswerIncrementalUpdate } = require('../analytics/realtime.analytics.service');
+    handleAnswerIncrementalUpdate({
+        sessionId: session.sessionId || sessionId || socketRoom,
+        questionId: question._id,
+        questionText: question.text,
+        selectedOption: String(selectedOption),
+        isCorrect,
+        correctOption: question.options?.[question.correctOption] || null,
+        responseTime: timeTaken
+    }).catch(err => logger.error('Incremental Analytics failed', { error: err.message }));
+    
     publishLeaderboardUpdate(socketRoom, leaderboard);
 
     publishAnswerResult(socket, buildAnswerResult({

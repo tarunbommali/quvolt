@@ -15,6 +15,8 @@ const config = require('./config/env');
 const User = require('./models/User');
 const registerQuizSocket = require('./sockets/quiz.socket');
 const { rebootQuizzes, startDistributedTimerWorker } = require('./services/quiz/quiz.service');
+// Realtime analytics service handled via incremental updates
+const { startReconciliationJob } = require('./services/analytics/reconciliation.job');
 const { socketManager } = require('./modules');
 const logger = require('./utils/logger');
 const requestContext = require('./middleware/requestContext');
@@ -176,6 +178,8 @@ const bootstrap = async () => {
 
         // Start Stateless Distributed Quiz Telemetry Loop
         startDistributedTimerWorker(io);
+        startAnalyticsWorker();
+        startReconciliationJob();
 
         // Resume any ongoing quizzes (Resilience)
         await rebootQuizzes(io);
@@ -211,6 +215,7 @@ const bootstrap = async () => {
 
     // Start Stateless Distributed Quiz Telemetry Loop (Required for scheduleNextAction)
     startDistributedTimerWorker(io);
+    startReconciliationJob();
 
     // API Routes — rate limiters applied inline on every router group
     app.use('/api/auth', authLimiter, authRoutes);

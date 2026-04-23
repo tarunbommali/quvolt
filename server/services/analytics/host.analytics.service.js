@@ -1,6 +1,54 @@
 const Submission = require('../../models/Submission');
 const Quiz = require('../../models/Quiz');
+const QuizSession = require('../../models/QuizSession');
 const { toObjectId } = require('./analytics.utils');
+
+/**
+ * Get the N most recent sessions for a host, providing the sessionId
+ * needed by the session-level analytics endpoints.
+ *
+ * @param {string} hostId
+ * @param {number} limit  default 10
+ */
+const getRecentSessions = async (hostId, limit = 10) => {
+    const hostObjectId = toObjectId(hostId);
+    if (!hostObjectId) throw new Error('Invalid hostId');
+
+    // Get quizIds owned by this host
+    const quizIds = await Quiz.find({ hostId: hostObjectId, type: { $ne: 'subject' } })
+        .select('_id title')
+        .lean()
+        .then((qs) => qs.map((q) => q._id));
+
+    if (!quizIds.length) return [];
+
+    const quizTitleMap = await Quiz.find({ _id: { $in: quizIds } })
+        .select('_id title')
+        .lean()
+        .then((qs) => new Map(qs.map((q) => [q._id.toString(), q.title])));
+
+    const sessions = await QuizSession.find({
+        quizId: { $in: quizIds },
+        status: { $in: ['completed', 'aborted', 'live', 'waiting'] },
+    })
+        .select('_id quizId sessionCode status participantCount startedAt endedAt sessionDuration topWinners')
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .lean();
+
+    return sessions.map((s) => ({
+        sessionId: s._id.toString(),
+        quizId: s.quizId?.toString(),
+        sessionCode: s.sessionCode,
+        title: quizTitleMap.get(s.quizId?.toString()) || 'Untitled Quiz',
+        status: s.status,
+        participantCount: s.participantCount || 0,
+        startedAt: s.startedAt,
+        endedAt: s.endedAt,
+        sessionDuration: s.sessionDuration || 0,
+    }));
+};
+
 
 const gethostAnalyticsSummary = async (hostId) => {
     const hostObjectId = toObjectId(hostId);
@@ -125,4 +173,6 @@ const gethostAnalyticsSummary = async (hostId) => {
 
 module.exports = {
     gethostAnalyticsSummary,
+    getRecentSessions,
 };
+

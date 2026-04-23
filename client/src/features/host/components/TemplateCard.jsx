@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { CalendarDays, Clock3, EllipsisVertical, Play, Radio, Settings2, Zap } from 'lucide-react';
+import { CalendarDays, Clock3, EllipsisVertical, Play, Radio, Settings2, Zap, History } from 'lucide-react';
 import { textStyles, tagStyles, controlStyles } from '../../../styles/commonStyles';
 import { cardStyles } from '../../../styles/cardStyles';
 import { buttonStyles } from '../../../styles/buttonStyles';
@@ -41,7 +41,7 @@ const getModeTag = (mode) => (
         : `${tagStyles.base} ${tagStyles.autotime}`
 );
 
-const TemplateCard = ({ template, view = 'grid', cloning, onEdit, onDelete, onClone, onGoLive, onPrefetch, onSessionSettings }) => {
+const TemplateCard = ({ template, view = 'grid', cloning, onEdit, onDelete, onClone, onGoLive, onPrefetch, onSessionSettings, onViewHistory }) => {
     const [showMenu, setShowMenu] = useState(false);
     const menuRef = useRef(null);
     const isList = view === 'list';
@@ -179,6 +179,10 @@ const TemplateCard = ({ template, view = 'grid', cloning, onEdit, onDelete, onCl
                                             <Settings2 size={13} />
                                             Session Settings
                                         </button>
+                                        <button type="button" onClick={() => handleMenuAction(onViewHistory)} className={`${cardStyles.menuItem} flex items-center gap-2 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20`}>
+                                            <History size={13} />
+                                            Session History
+                                        </button>
                                         <div className="my-1 h-px theme-border" />
                                         <button type="button" onClick={() => handleMenuAction(onEdit)} className={cardStyles.menuItem}>
                                             Edit
@@ -254,6 +258,14 @@ const TemplateCard = ({ template, view = 'grid', cloning, onEdit, onDelete, onCl
                                     >
                                         <Settings2 size={13} />
                                         Session Settings
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleMenuAction(onViewHistory)}
+                                        className={`${cardStyles.menuItem} flex items-center gap-2 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20`}
+                                    >
+                                        <History size={13} />
+                                        Session History
                                     </button>
                                     <div className="my-1 h-px theme-border" />
                                     <button

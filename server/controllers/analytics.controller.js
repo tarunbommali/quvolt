@@ -7,6 +7,11 @@ const {
     getQuizAnalytics: getQuizAnalyticsService,
     getUserAnalytics: getUserAnalyticsService,
     gethostAnalyticsSummary: gethostAnalyticsSummaryService,
+    getBasicSessionAnalytics,
+    getQuestionInsights,
+    getAudienceInsights,
+    getRecentSessions: getRecentSessionsService,
+    getFullSessionAnalytics: getFullSessionAnalyticsService,
 } = require('../services/analytics/analytics.service');
 const { 
     buildhostScopeQuery,
@@ -340,7 +345,8 @@ const gethostStats = async (req, res) => {
             { $match: { quizId: { $in: quizIds } } },
             {
                 $group: {
-                    _id: "$roomCode",
+                    _id: "$sessionId",
+                    roomCode: { $first: "$roomCode" },
                     quizId: { $first: "$quizId" },
                     participantCount: { $addToSet: "$userId" },
                     totalAnswers: { $count: {} },
@@ -361,9 +367,10 @@ const gethostStats = async (req, res) => {
 
         const stats = sessions.map(s => ({
             _id: s._id,
+            sessionId: s._id,
             quizId: s.quizId,
             title: s.quiz.title,
-            roomCode: s._id,
+            roomCode: s.roomCode,
             status: 'completed',
             participantCount: s.participantCount.length,
             totalAnswers: s.totalAnswers,
@@ -505,6 +512,160 @@ const gethostAnalyticsSummary = async (req, res) => {
     }
 };
 
+/**
+ * GET /api/analytics/session/:sessionId
+ * Returns basic session analytics (all tiers).
+ */
+const getSessionAnalytics = async (req, res) => {
+    try {
+        const { sessionId } = req.params;
+        const session = await QuizSession.findById(sessionId).select('quizId templateId hostId').lean();
+        if (!session) return sendError(res, 'Session not found', 404);
+
+        if (req.user.role !== 'admin') {
+            const quiz = await Quiz.findById(session.templateId || session.quizId).select('hostId').lean();
+            if (!quiz || String(quiz.hostId) !== String(req.user._id)) {
+                return sendError(res, 'Not authorized to view this session analytics', 403);
+            }
+        }
+
+        const data = await getBasicSessionAnalytics(sessionId);
+        return sendSuccess(res, data, 'Session analytics loaded');
+    } catch (error) {
+        logger.error('[AnalyticsController] getSessionAnalytics', { message: error.message });
+        return sendError(res, error.message || 'Failed to load session analytics', 400);
+    }
+};
+
+/**
+ * GET /api/analytics/questions/:sessionId
+ * Returns question-level insights (CREATOR+ only — enforced via requirePlan middleware).
+ */
+const getSessionQuestionInsights = async (req, res) => {
+    try {
+        const { sessionId } = req.params;
+        const session = await QuizSession.findById(sessionId).select('quizId templateId hostId').lean();
+        if (!session) return sendError(res, 'Session not found', 404);
+
+        if (req.user.role !== 'admin') {
+            const quiz = await Quiz.findById(session.templateId || session.quizId).select('hostId').lean();
+            if (!quiz || String(quiz.hostId) !== String(req.user._id)) {
+                return sendError(res, 'Not authorized to view question insights', 403);
+            }
+        }
+
+        const data = await getQuestionInsights(sessionId);
+        return sendSuccess(res, data, 'Question insights loaded');
+    } catch (error) {
+        logger.error('[AnalyticsController] getSessionQuestionInsights', { message: error.message });
+        return sendError(res, error.message || 'Failed to load question insights', 400);
+    }
+};
+
+/**
+ * GET /api/analytics/audience/:sessionId
+ * Returns audience insights (CREATOR+ only — enforced via requirePlan middleware).
+ */
+const getSessionAudienceInsights = async (req, res) => {
+    try {
+        const { sessionId } = req.params;
+        const session = await QuizSession.findById(sessionId).select('quizId templateId hostId').lean();
+        if (!session) return sendError(res, 'Session not found', 404);
+
+        if (req.user.role !== 'admin') {
+            const quiz = await Quiz.findById(session.templateId || session.quizId).select('hostId').lean();
+            if (!quiz || String(quiz.hostId) !== String(req.user._id)) {
+                return sendError(res, 'Not authorized to view audience insights', 403);
+            }
+        }
+
+        const data = await getAudienceInsights(sessionId);
+        return sendSuccess(res, data, 'Audience insights loaded');
+    } catch (error) {
+        logger.error('[AnalyticsController] getSessionAudienceInsights', { message: error.message });
+        return sendError(res, error.message || 'Failed to load audience insights', 400);
+    }
+};
+
+/**
+ * GET /api/analytics/sessions/recent?limit=10
+ * Returns the N most recent sessions for the authenticated host.
+ * Provides the sessionId needed for session-level analytics endpoints.
+ */
+const getRecentSessions = async (req, res) => {
+    try {
+        const hostId = req.user._id;
+        const limit = Math.min(parseInt(req.query.limit) || 10, 50);
+        const sessions = await getRecentSessionsService(hostId, limit);
+        return sendSuccess(res, sessions, 'Recent sessions loaded');
+    } catch (error) {
+        logger.error('[AnalyticsController] getRecentSessions', { message: error.message });
+        return sendError(res, error.message || 'Failed to load recent sessions', 400);
+    }
+};
+
+/**
+ * GET /api/analytics/full/:sessionId
+ * Plan-aware unified endpoint — 1 request returns all data the user's tier allows.
+ * Backend is the authoritative tier enforcement layer.
+ */
+const getFullAnalytics = async (req, res) => {
+    try {
+        const hostId   = req.user._id.toString();
+        const { sessionId } = req.params;
+        const plan = (req.user?.subscription?.plan || req.user?.plan || 'FREE').toUpperCase();
+
+        const { findSessionByIdentifier } = require('../utils/controllerHelpers');
+        const session = await findSessionByIdentifier({ sessionId });
+
+        if (!session) return sendError(res, 'Session not found', 404);
+
+        const quiz = await require('../models/Quiz')
+            .findById(session.quizId)
+            .select('hostId')
+            .lean();
+
+        if (!quiz) return sendError(res, 'Associated quiz not found', 404);
+
+        const sessionHostId = (quiz.hostId || '').toString();
+        if (sessionHostId !== hostId && req.user.role !== 'admin') {
+            return sendError(res, 'Unauthorized — not your session', 403);
+        }
+
+        const data = await getFullSessionAnalyticsService(sessionId, plan);
+        return sendSuccess(res, data, 'Analytics loaded');
+    } catch (error) {
+        logger.error('[AnalyticsController] getFullAnalytics', { message: error.message });
+        return sendError(res, error.message || 'Failed to load analytics', 400);
+    }
+};
+
+const getParticipantDrilldown = async (req, res) => {
+    try {
+        const { sessionId, userId } = req.params;
+        const { getParticipantAnalytics } = require('../services/analytics/participant.analytics.service');
+        const mongoose = require('mongoose');
+
+        // Check auth (Host or the user themselves)
+        const sessionObjectId = new mongoose.Types.ObjectId(sessionId);
+        const session = await QuizSession.findById(sessionObjectId).select('quizId').lean();
+        if (!session) return sendError(res, 'Session not found', 404);
+
+        const template = await Quiz.findById(session.quizId).select('hostId').lean();
+        if (!template) return sendError(res, 'Template not found', 404);
+
+        if (req.user.role !== 'admin' && req.user._id.toString() !== template.hostId.toString() && req.user._id.toString() !== userId) {
+            return sendError(res, 'Not authorized to view participant drilldown', 403);
+        }
+
+        const data = await getParticipantAnalytics({ sessionId, userId });
+        return sendSuccess(res, data);
+    } catch (error) {
+        logger.error('[AnalyticsController] getParticipantDrilldown', { error: error.message });
+        return sendError(res, error.message || 'Server Error', 500);
+    }
+};
+
 module.exports = {
     getQuizAnalytics,
     getUserAnalytics,
@@ -516,4 +677,12 @@ module.exports = {
     getSubjectLeaderboard,
     gethostStats,
     getUserHistory,
+    // Session-level
+    getSessionAnalytics,
+    getSessionQuestionInsights,
+    getSessionAudienceInsights,
+    getRecentSessions,
+    // Unified (plan-aware, 1 call)
+    getFullAnalytics,
+    getParticipantDrilldown,
 };

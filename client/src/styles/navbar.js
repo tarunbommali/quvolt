@@ -30,12 +30,20 @@ export const navbar = {
     primaryButton: 'inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium bg-[var(--qb-primary)] text-white transition-colors hover:bg-[var(--qb-primary-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--qb-primary)] focus-visible:ring-offset-2',
     secondaryButton: 'inline-flex items-center justify-center rounded-lg border theme-border px-4 py-2 text-sm font-medium theme-text-secondary transition-colors hover:theme-surface-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--qb-primary)] focus-visible:ring-offset-2',
     badge: 'text-xs px-2.5 py-1 rounded-full font-medium inline-flex items-center gap-1.5',
-    badgeDot: 'h-1.5 w-1.5 rounded-full bg-current',
+    badgeDot: '', // no longer needed (we use custom JSX now)
     iconButton: 'inline-flex h-9 w-9 items-center justify-center rounded-full theme-text-secondary transition-colors hover:theme-surface-soft hover:theme-text-primary select-none outline-none focus:outline-none',
     profileMenuWrap: 'relative',
-    avatarTrigger: 'inline-flex h-9 items-center gap-1 rounded-full border theme-border theme-surface pr-1 theme-text-secondary transition-colors hover:theme-surface-soft hover:theme-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--qb-primary)] focus-visible:ring-offset-2',
     avatarCaret: 'theme-text-muted',
-    avatar: 'h-9 w-9 overflow-hidden rounded-full border theme-border bg-[color-mix(in_srgb,var(--qb-primary)_14%,var(--qb-surface-1))] flex items-center justify-center text-sm font-medium text-[var(--qb-primary)]',
+    avatar: `
+h-9 w-9 overflow-hidden rounded-full 
+border theme-border 
+bg-[color-mix(in_srgb,var(--qb-primary)_14%,var(--qb-surface-1))] 
+flex items-center justify-center 
+text-sm font-medium 
+text-[var(--qb-primary)]
+relative
+shadow-sm
+`.trim().replace(/\s+/g, ' '),
     avatarImage: 'h-full w-full object-cover',
     dropdown: 'absolute right-0 top-full mt-2 z-[100] min-w-56 rounded-xl border theme-border theme-surface p-1 shadow-xl',
     dropdownItem: 'flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium theme-text-secondary transition-colors hover:theme-surface-soft hover:theme-text-primary',

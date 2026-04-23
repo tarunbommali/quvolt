@@ -16,6 +16,6 @@ SubmissionSchema.index({ quizId: 1, userId: 1 });
 SubmissionSchema.index({ roomCode: 1, createdAt: -1 });
 SubmissionSchema.index({ userId: 1, createdAt: -1 });
 SubmissionSchema.index({ quizId: 1, roomCode: 1 });
-SubmissionSchema.index({ sessionId: 1 });
+SubmissionSchema.index({ sessionId: 1, userId: 1 });
 
 module.exports = mongoose.model('Submission', SubmissionSchema);

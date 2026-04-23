@@ -6,7 +6,7 @@ import HistoryGrid from '../components/HistoryGrid';
 import HistoryEmptyState from '../components/HistoryEmptyState';
 import { useAuthStore } from '../../../stores/useAuthStore';
 
-const TemplateQuizHistory = () => {
+const DetailedQuizAnalytics = () => {
     const { id } = useParams();
     const location = useLocation();
     const navigate = useNavigate();
@@ -95,7 +95,7 @@ const TemplateQuizHistory = () => {
                         date: s.startedAt || s.createdAt,
                     }))}
                     userRole={user?.role || 'host'}
-                    onNavigate={(record) => navigate(`/history/template_id/${record._id}`, { state: { record } })}
+                    onNavigate={(record) => navigate(`/history/${record._id}`)}
                     onOpenLeaderboard={(e) => e.stopPropagation()}
                     onPrefetch={() => { }}
                 />
@@ -104,5 +104,5 @@ const TemplateQuizHistory = () => {
     );
 };
 
-export default TemplateQuizHistory;
+export default DetailedQuizAnalytics;
 

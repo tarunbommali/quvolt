@@ -2,9 +2,9 @@ import ViewportPrefetch from '../../../components/common/ViewportPrefetch';
 import HistoryRecordCard from './HistoryRecordCard';
 
 const HistoryGrid = ({ records, userRole, onNavigate, onOpenLeaderboard, onPrefetch }) => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    <div className="flex flex-col gap-3">
         {records.map((record, i) => (
-            <ViewportPrefetch key={record.roomCode || i} onPrefetch={() => onPrefetch(record)}>
+            <ViewportPrefetch key={record.roomCode || record._id || i} onPrefetch={() => onPrefetch(record)}>
                 <HistoryRecordCard
                     record={record}
                     userRole={userRole}

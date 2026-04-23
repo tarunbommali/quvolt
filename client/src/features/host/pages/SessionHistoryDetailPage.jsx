@@ -170,8 +170,8 @@ const SessionHistoryDetailPage = () => {
                     { label: 'Session Analytics' },
                 ] : [
                     {
-                        label: 'Template Sessions',
-                        href: `/quiz/templates/${templateId || selectedQuiz.quizId || selectedQuiz._id}/sessions`,
+                        label: 'HISTORY',
+                        href: `/history`,
                     },
                     { label: 'Session' },
                 ]}
