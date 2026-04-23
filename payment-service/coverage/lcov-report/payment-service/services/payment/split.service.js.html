@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">45.45% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>5/11</span>
+                <span class='fraction'>11/11</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">28.57% </span>
+                <span class="strong">85.71% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>2/7</span>
+                <span class='fraction'>6/7</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/3</span>
+                <span class='fraction'>3/3</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">55.55% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>5/9</span>
+                <span class='fraction'>9/9</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -90,19 +90,17 @@
 <a name='L25'></a><a href='#L25'>25</a>
 <a name='L26'></a><a href='#L26'>26</a>
 <a name='L27'></a><a href='#L27'>27</a>
-<a name='L28'></a><a href='#L28'>28</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<a name='L28'></a><a href='#L28'>28</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">11x</span>
+<span class="cline-any cline-yes">26x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -111,7 +109,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -119,15 +119,15 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">const PLATFORM_FEE_PERCENT = Number(process.env.PLATFORM_FEE_PERCENT || 20);
 &nbsp;
-const toPaise = <span class="fstat-no" title="function not covered" >(r</span>upees) =&gt; <span class="cstat-no" title="statement not covered" >Math.round(Number(rupees || 0) * 100);</span>
-const toRupees = <span class="fstat-no" title="function not covered" >(p</span>aise) =&gt; <span class="cstat-no" title="statement not covered" >Number((Number(paise || 0) / 100).toFixed(2));</span>
+const toPaise = (rupees) =&gt; Math.round(Number(rupees || 0) * 100);
+const toRupees = (paise) =&gt; Number((Number(paise || 0) / 100).toFixed(2));
 &nbsp;
-const computeSplit = <span class="fstat-no" title="function not covered" >(a</span>mountRupees, commissionPercent = <span class="branch-0 cbranch-no" title="branch not covered" >PLATFORM_FEE_PERCENT)</span> =&gt; {
-  const grossPaise = <span class="cstat-no" title="statement not covered" >toPaise(amountRupees);</span>
-  const platformFeePaise = <span class="cstat-no" title="statement not covered" >Math.round((grossPaise * commissionPercent) / 100);</span>
-  const hostPaise = <span class="cstat-no" title="statement not covered" >Math.max(0, grossPaise - platformFeePaise);</span>
+const computeSplit = (amountRupees, commissionPercent = <span class="branch-0 cbranch-no" title="branch not covered" >PLATFORM_FEE_PERCENT)</span> =&gt; {
+  const grossPaise = toPaise(amountRupees);
+  const platformFeePaise = Math.round((grossPaise * commissionPercent) / 100);
+  const hostPaise = Math.max(0, grossPaise - platformFeePaise);
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  return {</span>
+  return {
     grossPaise,
     platformFeePaise,
     hostPaise,
@@ -151,7 +151,7 @@ module.exports = {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-21T09:21:28.954Z
+                at 2026-04-21T15:57:58.472Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

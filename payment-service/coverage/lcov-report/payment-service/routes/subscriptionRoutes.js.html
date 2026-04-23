@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">68% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>15/15</span>
+                <span class='fraction'>17/25</span>
             </div>
         
             
@@ -37,9 +37,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">20% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/0</span>
+                <span class='fraction'>2/10</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line high'></div>
+    <div class='status-line medium'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -86,29 +86,29 @@
 <a name='L21'></a><a href='#L21'>21</a>
 <a name='L22'></a><a href='#L22'>22</a>
 <a name='L23'></a><a href='#L23'>23</a>
-<a name='L24'></a><a href='#L24'>24</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<a name='L24'></a><a href='#L24'>24</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">const express = require('express');
 const subscriptionController = require('../controllers/subscriptionController');
 const { protect, authorize } = require('../middleware/authMiddleware');
@@ -116,20 +116,20 @@ const { protect, authorize } = require('../middleware/authMiddleware');
 const router = express.Router();
 &nbsp;
 // Public routes
-router.get('/plans', subscriptionController.getAllSubscriptionPlans);
+router.get('/plans', (req, res) =&gt; subscriptionController.getAllSubscriptionPlans(req, res));
 &nbsp;
 // Protected routes (hosts/hosts)
-router.get('/my-subscription', protect, authorize('host', 'admin'), subscriptionController.getHostSubscription);
-router.get('/status', protect, authorize('host', 'admin'), subscriptionController.getSubscriptionStatus);
-router.post('/create-order', protect, authorize('host', 'admin'), subscriptionController.createSubscriptionOrder);
-router.post('/create', protect, authorize('host', 'admin'), subscriptionController.createSubscriptionOrder);
-router.post('/verify-payment', protect, authorize('host', 'admin'), subscriptionController.verifySubscriptionPayment);
-router.post('/verify', protect, authorize('host', 'admin'), subscriptionController.verifySubscriptionPayment);
-router.post('/cancel', protect, authorize('host', 'admin'), subscriptionController.cancelHostSubscription);
+router.get('/my-subscription', protect, authorize('host', 'admin'), <span class="fstat-no" title="function not covered" >(r</span>eq, res) =&gt; <span class="cstat-no" title="statement not covered" >subscriptionController.getHostSubscription(req, res))</span>;
+router.get('/status', protect, authorize('host', 'admin'), <span class="fstat-no" title="function not covered" >(r</span>eq, res) =&gt; <span class="cstat-no" title="statement not covered" >subscriptionController.getSubscriptionStatus(req, res))</span>;
+router.post('/create-order', protect, authorize('host', 'admin'), (req, res) =&gt; subscriptionController.createSubscriptionOrder(req, res));
+router.post('/create', protect, authorize('host', 'admin'), <span class="fstat-no" title="function not covered" >(r</span>eq, res) =&gt; <span class="cstat-no" title="statement not covered" >subscriptionController.createSubscriptionOrder(req, res))</span>;
+router.post('/verify-payment', protect, authorize('host', 'admin'), <span class="fstat-no" title="function not covered" >(r</span>eq, res) =&gt; <span class="cstat-no" title="statement not covered" >subscriptionController.verifySubscriptionPayment(req, res))</span>;
+router.post('/verify', protect, authorize('host', 'admin'), <span class="fstat-no" title="function not covered" >(r</span>eq, res) =&gt; <span class="cstat-no" title="statement not covered" >subscriptionController.verifySubscriptionPayment(req, res))</span>;
+router.post('/cancel', protect, authorize('host', 'admin'), <span class="fstat-no" title="function not covered" >(r</span>eq, res) =&gt; <span class="cstat-no" title="statement not covered" >subscriptionController.cancelHostSubscription(req, res))</span>;
 &nbsp;
 // Admin routes
-router.get('/admin/statistics', protect, authorize('admin'), subscriptionController.getSubscriptionStatistics);
-router.get('/admin/all', protect, authorize('admin'), subscriptionController.getAllActiveSubscriptions);
+router.get('/admin/statistics', protect, authorize('admin'), <span class="fstat-no" title="function not covered" >(r</span>eq, res) =&gt; <span class="cstat-no" title="statement not covered" >subscriptionController.getSubscriptionStatistics(req, res))</span>;
+router.get('/admin/all', protect, authorize('admin'), <span class="fstat-no" title="function not covered" >(r</span>eq, res) =&gt; <span class="cstat-no" title="statement not covered" >subscriptionController.getAllActiveSubscriptions(req, res))</span>;
 &nbsp;
 module.exports = router;
 &nbsp;</pre></td></tr></table></pre>
@@ -139,7 +139,7 @@ module.exports = router;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-21T09:21:28.954Z
+                at 2026-04-21T15:57:58.472Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

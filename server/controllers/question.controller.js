@@ -3,6 +3,8 @@ const { hashAnswer } = require('../utils/crypto');
 const logger = require('../utils/logger');
 const { 
     buildQuizAccessQuery,
+    sendSuccess,
+    sendError,
 } = require('../utils/controllerHelpers');
 
 const addQuestion = async (req, res) => {
@@ -11,24 +13,24 @@ const addQuestion = async (req, res) => {
         const { text, options, correctOption, timeLimit, shuffleOptions } = req.body;
 
         if (!text || !options || options.length < 2 || correctOption === undefined) {
-            return res.status(400).json({ message: 'Question text, at least 2 options, and a correct option index are required' });
+            return sendError(res, 'Question text, at least 2 options, and a correct option index are required', 400);
         }
 
         const quizQuery = req.user.role === 'admin'
             ? { _id: id }
             : { _id: id, hostId: req.user._id };
         const quiz = await Quiz.findOne(quizQuery);
-        if (!quiz) return res.status(404).json({ message: 'Quiz not found' });
+        if (!quiz) return sendError(res, 'Quiz not found', 404);
 
         const hashedCorrectAnswer = hashAnswer(options[correctOption]);
 
         quiz.questions.push({ text, options, correctOption, hashedCorrectAnswer, timeLimit, shuffleOptions: !!shuffleOptions });
         await quiz.save();
 
-        res.json(quiz);
+        return sendSuccess(res, quiz, 'Question added successfully');
     } catch (error) {
         logger.error('[QuestionController] addQuestion', { message: error.message, stack: error.stack });
-        res.status(500).json({ message: 'Server Error' });
+        return sendError(res, 'Server Error');
     }
 };
 
@@ -38,10 +40,10 @@ const updateQuestion = async (req, res) => {
         const { text, options, correctOption, timeLimit, shuffleOptions } = req.body;
 
         const quiz = await Quiz.findOne(buildQuizAccessQuery(req, quizId));
-        if (!quiz) return res.status(404).json({ message: 'Quiz not found' });
+        if (!quiz) return sendError(res, 'Quiz not found', 404);
 
         const question = quiz.questions.id(questionId);
-        if (!question) return res.status(404).json({ message: 'Question not found' });
+        if (!question) return sendError(res, 'Question not found', 404);
 
         if (text) question.text = text;
         if (options) question.options = options;
@@ -54,10 +56,10 @@ const updateQuestion = async (req, res) => {
         if (shuffleOptions !== undefined) question.shuffleOptions = shuffleOptions;
 
         await quiz.save();
-        res.json(quiz);
+        return sendSuccess(res, quiz, 'Question updated successfully');
     } catch (error) {
         logger.error('[QuestionController] updateQuestion', { message: error.message, stack: error.stack });
-        res.status(500).json({ message: 'Server Error' });
+        return sendError(res, 'Server Error');
     }
 };
 
@@ -65,14 +67,14 @@ const deleteQuestion = async (req, res) => {
     try {
         const { quizId, questionId } = req.params;
         const quiz = await Quiz.findOne(buildQuizAccessQuery(req, quizId));
-        if (!quiz) return res.status(404).json({ message: 'Quiz not found' });
+        if (!quiz) return sendError(res, 'Quiz not found', 404);
 
         quiz.questions.pull(questionId);
         await quiz.save();
-        res.json(quiz);
+        return sendSuccess(res, quiz, 'Question deleted successfully');
     } catch (error) {
         logger.error('[QuestionController] deleteQuestion', { message: error.message, stack: error.stack });
-        res.status(500).json({ message: 'Server Error' });
+        return sendError(res, 'Server Error');
     }
 };
 
@@ -82,15 +84,15 @@ const updateQuizFullState = async (req, res) => {
         const { slides, order, config } = req.body;
 
         if (!Array.isArray(slides)) {
-            return res.status(400).json({ message: 'slides must be an array' });
+            return sendError(res, 'slides must be an array', 400);
         }
 
         if (!Array.isArray(order)) {
-            return res.status(400).json({ message: 'order must be an array' });
+            return sendError(res, 'order must be an array', 400);
         }
 
         const quiz = await Quiz.findOne(buildQuizAccessQuery(req, id));
-        if (!quiz) return res.status(404).json({ message: 'Quiz not found' });
+        if (!quiz) return sendError(res, 'Quiz not found', 404);
 
         const normalizedSlides = slides.map((slide, index) => {
             const text = String(slide?.text || '').trim();
@@ -171,13 +173,13 @@ const updateQuizFullState = async (req, res) => {
             quizId: id,
             slideCount: quiz.questions.length,
         });
-        return res.json(quiz);
+        return sendSuccess(res, quiz, 'Quiz state updated successfully');
     } catch (error) {
         logger.error('[QuestionController] updateQuizFullState', { message: error.message, stack: error.stack });
         if (error.message?.includes('Slide')) {
-            return res.status(400).json({ message: error.message });
+            return sendError(res, error.message, 400);
         }
-        return res.status(500).json({ message: 'Server Error' });
+        return sendError(res, 'Server Error');
     }
 };
 

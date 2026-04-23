@@ -19,15 +19,15 @@ const getSessionResults = async (req, res) => {
     try {
         const { sessionId, sessionCode } = req.params;
         const session = await findSessionByIdentifier({ sessionId, sessionCode });
-        if (!session) return res.status(404).json({ message: 'Session not found' });
+        if (!session) return sendError(res, 'Session not found', 404);
 
         const template = await Quiz.findById(session.templateId || session.quizId).select('hostId title questions mode accessType shuffleQuestions').lean();
-        if (!template) return res.status(404).json({ message: 'Template not found' });
+        if (!template) return sendError(res, 'Template not found', 404);
 
         const snapshot = session.templateSnapshot || buildTemplateSnapshot(template);
 
         if (req.user.role !== 'admin' && template.hostId.toString() !== req.user._id.toString()) {
-            return res.status(403).json({ message: 'Not authorized to view this session\'s results' });
+            return sendError(res, 'Not authorized to view this session\'s results', 403);
         }
 
         const submissions = await Submission.find({
@@ -75,7 +75,7 @@ const getSessionResults = async (req, res) => {
             };
         });
 
-        res.json({
+        return sendSuccess(res, {
             session,
             quizTitle: snapshot.title || template.title,
             totalParticipants,
@@ -84,7 +84,7 @@ const getSessionResults = async (req, res) => {
         });
     } catch (error) {
         logger.error('[AnalyticsController] getSessionResults', { message: error.message, stack: error.stack });
-        res.status(500).json({ message: 'Server Error' });
+        return sendError(res, 'Server Error');
     }
 };
 
@@ -92,13 +92,13 @@ const getSessionParticipants = async (req, res) => {
     try {
         const { sessionId, sessionCode } = req.params;
         const session = await findSessionByIdentifier({ sessionId, sessionCode });
-        if (!session) return res.status(404).json({ message: 'Session not found' });
+        if (!session) return sendError(res, 'Session not found', 404);
 
         const template = await Quiz.findById(session.templateId || session.quizId).select('title hostId').lean();
-        if (!template) return res.status(404).json({ message: 'Template not found' });
+        if (!template) return sendError(res, 'Template not found', 404);
 
         if (req.user.role !== 'admin' && template.hostId.toString() !== req.user._id.toString()) {
-            return res.status(403).json({ message: 'Not authorized to view this session' });
+            return sendError(res, 'Not authorized to view this session', 403);
         }
 
         const participants = await Submission.aggregate([
@@ -150,7 +150,7 @@ const getSessionParticipants = async (req, res) => {
             rank: index + 1,
         }));
 
-        res.json({
+        return sendSuccess(res, {
             quizTitle: template.title,
             sessionCode: session.sessionCode,
             participantCount: rankedParticipants.length,
@@ -158,7 +158,7 @@ const getSessionParticipants = async (req, res) => {
         });
     } catch (error) {
         logger.error('[AnalyticsController] getSessionParticipants', { message: error.message, stack: error.stack });
-        res.status(500).json({ message: 'Server Error' });
+        return sendError(res, 'Server Error');
     }
 };
 
@@ -172,13 +172,13 @@ const exportSessionParticipants = async (req, res) => {
     try {
         const { sessionId, sessionCode } = req.params;
         const session = await findSessionByIdentifier({ sessionId, sessionCode });
-        if (!session) return res.status(404).json({ message: 'Session not found' });
+        if (!session) return sendError(res, 'Session not found', 404);
 
         const template = await Quiz.findById(session.templateId || session.quizId).select('title hostId').lean();
-        if (!template) return res.status(404).json({ message: 'Template not found' });
+        if (!template) return sendError(res, 'Template not found', 404);
 
         if (req.user.role !== 'admin' && template.hostId.toString() !== req.user._id.toString()) {
-            return res.status(403).json({ message: 'Not authorized to export this session' });
+            return sendError(res, 'Not authorized to export this session', 403);
         }
 
         const participants = await Submission.aggregate([
@@ -243,10 +243,10 @@ const exportSessionParticipants = async (req, res) => {
 
         res.setHeader('Content-Type', 'text/csv; charset=utf-8');
         res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-        res.status(200).send(csv);
+        return res.status(200).send(csv);
     } catch (error) {
         logger.error('[AnalyticsController] exportSessionParticipants', { message: error.message, stack: error.stack });
-        res.status(500).json({ message: 'Server Error' });
+        return sendError(res, 'Server Error');
     }
 };
 
@@ -281,10 +281,10 @@ const getQuizLeaderboard = async (req, res) => {
             { $sort: { score: -1, time: 1 } },
             { $limit: 10 }
         ]);
-        res.json(leaderboard);
+        return sendSuccess(res, leaderboard);
     } catch (error) {
         logger.error('[AnalyticsController] getQuizLeaderboard', { message: error.message, stack: error.stack });
-        res.status(500).json({ message: 'Server Error' });
+        return sendError(res, 'Server Error');
     }
 };
 
@@ -325,10 +325,10 @@ const getSubjectLeaderboard = async (req, res) => {
             { $limit: 10 }
         ]);
 
-        res.json(leaderboard);
+        return sendSuccess(res, leaderboard);
     } catch (error) {
         logger.error('[AnalyticsController] getSubjectLeaderboard', { message: error.message, stack: error.stack });
-        res.status(500).json({ message: 'Server Error' });
+        return sendError(res, 'Server Error');
     }
 };
 
@@ -370,10 +370,10 @@ const gethostStats = async (req, res) => {
             createdAt: s.firstSubmission
         }));
 
-        res.json(stats);
+        return sendSuccess(res, stats);
     } catch (error) {
         logger.error('[AnalyticsController] gethostStats', { message: error.message, stack: error.stack });
-        res.status(500).json({ message: 'Server Error' });
+        return sendError(res, 'Server Error');
     }
 };
 
@@ -436,10 +436,10 @@ const getUserHistory = async (req, res) => {
             }
         });
 
-        res.json(Object.values(history));
+        return sendSuccess(res, Object.values(history));
     } catch (error) {
         logger.error('[AnalyticsController] getUserHistory', { message: error.message, stack: error.stack });
-        res.status(500).json({ message: 'Server Error' });
+        return sendError(res, 'Server Error');
     }
 };
 

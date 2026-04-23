@@ -569,7 +569,7 @@ class PaymentRouter {
    * @returns {Promise<Array<Object>>} Gateway success rates from database
    */
   async calculateGatewaySuccessRates() {
-    const Payment = require('../models/Payment');
+    const Payment = require('../../models/Payment');
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
     try {
@@ -646,7 +646,7 @@ class PaymentRouter {
    * @returns {Promise<Array<Object>>} Flagged transactions
    */
   async getFlaggedFallbackTransactions(options = {}) {
-    const Payment = require('../models/Payment');
+    const Payment = require('../../models/Payment');
     const { limit = 50, page = 1 } = options;
     const skip = (page - 1) * limit;
 

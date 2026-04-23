@@ -28,6 +28,7 @@ const sendSuccess = (res, data = null, message = 'Success', statusCode = 200) =>
 const sendError = (res, message = 'Internal Server Error', statusCode = 500, error = null) => {
     return res.status(statusCode).json({
         success: false,
+        data: null,
         message,
         error: process.env.NODE_ENV === 'development' ? error : undefined
     });

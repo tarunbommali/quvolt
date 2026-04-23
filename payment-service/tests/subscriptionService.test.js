@@ -13,11 +13,11 @@ jest.mock('../utils/logger', () => ({
 }));
 
 const Subscription = require('../models/Subscription');
-const { buildSubscriptionReceipt } = require('../controllers/subscriptionController');
 const {
   getHostCurrentPlan,
   createSubscription,
   cancelSubscription,
+  buildSubscriptionReceipt,
 } = require('../services/subscription/subscription.service');
 
 describe('subscriptionService', () => {

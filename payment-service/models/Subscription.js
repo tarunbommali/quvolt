@@ -47,6 +47,17 @@ const subscriptionSchema = new mongoose.Schema(
       sparse: true,
       default: null
     },
+    razorpayCustomerId: {
+      type: String,
+      sparse: true,
+      index: true,
+      default: null
+    },
+    billingCycle: {
+      type: String,
+      enum: ['monthly', 'yearly'],
+      default: 'monthly'
+    },
     currentCycleStart: Date,
     currentCycleEnd: Date,
     expiryDate: {

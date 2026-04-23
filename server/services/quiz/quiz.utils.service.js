@@ -64,6 +64,10 @@ const resolveQuizActionContext = async ({ user, quizId, sessionCode, sessionId }
             ? await QuizSession.findOne({ sessionCode, quizId: quiz._id }).lean()
             : await QuizSession.findOne({ quizId: quiz._id, status: { $in: [SESSION_STATUS.SCHEDULED, SESSION_STATUS.WAITING, SESSION_STATUS.LIVE, 'ongoing'] } }).sort({ startedAt: -1 }).lean();
 
+        if (sessionCode && !liveSession) {
+            return { error: 'Session not found for this quiz', statusCode: 404 };
+        }
+
         return { quiz, liveSession, roomCode: liveSession?.sessionCode || sessionCode || quiz.roomCode };
     }
 

@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Hash, AlertCircle, CreditCard, Loader2 } from 'lucide-react';
-import { getPaymentStatus, createPaymentOrder, verifyPayment } from '../../billing/services/billing.service';
 import { guestLogin } from '../../auth/services/auth.service';
 import { useAuthStore } from '../../../stores/useAuthStore';
 import { useQuizStore } from '../../../stores/useQuizStore';
-import useRazorpay from '../../../hooks/useRazorpay';
+import usePayment from '../../../hooks/usePayment';
+import { paymentApi } from '../../../services/payment.api';
 import Card from '../../../components/common/ui/Card';
 import Button from '../../../components/common/ui/Button';
 import InputField from '../../../components/common/ui/InputField';
@@ -31,7 +31,7 @@ const QuizJoinRoom = () => {
 
     const navigate = useNavigate();
     const user = useAuthStore((state) => state.user);
-    const { loadRazorpayScript } = useRazorpay();
+    const { purchaseQuiz } = usePayment();
     const getQuizByCodeCached = useQuizStore((state) => state.getQuizByCodeCached);
     const setQuizByCodeCached = useQuizStore((state) => state.setQuizByCodeCached);
 
@@ -88,8 +88,8 @@ const QuizJoinRoom = () => {
             }
 
             if (quiz?.isPaid && quiz?.price > 0 && user?.role !== 'host') {
-                const status = await getPaymentStatus(quiz._id);
-                if (status?.data?.paid) {
+                const { data: status } = await paymentApi.getQuizPaymentStatus(quiz._id);
+                if (status?.paid) {
                     navigate(`/quiz/${cleanedCode}`);
                 } else {
                     setPaymentQuiz(quiz);
@@ -134,65 +134,12 @@ const QuizJoinRoom = () => {
         setPaying(true);
         setError('');
 
-        try {
-            const sdkLoaded = await loadRazorpayScript();
-            if (!sdkLoaded) {
-                throw new Error('Payment gateway not loaded. Please refresh and try again.');
-            }
-
-            const order = await createPaymentOrder(paymentQuiz._id, paymentQuiz.price);
-
-            if (order?.data?.mock) {
-                await verifyPayment(
-                    order.data.orderId,
-                    `mock_payment_${Date.now()}`,
-                    'mock_signature',
-                    paymentQuiz._id,
-                );
-                setQuizByCodeCached(roomCode, paymentQuiz);
-                navigate(`/quiz/${sanitizeRoomCode(roomCode)}`);
-                return;
-            }
-
-            const options = {
-                key: order.data.key,
-                amount: order.data.amount * 100,
-                currency: order.data.currency,
-                name: 'Quvolt',
-                description: `Payment for: ${paymentQuiz.title}`,
-                order_id: order.data.orderId,
-                handler: async (response) => {
-                    try {
-                        await verifyPayment(
-                            response.razorpay_order_id,
-                            response.razorpay_payment_id,
-                            response.razorpay_signature,
-                            paymentQuiz._id,
-                        );
-                        setQuizByCodeCached(roomCode, paymentQuiz);
-                        navigate(`/quiz/${sanitizeRoomCode(roomCode)}`);
-                    } catch {
-                        setError('Payment verification failed. Please contact support.');
-                    }
-                },
-                prefill: {
-                    name: user?.name || '',
-                    email: user?.email || '',
-                },
-                theme: { color: '#6366f1' },
-            };
-
-            if (window.Razorpay) {
-                const rzp = new window.Razorpay(options);
-                rzp.open();
-            } else {
-                setError('Payment gateway not loaded. Please refresh and try again.');
-            }
-        } catch {
-            setError('Failed to initiate payment. Please try again.');
-        } finally {
+        purchaseQuiz(paymentQuiz._id, paymentQuiz.price, () => {
+            setQuizByCodeCached(roomCode, paymentQuiz);
+            navigate(`/quiz/${sanitizeRoomCode(roomCode)}`);
+        }).finally(() => {
             setPaying(false);
-        }
+        });
     };
 
     return (
@@ -332,5 +279,3 @@ const QuizJoinRoom = () => {
 };
 
 export default QuizJoinRoom;
-
-

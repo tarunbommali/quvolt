@@ -4,6 +4,7 @@ const Subscription = require('../../models/Subscription');
 const { getPlanConfig } = require('../../utils/subscriptionPlans');
 
 jest.mock('../../models/Subscription');
+jest.mock('../../models/User');
 jest.mock('../../utils/subscriptionPlans');
 jest.mock('../../utils/logger', () => ({
   info: jest.fn(),

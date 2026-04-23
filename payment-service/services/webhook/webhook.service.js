@@ -82,28 +82,96 @@ const handleTransferUpdate = async (transferEntity, event) => {
   }
 };
 
-const handleSubscriptionCharged = async (subscriptionEntity) => {
-  const { createSubscription } = require('../subscription/subscription.service');
+const handleSubscriptionCharged = async (subscriptionEntity, paymentId) => {
+  const Subscription = require('../../models/Subscription');
+  const { processSubscriptionPayment, createSubscription } = require('../subscription/subscription.service');
+  
+  const razorpaySubId = subscriptionEntity.id;
   const hostId = subscriptionEntity.notes?.hostId;
   const planId = subscriptionEntity.notes?.planId;
-  const paymentId = subscriptionEntity.payment_id;
+  const amount = toRupees(subscriptionEntity.paid_amount || 0);
 
-  if (hostId && planId) {
+  // Find existing subscription by Razorpay ID
+  const subscription = await Subscription.findOne({ razorpaySubscriptionId: razorpaySubId });
+
+  if (subscription) {
+    // If it exists, this is a recurring charge
+    await processSubscriptionPayment(subscription._id, paymentId, amount);
+    logger.info('handleSubscriptionCharged: extended existing subscription', { razorpaySubId, hostId });
+  } else if (hostId && planId) {
+    // If not, this might be the first charge for a new subscription
     await createSubscription(hostId, planId, paymentId);
-    logger.info('handleSubscriptionCharged: processed', { hostId, planId, paymentId });
+    // Update the subscription with the Razorpay ID if it was just created
+    await Subscription.findOneAndUpdate(
+      { hostId, plan: planId, status: 'active' },
+      { $set: { razorpaySubscriptionId: razorpaySubId } }
+    );
+    logger.info('handleSubscriptionCharged: created new subscription record', { hostId, planId });
   }
 };
 
 const handleSubscriptionCancelled = async (subscriptionEntity) => {
   const Subscription = require('../../models/Subscription');
-  const hostId = subscriptionEntity.notes?.hostId;
+  const razorpaySubId = subscriptionEntity.id;
 
-  if (hostId) {
-    await Subscription.updateMany(
-      { hostId, status: 'active' },
-      { $set: { status: 'cancelled', cancelledAt: new Date() } }
+  if (razorpaySubId) {
+    const updated = await Subscription.findOneAndUpdate(
+      { razorpaySubscriptionId: razorpaySubId, status: 'active' },
+      { 
+        $set: { 
+          status: 'cancelled', 
+          cancelledAt: new Date(),
+          autoRenew: false
+        } 
+      },
+      { new: true }
     );
-    logger.info('handleSubscriptionCancelled: processed', { hostId });
+    
+    if (updated) {
+      logger.info('handleSubscriptionCancelled: processed', { razorpaySubId, hostId: updated.hostId });
+    }
+  }
+};
+
+const handleSubscriptionCompleted = async (subscriptionEntity) => {
+  const Subscription = require('../../models/Subscription');
+  const razorpaySubId = subscriptionEntity.id;
+
+  if (razorpaySubId) {
+    await Subscription.findOneAndUpdate(
+      { razorpaySubscriptionId: razorpaySubId },
+      { $set: { status: 'expired' } }
+    );
+    logger.info('handleSubscriptionCompleted: marked as expired', { razorpaySubId });
+  }
+};
+
+const handleInvoicePaid = async (invoiceEntity) => {
+  const Payment = require('../../models/Payment');
+  const Subscription = require('../../models/Subscription');
+  
+  const razorpayInvoiceId = invoiceEntity.id;
+  const razorpaySubId = invoiceEntity.subscription_id;
+  const amount = toRupees(invoiceEntity.amount_paid || 0);
+  const paymentId = invoiceEntity.payment_id;
+
+  if (razorpaySubId) {
+    const subscription = await Subscription.findOne({ razorpaySubscriptionId: razorpaySubId });
+    if (subscription) {
+      // Create a payment record for the invoice
+      await Payment.create({
+        userId: subscription.hostId,
+        paymentType: 'subscription',
+        subscriptionId: subscription._id,
+        amount: amount,
+        grossAmount: amount,
+        razorpayOrderId: invoiceEntity.order_id || `inv_order_${razorpayInvoiceId}`,
+        razorpayPaymentId: paymentId,
+        status: 'completed',
+        metadata: { razorpayInvoiceId, razorpaySubId }
+      });
+      logger.info('handleInvoicePaid: stored billing record', { razorpayInvoiceId, razorpaySubId });
+    }
   }
 };
 
@@ -126,6 +194,17 @@ const logFailedWebhookJob = async (idempotencyKey, payload, error) => {
   ).catch(err => logger.error('Failed to log FailedJob', { error: err.message }));
 };
 
+const handleOrderPaid = async (orderEntity) => {
+  const Payment = require('../../models/Payment');
+  const razorpayOrderId = orderEntity.id;
+
+  if (orderEntity.status === 'paid') {
+    // This usually matches a payment.captured, but we can use it as a fallback
+    // reconciliation if needed. For now just log.
+    logger.info('handleOrderPaid: backup reconciliation triggered', { razorpayOrderId });
+  }
+};
+
 module.exports = {
   reconcileCapturedPayment,
   handlePaymentFailed,
@@ -133,5 +212,8 @@ module.exports = {
   handleTransferUpdate,
   handleSubscriptionCharged,
   handleSubscriptionCancelled,
+  handleSubscriptionCompleted,
+  handleInvoicePaid,
+  handleOrderPaid,
   logFailedWebhookJob
 };

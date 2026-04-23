@@ -29,12 +29,16 @@ async function request(pathname, { method = 'GET', token, body } = {}) {
         throw new Error(`${method} ${pathname} -> ${response.status} ${JSON.stringify(payload)}`);
     }
 
+    if (payload && typeof payload === 'object' && payload.success === true && Object.prototype.hasOwnProperty.call(payload, 'data')) {
+        return payload.data;
+    }
+
     return payload;
 }
 
 async function register(role, label) {
     const suffix = crypto.randomUUID().replace(/-/g, '').slice(0, 12);
-    return request('/api/auth/register', {
+    const data = await request('/api/auth/register', {
         method: 'POST',
         body: {
             name: label,
@@ -43,6 +47,7 @@ async function register(role, label) {
             role,
         },
     });
+    return data;
 }
 
 function createClient(token) {
@@ -132,17 +137,29 @@ async function waitFor(predicate, label, timeout = 25000) {
         },
     });
 
+    // 1. Initialize a waiting session
+    const sessionInit = await request(`/api/quiz/${quiz._id}/start`, {
+        method: 'POST',
+        token: org.token,
+    });
+    const sessionCode = sessionInit.sessionCode;
+
     const host = createClient(org.token);
     const participantA = createClient(p1.token);
     const participantB = createClient(p2.token);
 
     await Promise.all([host.ready, participantA.ready, participantB.ready]);
 
-    host.socket.emit('join_room', { roomCode: quiz.roomCode });
-    participantA.socket.emit('join_room', { roomCode: quiz.roomCode });
-    participantB.socket.emit('join_room', { roomCode: quiz.roomCode });
+    // 2. Join the session room
+    host.socket.emit('join_room', { roomCode: sessionCode });
+    participantA.socket.emit('join_room', { roomCode: sessionCode });
+    participantB.socket.emit('join_room', { roomCode: sessionCode });
 
-    host.socket.emit('start_quiz', { roomCode: quiz.roomCode });
+    // 3. Start the quiz (Transition to LIVE)
+    await request(`/api/quiz/${quiz._id}/start-live`, {
+        method: 'POST',
+        token: org.token,
+    });
 
     await waitFor(
         () => participantA.state.questions.length >= 2 && participantB.state.questions.length >= 2,

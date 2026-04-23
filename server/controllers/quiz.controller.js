@@ -9,6 +9,8 @@ const {
     ALLOWED_QUIZ_CATEGORIES, 
     buildQuizAccessQuery, 
     buildhostScopeQuery,
+    sendSuccess,
+    sendError,
 } = require('../utils/controllerHelpers');
 
 const createQuiz = async (req, res) => {
@@ -18,7 +20,7 @@ const createQuiz = async (req, res) => {
         const normalizedAccessType = accessType || 'public';
 
         if (!title || !title.trim()) {
-            return res.status(400).json({ message: 'Title is required' });
+            return sendError(res, 'Title is required', 400);
         }
 
         if (req.user.role !== 'admin') {
@@ -31,22 +33,16 @@ const createQuiz = async (req, res) => {
                 });
 
                 if (quizCount >= entitlements.maxQuizTemplates) {
-                    return res.status(403).json({
-                        message: `Your ${entitlements.plan} plan allows up to ${entitlements.maxQuizTemplates} quizzes. Upgrade your subscription to create more.`,
-                    });
+                    return sendError(res, `Your ${entitlements.plan} plan allows up to ${entitlements.maxQuizTemplates} quizzes. Upgrade your subscription to create more.`, 403);
                 }
             }
 
             if (normalizedAccessType === 'private' && !entitlements.canUsePrivateHosting) {
-                return res.status(403).json({
-                    message: 'Private session hosting is available on Creator and Teams plans. Upgrade your subscription to continue.',
-                });
+                return sendError(res, 'Private session hosting is available on Creator and Teams plans. Upgrade your subscription to continue.', 403);
             }
 
             if (normalizedType === 'quiz' && Boolean(isPaid) && !entitlements.canCreatePaidQuiz) {
-                return res.status(403).json({
-                    message: 'Paid quiz creation is available on Creator and Teams plans. Upgrade your subscription to continue.',
-                });
+                return sendError(res, 'Paid quiz creation is available on Creator and Teams plans. Upgrade your subscription to continue.', 403);
             }
         }
 
@@ -86,13 +82,13 @@ const createQuiz = async (req, res) => {
         }
 
         if (!quiz) {
-            return res.status(409).json({ message: 'Unable to allocate unique room code. Please try again.' });
+            return sendError(res, 'Unable to allocate unique room code. Please try again.', 409);
         }
 
-        res.status(201).json(quiz);
+        return sendSuccess(res, quiz, 'Quiz created successfully', 201);
     } catch (error) {
         logger.error('[QuizController] createQuiz', { message: error.message, stack: error.stack });
-        res.status(500).json({ message: 'Server Error' });
+        return sendError(res, 'Server Error');
     }
 };
 
@@ -150,10 +146,10 @@ const getMyQuizzes = async (req, res) => {
             hasActiveSession: Boolean(activeSessionMap[q._id.toString()]),
         }));
 
-        res.json(enriched);
+        return sendSuccess(res, enriched);
     } catch (error) {
         logger.error('[QuizController] getMyQuizzes', { message: error.message, stack: error.stack });
-        res.status(500).json({ message: 'Server Error' });
+        return sendError(res, 'Server Error');
     }
 };
 
@@ -173,7 +169,7 @@ const getQuizByCode = async (req, res) => {
             quiz = await Quiz.findOne({ roomCode: code }).select('-questions.hashedCorrectAnswer -questions.correctOption');
         }
 
-        if (!quiz) return res.status(404).json({ message: 'Quiz not found' });
+        if (!quiz) return sendError(res, 'Quiz not found', 404);
         
         const quizObj = quiz.toObject();
         if (session) {
@@ -182,10 +178,10 @@ const getQuizByCode = async (req, res) => {
             quizObj.status = session.status;
         }
 
-        res.json(quizObj);
+        return sendSuccess(res, quizObj);
     } catch (error) {
         logger.error('[QuizController] getQuizByCode', { message: error.message, stack: error.stack });
-        res.status(500).json({ message: 'Server Error' });
+        return sendError(res, 'Server Error');
     }
 };
 
@@ -198,9 +194,7 @@ const updateQuiz = async (req, res) => {
         if (accessType === 'private' && req.user.role !== 'admin') {
             const entitlements = await resolveHostSubscriptionEntitlements(req.user._id);
             if (!entitlements.canUsePrivateHosting) {
-                return res.status(403).json({
-                    message: 'Private session hosting is available on Creator and Teams plans. Upgrade your subscription to continue.',
-                });
+                return sendError(res, 'Private session hosting is available on Creator and Teams plans. Upgrade your subscription to continue.', 403);
             }
         }
 
@@ -226,11 +220,11 @@ const updateQuiz = async (req, res) => {
             updateData,
             { returnDocument: 'after', runValidators: true, new: true }
         );
-        if (!quiz) return res.status(404).json({ message: 'Quiz not found' });
-        res.json(quiz);
+        if (!quiz) return sendError(res, 'Quiz not found', 404);
+        return sendSuccess(res, quiz, 'Quiz updated successfully');
     } catch (error) {
         logger.error('[QuizController] updateQuiz', { message: error.message, stack: error.stack });
-        res.status(500).json({ message: 'Server Error' });
+        return sendError(res, 'Server Error');
     }
 };
 
@@ -238,7 +232,7 @@ const deleteQuiz = async (req, res) => {
     try {
         const { id } = req.params;
         const quiz = await Quiz.findOne(buildQuizAccessQuery(req, id));
-        if (!quiz) return res.status(404).json({ message: 'Quiz not found' });
+        if (!quiz) return sendError(res, 'Quiz not found', 404);
 
         if (quiz.sharedWith && quiz.sharedWith.length > 0) {
             logger.info('Revoking all access grants for deleted quiz', {
@@ -261,10 +255,10 @@ const deleteQuiz = async (req, res) => {
         }
 
         await Quiz.deleteOne({ _id: id });
-        res.json({ message: 'Quiz deleted successfully' });
+        return sendSuccess(res, null, 'Quiz deleted successfully');
     } catch (error) {
         logger.error('[QuizController] deleteQuiz', { message: error.message, stack: error.stack });
-        res.status(500).json({ message: 'Server Error' });
+        return sendError(res, 'Server Error');
     }
 };
 
@@ -273,7 +267,7 @@ const getQuizSessions = async (req, res) => {
         const { id, templateId } = req.params;
         const targetId = templateId || id;
         const template = await Quiz.findOne(buildQuizAccessQuery(req, targetId));
-        if (!template) return res.status(404).json({ message: 'Template not found' });
+        if (!template) return sendError(res, 'Template not found', 404);
 
         const sessions = await QuizSession.find({
             $or: [
@@ -281,10 +275,10 @@ const getQuizSessions = async (req, res) => {
                 { quizId: targetId },
             ],
         }).sort('-startedAt');
-        res.json({ templateId: targetId, templateTitle: template.title, sessions });
+        return sendSuccess(res, { templateId: targetId, templateTitle: template.title, sessions });
     } catch (error) {
         logger.error('[QuizController] getQuizSessions', { message: error.message, stack: error.stack });
-        res.status(500).json({ message: 'Server Error' });
+        return sendError(res, 'Server Error');
     }
 };
 

@@ -21,7 +21,7 @@ const startQuizSession = async (req, res) => {
         const templateId = resolveTemplateIdParam(req.params);
         const { accessType, allowedEmails, sharedWith } = req.body || {}; 
         const quizResult = await getManagedQuizOrError(req, templateId);
-        if (quizResult.error) return sendError(res, quizResult.statusCode, quizResult.error);
+        if (quizResult.error) return sendError(res, quizResult.error, quizResult.statusCode || 400);
         const { quiz } = quizResult;
         const currentStatus = normalizeSessionStatus(quiz.status);
 
@@ -31,7 +31,7 @@ const startQuizSession = async (req, res) => {
         }
 
         if (!canTransition(currentStatus, SESSION_STATUS.WAITING) && currentStatus !== SESSION_STATUS.WAITING) {
-            return sendError(res, 409, `Invalid quiz state transition: ${currentStatus} -> ${SESSION_STATUS.WAITING}`);
+            return sendError(res, `Invalid quiz state transition: ${currentStatus} -> ${SESSION_STATUS.WAITING}`, 409);
         }
 
         let entitlements = { plan: 'FREE', maxConcurrentSessions: 1, maxParticipantsPerSession: 200, commissionPercent: 25 };
@@ -43,7 +43,7 @@ const startQuizSession = async (req, res) => {
             });
 
             if (activeSessionCount >= entitlements.maxConcurrentSessions) {
-                return sendError(res, 403, `Plan Limit Reached: Your ${entitlements.plan} plan allows ${entitlements.maxConcurrentSessions} concurrent session. Please end active sessions or upgrade to start more.`);
+                return sendError(res, `Plan Limit Reached: Your ${entitlements.plan} plan allows ${entitlements.maxConcurrentSessions} concurrent session. Please end active sessions or upgrade to start more.`, 403);
             }
         } catch (err) {
             logger.warn('Subscription check failed in startQuizSession, defaulting to FREE limits', { error: err.message });
@@ -98,7 +98,7 @@ const startQuizSession = async (req, res) => {
             }
         }
         if (!session) {
-            return sendError(res, 409, 'Unable to allocate unique session code');
+            return sendError(res, 'Unable to allocate unique session code', 409);
         }
 
         assertTransition(currentStatus, SESSION_STATUS.WAITING, 'quiz');
@@ -114,7 +114,7 @@ const startQuizSession = async (req, res) => {
         }, 'Session started');
     } catch (error) {
         logger.error('[SessionController] startQuizSession', { message: error.message, stack: error.stack });
-        return sendError(res, 500, error.message || 'Server Error');
+        return sendError(res, error.message || 'Server Error', 500);
     }
 };
 
@@ -131,7 +131,7 @@ const startLiveSession = async (req, res) => {
 
         if (result.error) {
             const statusCode = result.statusCode || (result.error === 'Quiz not found' ? 404 : 409);
-            return sendError(res, statusCode, result.error);
+            return sendError(res, result.error, statusCode);
         }
 
         logger.audit('quiz.session.started_live', {
@@ -151,7 +151,7 @@ const startLiveSession = async (req, res) => {
         }, 'Session is live');
     } catch (error) {
         logger.error('[SessionController] startLiveSession', { message: error.message, stack: error.stack });
-        return sendError(res, 500, error.message || 'Server Error');
+        return sendError(res, error.message || 'Server Error', 500);
     }
 };
 
@@ -170,7 +170,7 @@ const abortSession = async (req, res) => {
 
         if (result.error) {
             const statusCode = result.statusCode || (result.error === 'Quiz not found' ? 404 : 409);
-            return sendError(res, statusCode, result.error);
+            return sendError(res, result.error, statusCode);
         }
 
         logger.audit('quiz.session.aborted', {
@@ -187,7 +187,7 @@ const abortSession = async (req, res) => {
         }, 'Session aborted');
     } catch (error) {
         logger.error('[SessionController] abortSession', { message: error.message, stack: error.stack });
-        return sendError(res, 500, 'Server Error');
+        return sendError(res, 'Server Error', 500);
     }
 };
 
@@ -197,12 +197,12 @@ const pauseSession = async (req, res) => {
         const { sessionCode } = req.body;
 
         const result = await quizService.pauseQuizSession({ io: req.app.get('io'), quizId: id, sessionCode, user: req.user });
-        if (result.error) return res.status(result.error === 'Quiz not found' ? 404 : 400).json({ message: result.error });
+        if (result.error) return sendError(res, result.error, result.error === 'Quiz not found' ? 404 : 400);
 
-        res.json({ message: 'Quiz paused' });
+        return sendSuccess(res, null, 'Quiz paused');
     } catch (error) {
         logger.error('[SessionController] pauseSession', { message: error.message, stack: error.stack });
-        res.status(500).json({ message: 'Server Error' });
+        return sendError(res, 'Server Error', 500);
     }
 };
 
@@ -212,12 +212,12 @@ const resumeSession = async (req, res) => {
         const { sessionCode } = req.body;
 
         const result = await quizService.resumeQuizSession({ io: req.app.get('io'), quizId: id, sessionCode, user: req.user });
-        if (result.error) return res.status(result.error === 'Quiz not found' ? 404 : 400).json({ message: result.error });
+        if (result.error) return sendError(res, result.error, result.error === 'Quiz not found' ? 404 : 400);
 
-        res.json({ message: 'Quiz resumed' });
+        return sendSuccess(res, null, 'Quiz resumed');
     } catch (error) {
         logger.error('[SessionController] resumeSession', { message: error.message, stack: error.stack });
-        res.status(500).json({ message: 'Server Error' });
+        return sendError(res, 'Server Error', 500);
     }
 };
 
@@ -227,12 +227,12 @@ const nextQuestion = async (req, res) => {
         const { sessionCode } = req.body;
 
         const result = await quizService.advanceQuizQuestion({ io: req.app.get('io'), quizId: id, sessionCode, user: req.user });
-        if (result.error) return res.status(result.error === 'Quiz not found' ? 404 : 400).json({ message: result.error });
+        if (result.error) return sendError(res, result.error, result.error === 'Quiz not found' ? 404 : 400);
 
-        res.json({ message: 'Advanced to next question' });
+        return sendSuccess(res, null, 'Advanced to next question');
     } catch (error) {
         logger.error('[SessionController] nextQuestion', { message: error.message, stack: error.stack });
-        res.status(500).json({ message: 'Server Error' });
+        return sendError(res, 'Server Error', 500);
     }
 };
 
@@ -242,12 +242,12 @@ const revealAnswer = async (req, res) => {
         const io = req.app.get('io');
 
         const result = await quizService.revealAnswer({ io, roomCode: sessionCode, user: req.user });
-        if (result.error) return res.status(400).json({ message: result.error });
+        if (result.error) return sendError(res, result.error, 400);
 
-        res.json({ message: 'Answer revealed', ...result });
+        return sendSuccess(res, result, 'Answer revealed');
     } catch (error) {
         logger.error('[SessionController] revealAnswer', { message: error.message, stack: error.stack });
-        res.status(500).json({ message: 'Server Error' });
+        return sendError(res, 'Server Error', 500);
     }
 };
 
@@ -258,12 +258,12 @@ const endQuizSession = async (req, res) => {
         const io = req.app.get('io');
 
         const result = await quizService.endQuizSession({ io, quizId: id, sessionCode, user: req.user });
-        if (result.error) return sendError(res, result.statusCode || 409, result.error);
+        if (result.error) return sendError(res, result.error, result.statusCode || 409);
 
         return sendSuccess(res, result, 'Quiz ended');
     } catch (error) {
         logger.error('[SessionController] endQuizSession', { message: error.message, stack: error.stack });
-        return sendError(res, 500, 'Server Error');
+        return sendError(res, 'Server Error', 500);
     }
 };
 
@@ -271,15 +271,15 @@ const getAnswerStats = async (req, res) => {
     try {
         const { sessionCode } = req.params;
         const session = await sessionStore.getSession(sessionCode);
-        if (!session) return res.status(404).json({ message: 'Session not found' });
+        if (!session) return sendError(res, 'Session not found', 404);
 
         const stats = await quizService.calculateAnswerStats(sessionCode, session.currentQuestionIndex);
-        if (!stats) return res.status(400).json({ message: 'No stats available for current question' });
+        if (!stats) return sendError(res, 'No stats available for current question', 400);
 
-        res.json(stats);
+        return sendSuccess(res, stats);
     } catch (error) {
         logger.error('[SessionController] getAnswerStats', { message: error.message, stack: error.stack });
-        res.status(500).json({ message: 'Server Error' });
+        return sendError(res, 'Server Error', 500);
     }
 };
 
@@ -290,7 +290,7 @@ const getSessionState = async (req, res) => {
         const normalizedCode = String(targetCode || '').trim().toUpperCase();
         
         const session = await sessionStore.getSession(normalizedCode);
-        if (!session) return res.status(404).json({ success: false, message: 'Session not found' });
+        if (!session) return sendError(res, 'Session not found', 404);
 
         const currentQuestionIndex = session.currentQuestionIndex ?? 0;
         const question = session.questions?.[currentQuestionIndex];
@@ -313,32 +313,29 @@ const getSessionState = async (req, res) => {
 
         const participants = Object.values(session.participants || {});
 
-        res.json({
-            success: true,
-            data: {
-                sessionCode: normalizedCode,
-                status: session.status,
-                mode: session.mode,
-                isPaused: session.isPaused || false,
-                currentQuestionIndex,
-                currentQuestion,
-                questionState: session.questionState || 'waiting',
-                leaderboard,
-                participants,
-                participantCount: participants.length,
-                sequenceNumber: session.sequenceNumber || 0,
-                timestamp: Date.now(),
-                answerStats: session.currentQuestionStats ? {
-                    questionId: session.currentQuestionStats.questionId,
-                    optionCounts: session.currentQuestionStats.optionCounts || {},
-                    totalAnswers: session.currentQuestionStats.totalAnswers || 0,
-                    fastestUser: session.currentQuestionStats.fastestUser || null,
-                } : null,
-            }
+        return sendSuccess(res, {
+            sessionCode: normalizedCode,
+            status: session.status,
+            mode: session.mode,
+            isPaused: session.isPaused || false,
+            currentQuestionIndex,
+            currentQuestion,
+            questionState: session.questionState || 'waiting',
+            leaderboard,
+            participants,
+            participantCount: participants.length,
+            sequenceNumber: session.sequenceNumber || 0,
+            timestamp: Date.now(),
+            answerStats: session.currentQuestionStats ? {
+                questionId: session.currentQuestionStats.questionId,
+                optionCounts: session.currentQuestionStats.optionCounts || {},
+                totalAnswers: session.currentQuestionStats.totalAnswers || 0,
+                fastestUser: session.currentQuestionStats.fastestUser || null,
+            } : null,
         });
     } catch (error) {
         logger.error('[SessionController] getSessionState', { code: req.params.code, message: error.message, stack: error.stack });
-        res.status(500).json({ success: false, message: 'Server Error' });
+        return sendError(res, 'Server Error', 500);
     }
 };
 
@@ -347,14 +344,14 @@ const scheduleQuiz = async (req, res) => {
         const { id } = req.params;
         const { scheduledAt, accessType, allowedEmails, sharedWith } = req.body;
 
-        if (!scheduledAt) return sendError(res, 400, 'scheduledAt date-time is required');
+        if (!scheduledAt) return sendError(res, 'scheduledAt date-time is required', 400);
         const scheduled = new Date(scheduledAt);
         if (isNaN(scheduled.getTime()) || scheduled <= new Date()) {
-            return sendError(res, 400, 'scheduledAt must be a valid future date-time');
+            return sendError(res, 'scheduledAt must be a valid future date-time', 400);
         }
 
         const quizResult = await getManagedQuizOrError(req, id);
-        if (quizResult.error) return sendError(res, quizResult.statusCode, quizResult.error);
+        if (quizResult.error) return sendError(res, quizResult.error, quizResult.statusCode || 400);
         const { quiz } = quizResult;
         const currentStatus = normalizeSessionStatus(quiz.status);
 
@@ -364,7 +361,7 @@ const scheduleQuiz = async (req, res) => {
         }
 
         if (!canTransition(currentStatus, SESSION_STATUS.SCHEDULED) && currentStatus !== SESSION_STATUS.SCHEDULED) {
-            return sendError(res, 409, `Invalid quiz state transition: ${currentStatus} -> ${SESSION_STATUS.SCHEDULED}`);
+            return sendError(res, `Invalid quiz state transition: ${currentStatus} -> ${SESSION_STATUS.SCHEDULED}`, 409);
         }
 
         quiz.scheduledAt = scheduled;
@@ -401,7 +398,7 @@ const scheduleQuiz = async (req, res) => {
             }
         } else if (scheduledSession.status !== SESSION_STATUS.SCHEDULED) {
             if (!canTransition(scheduledSession.status, SESSION_STATUS.SCHEDULED)) {
-                return sendError(res, 409, `Invalid session state transition: ${scheduledSession.status} -> ${SESSION_STATUS.SCHEDULED}`);
+                return sendError(res, `Invalid session state transition: ${scheduledSession.status} -> ${SESSION_STATUS.SCHEDULED}`, 409);
             }
             scheduledSession.status = SESSION_STATUS.SCHEDULED;
             await scheduledSession.save();
@@ -415,7 +412,7 @@ const scheduleQuiz = async (req, res) => {
         }, 'Quiz scheduled');
     } catch (error) {
         logger.error('[SessionController] scheduleQuiz', { message: error.message, stack: error.stack });
-        return sendError(res, 500, 'Server Error');
+        return sendError(res, 'Server Error', 500);
     }
 };
 
@@ -426,14 +423,14 @@ const joinScheduledSession = async (req, res) => {
         let userName = req.user.name;
 
         const quiz = await Quiz.findOne({ roomCode });
-        if (!quiz) return res.status(404).json({ message: 'Quiz not found' });
+        if (!quiz) return sendError(res, 'Quiz not found', 404);
 
         const activeSession = await QuizSession.findOne({
             quizId: quiz._id,
             status: { $in: [SESSION_STATUS.SCHEDULED, SESSION_STATUS.WAITING, SESSION_STATUS.LIVE] },
         }).sort({ startedAt: -1 }).lean();
 
-        if (!activeSession) return res.status(400).json({ message: 'Cannot join: session is not available.' });
+        if (!activeSession) return sendError(res, 'Cannot join: session is not available.', 400);
 
         if (!userName) {
             const participant = await User.findById(userId).select('name').lean();
@@ -446,7 +443,7 @@ const joinScheduledSession = async (req, res) => {
             await quiz.save();
         }
 
-        res.json({
+        return sendSuccess(res, {
             quizId: quiz._id,
             title: quiz.title,
             roomCode: activeSession.sessionCode,
@@ -455,7 +452,7 @@ const joinScheduledSession = async (req, res) => {
         });
     } catch (error) {
         logger.error('[SessionController] joinScheduledSession', { message: error.message, stack: error.stack });
-        res.status(500).json({ message: 'Server Error' });
+        return sendError(res, 'Server Error', 500);
     }
 };
 
@@ -491,10 +488,10 @@ const getMyScheduledJoins = async (req, res) => {
             joinedAt: q.joinedParticipants[0]?.joinedAt,
         }));
 
-        res.json(result);
+        return sendSuccess(res, result);
     } catch (error) {
         logger.error('[SessionController] getMyScheduledJoins', { message: error.message, stack: error.stack });
-        res.status(500).json({ message: 'Server Error' });
+        return sendError(res, 'Server Error', 500);
     }
 };
 

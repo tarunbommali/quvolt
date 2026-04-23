@@ -11,6 +11,10 @@ const ANSWER_LOCK_TTL_MS = 10 * 60 * 1000;
 /**
  * Sharded Redis Keys for scalability (Requirement: Final 5% Blueprint)
  */
+/**
+ * Sharded Redis Keys for scalability
+ */
+const SHARDS = ['meta', 'participants', 'leaderboard'];
 const sessionKey = (code, sub = 'meta') => `quiz:session:${code}:${sub}`;
 const seqKey = (code) => `quiz:session:${code}:seq`;
 const lockKey = (code, questionIndex, userId) => `quiz:lock:${code}:${questionIndex}:${userId}`;
@@ -26,25 +30,26 @@ const getRedisClientSafe = () => {
     }
 };
 
-/**
- * Transparently merge sharded session data (meta, participants, leaderboard)
- */
 const getSession = async (code) => {
     const client = getRedisClientSafe();
     if (!client) return memSessions.get(code) || null;
 
     try {
         // Fetch shards in parallel for performance
-        const [metaRaw, participantsRaw, leaderboardRaw] = await Promise.all([
-            client.get(sessionKey(code, 'meta')),
-            client.get(sessionKey(code, 'participants')),
-            client.get(sessionKey(code, 'leaderboard'))
-        ]);
+        const [metaRaw, participantsRaw, leaderboardRaw] = await Promise.all(
+            SHARDS.map(shard => client.get(sessionKey(code, shard)))
+        );
 
         if (!metaRaw) {
             // Fallback: check legacy key for one-time migration
             const legacyRaw = await client.get(`quiz:session:${code}`);
-            return legacyRaw ? JSON.parse(legacyRaw) : null;
+            if (legacyRaw) {
+                const session = JSON.parse(legacyRaw);
+                // Migrate to sharded format in background
+                setSession(code, session).catch(() => {});
+                return session;
+            }
+            return null;
         }
 
         const session = JSON.parse(metaRaw);
@@ -58,9 +63,6 @@ const getSession = async (code) => {
     }
 };
 
-/**
- * Split and save session data into shards to reduce hot-key contention
- */
 const setSession = async (code, session) => {
     const client = getRedisClientSafe();
     if (!client) {
@@ -106,9 +108,16 @@ const incrementSequence = async (code) => {
 const deleteSession = async (code) => {
     const client = getRedisClientSafe();
     if (client) {
-        const keys = await client.keys(`quiz:session:${code}:*`);
-        if (keys.length > 0) await client.del(keys);
-        await client.del(`quiz:session:${code}`); // legacy key
+        try {
+            const keysToDelete = [
+                ...SHARDS.map(shard => sessionKey(code, shard)),
+                seqKey(code),
+                `quiz:session:${code}` // legacy
+            ];
+            await client.del(keysToDelete);
+        } catch (error) {
+            logger.error('Redis deleteSession failed', { code, error: error.message });
+        }
     }
     memSessions.delete(code);
 };

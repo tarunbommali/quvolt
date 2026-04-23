@@ -6,10 +6,20 @@ const paymentSchema = new mongoose.Schema({
     ref: 'User',
     required: [true, 'User ID is required']
   },
+  paymentType: {
+    type: String,
+    enum: ['quiz', 'subscription'],
+    default: 'quiz'
+  },
   quizId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Quiz',
-    required: [true, 'Quiz ID is required']
+    required: false // Optional for subscription payments
+  },
+  subscriptionId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Subscription',
+    default: null
   },
   amount: {
     type: Number,

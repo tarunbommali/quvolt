@@ -31,4 +31,5 @@ const useToast = (duration = 4000) => {
     return { toast, showToast, clearToast };
 };
 
+export { useToast };
 export default useToast;

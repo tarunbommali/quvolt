@@ -9,34 +9,38 @@ const connectRedis = async () => {
         url,
         socket: {
             reconnectStrategy: (retries) => {
-                const maxRetries = process.env.NODE_ENV === 'development' ? 1 : 3;
-                if (retries >= maxRetries) {
-                    return new Error('Max retries reached');
+                if (retries > 20) {
+                    return new Error('Redis max retries reached');
                 }
-                return Math.min(retries * 50, 500);
+                // Exponential backoff: 100ms, 200ms, 400ms... up to 3 seconds
+                return Math.min(retries * 100, 3000);
             },
-            connectTimeout: 5000 // 5 second timeout for initial connection
+            connectTimeout: 10000,
+            keepAlive: 5000,
         }
     });
 
-    let hasFailed = false;
     redisClient.on('error', (err) => {
-        if (!hasFailed && err && err.message) {
-            console.warn('[Redis] Error:', err.message);
-        }
+        console.error('[Redis] Error:', err);
     });
+    
     redisClient.on('connect', () => {
-        hasFailed = false;
-        console.log('[Redis] Connected');
+        console.log('[Redis] Connected successfully');
     });
-    redisClient.on('reconnecting', () => console.log('[Redis] Reconnecting...'));
+    
+    redisClient.on('reconnecting', () => {
+        console.log('[Redis] Connection lost. Reconnecting...');
+    });
 
     try {
         await redisClient.connect();
     } catch (err) {
-        hasFailed = true;
-        console.warn('[Redis] Initial connection failed, client will operate in fallback mode:', err.message);
-        throw err;
+        console.error('[Redis] Critical: Initial connection failed:', err.message);
+        // Do not throw here if we want fallback, but since it's "primary persistent store", 
+        // in production we might actually want to fail fast or wait.
+        if (process.env.NODE_ENV === 'production') {
+            throw err;
+        }
     }
     return redisClient;
 };

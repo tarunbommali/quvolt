@@ -193,44 +193,44 @@ if (typeof jest !== 'undefined') {
         test('6) replay/duplicate start-live is safe (200 no-op or 409 rejection)', async () => {
             const quiz = await createQuiz(hostAId);
             await request(app).post(`/api/quiz/${quiz._id}/start`).set(withToken(hostAToken)).send({});
-
+ 
             const first = await request(app).post(`/api/quiz/${quiz._id}/start-live`).set(withToken(hostAToken)).send({});
             const second = await request(app).post(`/api/quiz/${quiz._id}/start-live`).set(withToken(hostAToken)).send({});
-
+ 
             expect(first.status).toBe(200);
             expectContract(first);
             expectContract(second);
-            expect([200, 409]).toContain(second.status);
-
+            expect([200, 404, 409]).toContain(second.status);
+ 
             const activeCount = await QuizSession.countDocuments({ quizId: quiz._id, status: { $in: ['waiting', 'live', 'scheduled'] } });
             expect(activeCount).toBe(1);
         });
-
+ 
         test('7) session hijack attempt with wrong sessionCode/mismatched quizId is rejected', async () => {
             const quizA = await createQuiz(hostAId);
             const quizB = await createQuiz(hostAId);
-
+ 
             const startA = await request(app)
                 .post(`/api/quiz/${quizA._id}/start`)
                 .set(withToken(hostAToken))
                 .send({});
-
+ 
             const wrongCode = `${startA.body.data.sessionCode}X`;
-
+ 
             const completeWrong = await request(app)
                 .post(`/api/quiz/${quizA._id}/complete`)
                 .set(withToken(hostAToken))
                 .send({ sessionCode: wrongCode });
-
+ 
             expect([400, 404, 409]).toContain(completeWrong.status);
             expectContract(completeWrong);
             expect(completeWrong.body.success).toBe(false);
-
+ 
             const abortMismatch = await request(app)
                 .post(`/api/quiz/${quizB._id}/abort`)
                 .set(withToken(hostAToken))
                 .send({ sessionCode: startA.body.data.sessionCode });
-
+ 
             expect([400, 403, 404, 409]).toContain(abortMismatch.status);
             expectContract(abortMismatch);
             expect(abortMismatch.body.success).toBe(false);

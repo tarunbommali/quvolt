@@ -1,8 +1,21 @@
 const razorpay = require('../../config/razorpay');
 const config = require('../../config/env');
 const Subscription = require('../../models/Subscription');
+const User = require('../../models/User');
 const { getPlanConfig } = require('../../utils/subscriptionPlans');
 const logger = require('../../utils/logger');
+
+/**
+ * Sync user's plan with their active subscription
+ */
+async function syncUserPlan(hostId, plan) {
+  try {
+    await User.findByIdAndUpdate(hostId, { $set: { plan } });
+    logger.info('User plan synced', { hostId, plan });
+  } catch (err) {
+    logger.error('Failed to sync user plan', { hostId, plan, error: err.message });
+  }
+}
 
 /**
  * Get active subscription for a host
@@ -44,6 +57,7 @@ async function createSubscription(hostId, newPlan, razorpaySubId = null) {
     const currentPlan = currentSubscription ? currentSubscription.plan : 'FREE';
 
     if (currentPlan === newPlan && currentSubscription) {
+      await syncUserPlan(hostId, newPlan);
       return { success: true, subscription: currentSubscription };
     }
 
@@ -77,6 +91,8 @@ async function createSubscription(hostId, newPlan, razorpaySubId = null) {
         participantLimit: getPlanConfig('FREE').participants,
         commission: getPlanConfig('FREE').commission,
       });
+
+      await syncUserPlan(hostId, 'FREE');
 
       logger.info({
         event: 'subscription_downgraded_to_free',
@@ -134,6 +150,8 @@ async function createSubscription(hostId, newPlan, razorpaySubId = null) {
       });
     }
 
+    await syncUserPlan(hostId, newPlan);
+
     logger.info({
       event: 'subscription_created',
       hostId,
@@ -160,6 +178,7 @@ async function handleSubscriptionExpiry(subscription) {
     await subscription.save();
 
     const { subscription: freeSubscription } = await createSubscription(subscription.hostId, 'FREE');
+    await syncUserPlan(subscription.hostId, 'FREE');
 
     logger.info({
       event: 'subscription_expired_downgraded',
@@ -195,6 +214,7 @@ async function cancelSubscription(subscriptionId, reason = '') {
     await subscription.save();
 
     await createSubscription(subscription.hostId, 'FREE');
+    await syncUserPlan(subscription.hostId, 'FREE');
 
     logger.info({
       event: 'subscription_cancelled',
@@ -234,6 +254,9 @@ async function processSubscriptionPayment(subscriptionId, razorpayPaymentId, cyc
     subscription.currentCycleEnd = newExpiryDate;
 
     await subscription.save();
+    
+    // Ensure user plan is PRO/PREMIUM
+    await syncUserPlan(subscription.hostId, subscription.plan);
 
     logger.info({
       event: 'subscription_payment_processed',
@@ -266,6 +289,7 @@ async function handleFailedSubscriptionPayment(subscriptionId) {
     // If 3 failed attempts, pause subscription
     if (subscription.failedPaymentCount >= 3) {
       subscription.status = 'paused';
+      await syncUserPlan(subscription.hostId, 'FREE'); // Fallback to FREE while paused
     }
 
     await subscription.save();
@@ -403,4 +427,6 @@ module.exports = {
   getSubscriptionStats,
   createSubscriptionOrder,
   verifySubscriptionPayment,
+  buildSubscriptionReceipt,
+  buildMockSubscriptionOrderId,
 };

@@ -36,9 +36,12 @@ class SessionController {
 
             await manager.start();
 
+            // Sync Quiz model status (Hardening: Requirement 8.1)
+            await require('../models/Quiz').findByIdAndUpdate(id, { status: 'live' });
+
             return sendSuccess(res, {
                 roomCode: session.sessionCode,
-                status: 'live',
+                status: session.status,
                 sessionId: session._id
             }, 'Quiz started successfully');
         } catch (error) {
@@ -58,7 +61,7 @@ class SessionController {
         try {
             const { sessionCode } = req.body;
             const session = await QuizSession.findOne({ sessionCode, status: 'live' });
-            if (!session) return sendError(res, 404, 'Live session not found');
+            if (!session) return sendError(res, 'Live session not found', 404);
 
             const manager = new SessionManager(session);
             await manager.pause();
@@ -66,7 +69,7 @@ class SessionController {
             return sendSuccess(res, null, 'Quiz paused');
         } catch (error) {
             logger.error('[OOP SessionController] pauseSession', { error: error.message });
-            return sendError(res, 500, error.message);
+            return sendError(res, error.message, 500);
         }
     }
 
@@ -77,7 +80,7 @@ class SessionController {
         try {
             const { sessionCode } = req.body;
             const session = await QuizSession.findOne({ sessionCode, status: 'paused' });
-            if (!session) return sendError(res, 404, 'Paused session not found');
+            if (!session) return sendError(res, 'Paused session not found', 404);
 
             const manager = new SessionManager(session);
             await manager.resume();
@@ -85,7 +88,7 @@ class SessionController {
             return sendSuccess(res, null, 'Quiz resumed');
         } catch (error) {
             logger.error('[OOP SessionController] resumeSession', { error: error.message });
-            return sendError(res, 500, error.message);
+            return sendError(res, error.message, 500);
         }
     }
 
@@ -96,15 +99,18 @@ class SessionController {
         try {
             const { sessionCode } = req.body;
             const session = await QuizSession.findOne({ sessionCode, status: { $in: ['live', 'paused'] } });
-            if (!session) return sendError(res, 404, 'Active session not found');
+            if (!session) return sendError(res, 'Active session not found', 404);
 
             const manager = new SessionManager(session);
             await manager.end();
 
+            // Sync Quiz model status
+            await require('../models/Quiz').findByIdAndUpdate(session.quizId, { status: 'completed' });
+
             return sendSuccess(res, null, 'Quiz ended');
         } catch (error) {
             logger.error('[OOP SessionController] endSession', { error: error.message });
-            return sendError(res, 500, error.message);
+            return sendError(res, error.message, 500);
         }
     }
 }
