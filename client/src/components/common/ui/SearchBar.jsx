@@ -1,7 +1,6 @@
 import { Search } from 'lucide-react';
 import InputField from './InputField';
-import { forms } from '../../../styles/forms';
-import { cx } from '../../../styles/theme';
+import { forms, cx } from '../../../styles/index';
 
 const SearchBar = ({ value, onChange, placeholder = 'Search...', className = '' }) => {
     return (

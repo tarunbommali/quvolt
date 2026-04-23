@@ -7,9 +7,9 @@ import ConfigSidebar from './ConfigSidebar';
 import OrganizerEditHeader from './OrganizerEditHeader';
 import OrganizerEditOverlays from './OrganizerEditOverlays';
 import EditorCommandPalette from './EditorCommandPalette';
-import { components } from '../../../styles/components';
-import { cx } from '../../../styles/theme';
+
 import { resolveSessionRoute } from '../../../utils/sessionRouteResolver';
+import { components, cx } from '../../../styles/index';
 
 const HISTORY_LIMIT = 80;
 

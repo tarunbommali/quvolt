@@ -12,9 +12,9 @@ import {
   FAQ
 } from '../../../components/common/home';
 import { useAuthStore } from '../../../stores/useAuthStore';
-import { components } from '../../../styles/components';
-import { cx } from '../../../styles/theme';
+
 import Footer from '../../../components/common/Footer';
+import { components, cx } from '../../../styles/index';
 
 const PublicLandingPage = () => {
   const user = useAuthStore((s) => s.user);

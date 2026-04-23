@@ -16,6 +16,7 @@ const QuestionSchema = new mongoose.Schema({
     mediaUrl: { type: String, default: null, trim: true },
     questionType: { type: String, enum: ['multiple-choice', 'true-false'], default: 'multiple-choice' },
     shuffleOptions: { type: Boolean, default: false },
+    explanation: { type: String, default: '', trim: true, maxlength: 1000 },
 }, { _id: true });
 
 QuestionSchema.path('correctOption').validate(function validateCorrectOption(index) {

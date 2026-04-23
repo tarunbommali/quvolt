@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { ChevronLeft, EllipsisVertical, Play, Save, Sparkles, FileJson, BarChart3, MonitorCog } from 'lucide-react';
-import { buttonStyles } from '../../../styles/buttonStyles';
+
 import { textStyles as textTokens } from '../../../styles/commonStyles';
-import { components } from '../../../styles/components';
-import { cx } from '../../../styles/theme';
+import { buttonStyles, components, cx } from '../../../styles/index';
 
 /**
  * Editor header with navigation and primary actions.

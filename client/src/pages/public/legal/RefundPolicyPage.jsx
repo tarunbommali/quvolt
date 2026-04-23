@@ -1,10 +1,13 @@
+
+
 import LegalLayout, { LegalSection, LegalList } from './LegalLayout';
+import { typography, cx } from '../../../styles/index';
 
 export default function RefundPolicyPage() {
     return (
         <LegalLayout title="Refund & Cancellation Policy" lastUpdated={new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}>
-            <div className="space-y-4 text-sm md:text-base font-medium theme-text-secondary leading-relaxed mb-8">
-                <p>Thank you for choosing <strong>Quvolt</strong>. We want to ensure that your experience with our platform is seamless and clear regarding billing and refunds.</p>
+            <div className={cx(typography.body, "mb-8 leading-relaxed")}>
+                <p>Thank you for choosing <strong className={typography.bodyStrong}>Quvolt</strong>. We want to ensure that your experience with our platform is seamless and clear regarding billing and refunds.</p>
             </div>
 
             <LegalSection title="1. Subscriptions">

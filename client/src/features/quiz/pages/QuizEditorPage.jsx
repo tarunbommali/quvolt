@@ -1,8 +1,8 @@
 import { textStyles as textTokens } from '../../../styles/commonStyles';
-import { components } from '../../../styles/components';
-import { cx } from '../../../styles/theme';
+
 import usehostEditController from '../../../hooks/useHostEditController'
 import hostEditView from '../../../components/hostEdit/hostEditView';
+import { components, cx } from '../../../styles/index';
 
 const QuizEditorPage = () => {
     const editor = usehostEditController();
@@ -16,5 +16,4 @@ const QuizEditorPage = () => {
 };
 
 export default QuizEditorPage;
-
 

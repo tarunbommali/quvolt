@@ -8,7 +8,7 @@ import MetricsSection from '../../../host/components/MetricsSection';
 import TableSection from '../../../host/components/TableSection';
 import SubHeader from '../../../components/layout/SubHeader';
 import ErrorState from '../../../components/common/ErrorState';
-import { components } from '../../../styles/components';
+import { components } from '../../../styles/index';
 
 const AnalyticsDashboardPage = () => {
     const user = useAuthStore((state) => state.user);
@@ -114,5 +114,4 @@ const AnalyticsDashboardPage = () => {
 };
 
 export default AnalyticsDashboardPage;
-
 

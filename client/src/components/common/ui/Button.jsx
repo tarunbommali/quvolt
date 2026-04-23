@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import { motion as Motion } from 'framer-motion';
-import { buttonStyles } from "../../../styles/buttonStyles";
-import { cx } from "../../../styles/theme";
+import { buttonStyles, cx } from '../../../styles/index';
 
 const variantClasses = {
     default: buttonStyles.neutral,

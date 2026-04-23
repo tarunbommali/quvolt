@@ -1,10 +1,13 @@
+
+
 import LegalLayout, { LegalSection, LegalList } from './LegalLayout';
+import { typography, cx } from '../../../styles/index';
 
 export default function PrivacyPolicyPage() {
     return (
         <LegalLayout title="Privacy Policy" lastUpdated={new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}>
-            <div className="space-y-4 text-sm md:text-base font-medium theme-text-secondary leading-relaxed mb-8">
-                <p>At <strong>Quvolt</strong>, we respect your privacy and are committed to protecting it through our compliance with this policy.</p>
+            <div className={cx(typography.body, "mb-8 leading-relaxed")}>
+                <p>At <strong className={typography.bodyStrong}>Quvolt</strong>, we respect your privacy and are committed to protecting it through our compliance with this policy.</p>
             </div>
 
             <LegalSection title="1. Data We Collect">
@@ -57,7 +60,7 @@ export default function PrivacyPolicyPage() {
             </LegalSection>
 
             <LegalSection title="8. Contact">
-                <p>For any privacy-related concerns or inquiries, you can reach us at: <a href="mailto:support@quvolt.com" className="text-[var(--qb-primary)] hover:underline font-bold">support@quvolt.com</a></p>
+                <p>For any privacy-related concerns or inquiries, you can reach us at: <a href="mailto:support@quvolt.com" className={typography.link}>support@quvolt.com</a></p>
             </LegalSection>
         </LegalLayout>
     );

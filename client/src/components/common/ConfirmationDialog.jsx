@@ -2,7 +2,7 @@ import { motion as Motion } from 'framer-motion';
 import { AlertTriangle, X } from 'lucide-react';
 import Button from './ui/Button';
 import { modalStyles } from '../../styles/layoutStyles';
-import { textStyles } from '../../styles/commonStyles';
+import { textStyles } from '../../styles/index';
 
 const ConfirmationDialog = ({ open, message, confirmLabel = 'Confirm', cancelLabel = 'Cancel', onConfirm, onCancel }) => {
     return (

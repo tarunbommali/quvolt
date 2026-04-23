@@ -25,6 +25,7 @@ const QuestionAnalyticsSchema = new mongoose.Schema(
         dropOffRate: { type: Number, default: 0 },     // 0-100 %
         difficulty: { type: Number, default: 0 },       // 0-100 (higher = harder)
         qqsScore: { type: Number, default: 100 },       // 0-100 (Question Quality Score)
+        explanation: { type: String, default: '' },     // Host-provided explanation
         
         // O(1) mapping of option -> count
         optionCounts: {

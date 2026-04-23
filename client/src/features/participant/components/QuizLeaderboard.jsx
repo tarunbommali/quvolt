@@ -2,7 +2,8 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Trophy } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Shell, CenterCard, Card, Stat, Label } from './QuizLayouts';
+import { Shell, CenterCard, Stat } from './QuizLayouts';
+import { cards, typography, buttonStyles, layout, cx } from '../../../styles/index';
 
 const QuizLeaderboard = ({ leaderboard = [], user }) => {
     const navigate = useNavigate();
@@ -14,52 +15,52 @@ const QuizLeaderboard = ({ leaderboard = [], user }) => {
         <Shell>
             <CenterCard>
                 <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
+                    initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     className="space-y-6"
                 >
-                    <Card className="text-center space-y-6 pt-10 relative overflow-hidden">
-                        <div className="absolute top-0 left-0 right-0 h-2 bg-[var(--qb-primary)]" />
+                    <div className={cx(cards.elevated, "text-center space-y-6 pt-10 relative overflow-hidden")}>
+                        <div className="absolute top-0 left-0 right-0 h-1.5 bg-[var(--qb-primary)]" />
 
-                        <div className="w-20 h-20 rounded-3xl bg-amber-100 text-amber-600 flex items-center justify-center mx-auto shadow-sm">
-                            <Trophy size={40} />
+                        <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-500 flex items-center justify-center mx-auto shadow-sm">
+                            <Trophy size={32} />
                         </div>
 
-                        <div>
-                            <h2 className="text-2xl font-black theme-text-primary">Quiz Completed!</h2>
-                            <p className="text-sm theme-text-secondary mt-1 font-medium">You've reached the finish line.</p>
+                        <div className="space-y-1">
+                            <h2 className={typography.h2}>Quiz Completed!</h2>
+                            <p className={typography.body}>You've reached the finish line.</p>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4 py-4 border-y theme-border">
-                            <Stat label="Your Rank" value={myRank > 0 ? `#${myRank}` : '—'} accent="text-amber-500" />
-                            <Stat label="Final Score" value={totalScore} accent="text-indigo-600" />
+                        <div className={cx(cards.divider, "grid grid-cols-2 gap-4 py-4 mt-2")}>
+                            <Stat label="Your Rank" value={myRank > 0 ? `#${myRank}` : '—'} accent="text-amber-600 dark:text-amber-500" />
+                            <Stat label="Final Score" value={totalScore} accent="text-[var(--qb-primary)]" />
                         </div>
 
                         <button
                             onClick={() => navigate('/p/dashboard')}
-                            className="w-full h-12 rounded-xl bg-[var(--qb-surface-3)] hover:bg-[var(--qb-surface-4)] theme-text-primary text-sm font-bold transition-all border theme-border"
+                            className={cx(buttonStyles.base, buttonStyles.secondary, buttonStyles.sizeLg, "w-full justify-center")}
                         >
                             Back to Dashboard
                         </button>
-                    </Card>
+                    </div>
 
                     {leaderboard.length > 0 && (
-                        <Card className="space-y-4">
-                            <Label className="px-1">Top Performers</Label>
+                        <div className={cx(cards.default, "space-y-4")}>
+                            <p className={cx(typography.metaLabel, "px-1")}>Top Performers</p>
                             <div className="space-y-2">
                                 {leaderboard.slice(0, 3).map((entry, idx) => (
-                                    <div key={idx} className="flex items-center justify-between p-3 rounded-xl theme-surface-soft border theme-border">
-                                        <div className="flex items-center gap-3">
-                                            <span className="w-6 h-6 rounded-lg bg-white/50 flex items-center justify-center text-[10px] font-black theme-text-primary border theme-border">
+                                    <div key={idx} className={cx(cards.flat, layout.rowBetween)}>
+                                        <div className={cx(layout.rowStart, "gap-3")}>
+                                            <span className="w-6 h-6 rounded-md bg-white/50 dark:bg-black/20 flex items-center justify-center text-xs font-semibold theme-text-primary border theme-border shadow-sm">
                                                 {idx + 1}
                                             </span>
-                                            <span className="text-sm font-black theme-text-primary">{entry.name}</span>
+                                            <span className={typography.bodyStrong}>{entry.name}</span>
                                         </div>
-                                        <span className="text-sm font-black text-indigo-600 tabular-nums">{entry.score}</span>
+                                        <span className={cx(typography.metricSm, "text-[var(--qb-primary)]")}>{entry.score}</span>
                                     </div>
                                 ))}
                             </div>
-                        </Card>
+                        </div>
                     )}
                 </motion.div>
             </CenterCard>
@@ -68,4 +69,3 @@ const QuizLeaderboard = ({ leaderboard = [], user }) => {
 };
 
 export default QuizLeaderboard;
-

@@ -5,6 +5,7 @@ import SubHeader from '../../../components/layout/SubHeader';
 import HistoryGrid from '../components/HistoryGrid';
 import HistoryEmptyState from '../components/HistoryEmptyState';
 import { useAuthStore } from '../../../stores/useAuthStore';
+import { panelStyles, textStyles, typography, buttonStyles, cx } from '../../../styles/index';
 
 const DetailedQuizAnalytics = () => {
     const { id } = useParams();
@@ -39,7 +40,7 @@ const DetailedQuizAnalytics = () => {
     if (loading) {
         return (
             <div className="app-page">
-                <div className="rounded-3xl border border-gray-100 bg-white p-8 text-center text-sm font-semibold text-slate-500">
+                <div className={panelStyles.loadingBox + " justify-center py-12"}>
                     Loading session history...
                 </div>
             </div>
@@ -57,11 +58,11 @@ const DetailedQuizAnalytics = () => {
                         { label: 'History' }
                     ]}
                 />
-                <div className="rounded-3xl border border-red-100 bg-red-50 p-8 text-center">
-                    <p className="text-sm font-medium text-red-600">{error}</p>
+                <div className={panelStyles.errorBox + " text-center py-12"}>
+                    <p className={cx(typography.bodyStrong, 'theme-tone-danger')}>{error}</p>
                     <button
                         onClick={fetchSessions}
-                        className="mt-4 text-sm font-bold text-red-700 underline"
+                        className={cx(buttonStyles.base, buttonStyles.ghost, 'mt-3 text-red-600 dark:text-red-400')}
                     >
                         Try again
                     </button>

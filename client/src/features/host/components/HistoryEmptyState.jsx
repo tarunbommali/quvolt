@@ -1,21 +1,22 @@
-import { Clock } from 'lucide-react';
-import Card from '../../../components/common/ui/Card';
+import React from 'react';
+import { motion as Motion } from 'framer-motion';
+import { History } from 'lucide-react';
+import { textStyles } from '../../../styles/index';
 
-const HistoryEmptyState = ({
-    title = 'No Template Activity Yet',
-    message = 'Your learning progress will appear here after you participate in or host a template.'
-}) => (
-    <Card className="bg-white p-20 flex flex-col items-center justify-center text-center space-y-6 rounded-[2.5rem] border border-gray-100 shadow-sm">
-        <div className="p-6 bg-gray-50 rounded-full shadow-sm text-slate-400">
-            <Clock size={48} />
+const HistoryEmptyState = () => (
+    <Motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col items-center justify-center py-24 text-center rounded-[3rem] border-2 border-dashed theme-border bg-gray-50/50 dark:bg-white/5"
+    >
+        <div className="w-20 h-20 rounded-3xl bg-white dark:bg-white/10 flex items-center justify-center shadow-sm mb-6 text-indigo-500">
+            <History size={40} />
         </div>
-        <div>
-            <h3 className="text-2xl font-black text-slate-900 uppercase">{title}</h3>
-            <p className="text-slate-500 font-bold max-w-xs text-sm mt-2">
-                {message}
-            </p>
-        </div>
-    </Card>
+        <h3 className={textStyles.value2Xl + " !font-black !text-2xl"}>No history yet</h3>
+        <p className={textStyles.subtitle + " max-w-xs mt-2"}>
+            Completed sessions and performance reports will appear here once you finish your first quiz.
+        </p>
+    </Motion.div>
 );
 
 export default HistoryEmptyState;

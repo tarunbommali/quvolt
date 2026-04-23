@@ -1,5 +1,5 @@
 import { modalStyles } from '../../../styles/layoutStyles';
-import { cx } from '../../../styles/theme';
+import { cx } from '../../../styles/index';
 
 const Modal = ({ open, children, className = '' }) => {
     if (!open) return null;

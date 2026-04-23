@@ -6,7 +6,7 @@ import { isTransientApiError } from '../services/quiz.service';
 import Skeleton from '../../../components/common/ui/Skeleton';
 import ViewportPrefetch from '../../../components/common/ViewportPrefetch';
 import { prefetchHistoryDetailRoute } from '../../../utils/routePrefetch';
-import { textStyles } from '../../../styles/commonStyles';
+import { textStyles } from '../../../styles/index';
 
 const QuizSessionResult = () => {
     const { templateId, quizId } = useParams();

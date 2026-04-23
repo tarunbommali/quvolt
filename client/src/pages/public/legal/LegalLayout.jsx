@@ -1,19 +1,8 @@
-import { Fragment } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { ChevronRight, Home } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
+import SubHeader from '../../../components/layout/SubHeader';
 import Footer from '../../../components/common/Footer';
+import { layout, typography, cx } from '../../../styles/index';
 
-const legalLinks = [
-    { path: '/terms', label: 'Terms & Conditions' },
-    { path: '/privacy', label: 'Privacy Policy' },
-    { path: '/refund', label: 'Refund & Cancellation' },
-    { path: '/cookies', label: 'Cookie Policy' },
-    { path: '/disclaimer', label: 'Disclaimer' },
-];
-
-/**
- * Maps the current legal route to a human-readable breadcrumb label.
- */
 const routeLabel = {
     '/terms': 'Terms & Conditions',
     '/privacy': 'Privacy Policy',
@@ -30,7 +19,7 @@ const routeLabel = {
 /**
  * LegalLayout — High-level layout for public-facing legal documents.
  * Integrates with the application's design system (app-shell, typography).
- * Includes breadcrumb navigation (Home > Legal > Document) and sidebar links.
+ * Includes breadcrumb navigation and standardized SubHeader.
  *
  * @param {Object} props
  * @param {string} props.title - The title of the legal document.
@@ -43,56 +32,22 @@ export default function LegalLayout({ title, lastUpdated, children }) {
 
     return (
         <div className="app-shell flex flex-col min-h-screen w-full">
-            {/* Ambient glow — matches app-shell pattern */}
-            <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden" aria-hidden="true">
-                <div className="absolute left-1/2 top-[-15%] h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-[color-mix(in_srgb,var(--qb-primary)_14%,transparent)] blur-[90px]" />
-            </div>
-
-            <main className="flex-1 w-full max-w-7xl mx-auto px-4 md:px-6 py-8 md:py-12 z-10">
+            <main className={layout.page + " flex-1 z-10 !py-8 md:!py-12"}>
                 <div className="space-y-8">
+                    <SubHeader
+                        title={title}
+                        subtitle={`Record Synchronization: ${lastUpdated}`}
+                        breadcrumbs={[
+                            { label: 'Legal' },
+                            { label: currentLabel }
+                        ]}
+                    />
 
-                    {/* ── Breadcrumbs + Page header ── */}
-                    <div className="space-y-3">
-                        <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-1">
-                            <Link
-                                to="/"
-                                className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--qb-text-3)] hover:text-[var(--qb-primary)] transition-colors"
-                            >
-                                <Home size={13} />
-                                Home
-                            </Link>
-
-                            <ChevronRight size={13} className="text-[var(--qb-text-3)] shrink-0" />
-
-                            <Link
-                                to="/terms"
-                                className="text-sm font-semibold text-[var(--qb-text-3)] hover:text-[var(--qb-primary)] transition-colors"
-                            >
-                                Legal
-                            </Link>
-
-                            <ChevronRight size={13} className="text-[var(--qb-text-3)] shrink-0" />
-
-                            <span className="text-sm font-semibold text-[var(--qb-text-1)]">
-                                {currentLabel}
-                            </span>
-                        </nav>
-
-                        <div className="space-y-1">
-                            <h1 className="text-2xl md:text-3xl font-black tracking-tight text-[var(--qb-text-1)]">
-                                {title}
-                            </h1>
-                            <p className="text-[11px] font-black tracking-[0.18em] uppercase text-[var(--qb-text-3)]">
-                                Last Updated: {lastUpdated}
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* ── Single-column content layout ── */}
-                    <div className="max-w-4xl mx-auto w-full">
+                    {/* ── Content layout — Expanded to match system width ── */}
+                    <div className="w-full">
                         <article className="w-full">
-                            <div className="surface-card rounded-3xl overflow-hidden shadow-sm">
-                                <div className="p-6 md:p-8 lg:p-10 space-y-10 text-[var(--qb-text-1)]">
+                            <div className="bg-white dark:bg-gray-900/50 rounded-[3rem] overflow-hidden border-2 theme-border shadow-2xl shadow-indigo-500/5">
+                                <div className="p-8 md:p-12 lg:p-16 space-y-12">
                                     {children}
                                 </div>
                             </div>
@@ -109,28 +64,29 @@ export default function LegalLayout({ title, lastUpdated, children }) {
 }
 
 export const LegalSection = ({ title, children, noBorder = false }) => (
-    <section className="space-y-4">
+    <section className="space-y-6">
         {title && (
             <h2
-                className={[
-                    'text-lg md:text-xl font-black tracking-tight text-[var(--qb-text-1)] pb-3',
-                    !noBorder && 'border-b theme-border',
-                ].filter(Boolean).join(' ')}
+                className={cx(
+                    typography.h2,
+                    !noBorder && "border-b-2 theme-border pb-4"
+                )}
             >
                 {title}
             </h2>
         )}
-        <div className="space-y-3 text-sm md:text-base font-medium text-[var(--qb-text-2)] leading-relaxed">
+        <div className={cx(typography.body, "space-y-4 !leading-loose opacity-90")}>
             {children}
         </div>
     </section>
 );
 
 export const LegalList = ({ items }) => (
-    <ul className="list-disc pl-5 space-y-2">
+    <ul className="space-y-3">
         {items.map((item, idx) => (
-            <li key={idx} className="pl-1.5 marker:text-[var(--qb-primary)] text-sm md:text-base font-medium text-[var(--qb-text-2)] leading-relaxed">
-                {item}
+            <li key={idx} className="flex gap-4">
+                <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0" />
+                <span className={cx(typography.body, "font-bold opacity-80")}>{item}</span>
             </li>
         ))}
     </ul>

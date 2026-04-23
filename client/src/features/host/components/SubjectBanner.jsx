@@ -1,45 +1,44 @@
-import { ChevronLeft, LayoutGrid, List, Plus } from 'lucide-react';
-import { controlStyles, textStyles } from '../../../styles/commonStyles';
-import { layoutStyles } from '../../../styles/layoutStyles';
-import { buttonStyles } from '../../../styles/buttonStyles';
+import React from 'react';
+import { ChevronLeft, LayoutGrid, List, Plus, X } from 'lucide-react';
+import { textStyles, components } from '../../../styles/index';
 
 const SubjectBanner = ({ currentSubject, showCreate, onBack, onToggleAddQuiz, viewMode, onViewModeChange, isMobileView }) => {
     if (!currentSubject) return null;
 
     return (
-        <div className={`${layoutStyles.sectionSurface} flex items-center gap-6 animate-in slide-in-from-left`}>
-            <button onClick={onBack} className="ui-icon-btn min-h-12 min-w-12 rounded-2xl bg-gray-100 border-transparent hover:bg-gray-200">
-                <ChevronLeft />
+        <div className={`${components.analytics.card} !p-6 !rounded-[2.5rem] flex items-center gap-6 border theme-border bg-gradient-to-r from-indigo-500/[0.03] to-purple-500/[0.03]`}>
+            <button 
+                onClick={onBack} 
+                className="w-12 h-12 rounded-2xl bg-white dark:bg-white/5 border theme-border flex items-center justify-center theme-text-primary hover:bg-gray-50 dark:hover:bg-white/10 transition-all shadow-sm group"
+            >
+                <ChevronLeft size={20} className="group-hover:-translate-x-0.5 transition-transform" />
             </button>
-            <div>
-                <h2 className="text-3xl font-black text-indigo-700 leading-none">{currentSubject.title}</h2>
-                <p className={`${textStyles.overline} mt-1`}>Management Chamber // Sub-directory</p>
+            <div className="flex-1">
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] theme-text-muted opacity-60 mb-1">Subject Module</p>
+                <h2 className={textStyles.value2Xl + " !font-black !text-2xl theme-text-primary"}>{currentSubject.title}</h2>
             </div>
-            <div className="ml-auto flex items-center gap-3">
-                <div className={controlStyles.segmented} role="group" aria-label="View mode">
+            <div className="flex items-center gap-4">
+                <div className="flex items-center bg-gray-100 dark:bg-white/5 p-1 rounded-xl border theme-border">
                     <button
-                        type="button"
                         onClick={() => onViewModeChange('grid')}
                         disabled={isMobileView}
-                        className={`${controlStyles.segmentedButton} ${viewMode === 'grid' ? controlStyles.segmentedActive : controlStyles.segmentedIdle} disabled:cursor-not-allowed disabled:opacity-50`}
-                        aria-pressed={viewMode === 'grid'}
+                        className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-white/10 theme-text-primary shadow-sm' : 'theme-text-muted hover:theme-text-primary opacity-50'}`}
                     >
-                        <LayoutGrid size={14} /> Grid
+                        <LayoutGrid size={16} />
                     </button>
                     <button
-                        type="button"
                         onClick={() => onViewModeChange('list')}
-                        className={`${controlStyles.segmentedButton} ${viewMode === 'list' ? controlStyles.segmentedActive : controlStyles.segmentedIdle}`}
-                        aria-pressed={viewMode === 'list'}
+                        className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white dark:bg-white/10 theme-text-primary shadow-sm' : 'theme-text-muted hover:theme-text-primary'}`}
                     >
-                        <List size={14} /> List
+                        <List size={16} />
                     </button>
                 </div>
                 <button
                     onClick={onToggleAddQuiz}
-                    className={`${buttonStyles.primary} inline-flex items-center gap-2 rounded-2xl px-6 py-3 text-xs font-bold shadow-sm transition-all`}
+                    className={`${components.button.base} ${components.button.sizes.md} ${showCreate ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/20' : components.button.variants.primary} !rounded-2xl px-6 flex items-center gap-2 font-black uppercase tracking-widest text-[11px] shadow-lg h-12`}
                 >
-                    <Plus size={16} /> {showCreate ? 'CANCEL' : 'ADD QUIZ'}
+                    {showCreate ? <X size={14} /> : <Plus size={14} />}
+                    <span>{showCreate ? 'Cancel' : 'Add Template'}</span>
                 </button>
             </div>
         </div>

@@ -1,63 +1,84 @@
 import React from 'react';
-import { Search, Plus, LayoutGrid, List, Settings2 } from 'lucide-react';
+import { Search, Plus, LayoutGrid, List, X } from 'lucide-react';
+import { motion as Motion } from 'framer-motion';
+import { textStyles, controlStyles, components, forms, buttonStyles, cx } from '../../../styles/index';
 
 const StudioDashboardToolbar = ({
     showCreate,
     onToggleCreate,
-    onGlobalDefaults,
     viewMode,
     onViewModeChange,
-    sortMode,
-    onSortModeChange,
-    filterMode,
-    onFilterModeChange,
     searchQuery,
     onSearchQueryChange
 }) => {
     return (
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between py-6 px-1">
-            <div className="flex-1 max-w-xl relative group">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={18} />
+        <div className={components.studio.controlInner}>
+            {/* LEFT: Search Input */}
+            <div className={cx(forms.searchWrap, "flex-1 max-w-xl group")}>
+                <Search
+                    className={cx(
+                        forms.searchIcon,
+                        "group-focus-within:text-indigo-500 transition-colors"
+                    )}
+                    size={18}
+                />
                 <input
                     type="text"
-                    placeholder="Search your projects..."
+                    placeholder="Search templates, folders, or tags..."
                     value={searchQuery}
                     onChange={(e) => onSearchQueryChange(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm"
+                    className={cx(
+                        forms.inputField,
+                        "!pl-14 !h-14 !rounded-2xl shadow-sm focus:ring-[var(--qb-primary)]/10"
+                    )}
                 />
             </div>
 
-            <div className="flex items-center gap-3">
-                <div className="flex items-center theme-bg-secondary p-1 rounded-xl border theme-border">
+            {/* RIGHT: View Toggles & Actions */}
+            <div className="flex items-center gap-4">
+                <div className="flex items-center bg-gray-100 dark:bg-white/5 p-1.5 rounded-2xl border theme-border">
                     <button
                         onClick={() => onViewModeChange('grid')}
-                        className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'theme-surface theme-text-primary shadow-sm' : 'theme-text-muted hover:theme-text-primary'}`}
+                        className={cx(
+                            controlStyles.iconButton,
+                            "!p-2.5 !rounded-xl",
+                            viewMode === 'grid' ? "bg-white dark:bg-white/10 theme-text-primary shadow-md" : "theme-text-muted"
+                        )}
                         title="Grid View"
                     >
-                        <LayoutGrid size={18} />
+                        <LayoutGrid size={20} />
                     </button>
                     <button
                         onClick={() => onViewModeChange('list')}
-                        className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'theme-surface theme-text-primary shadow-sm' : 'theme-text-muted hover:theme-text-primary'}`}
+                        className={cx(
+                            controlStyles.iconButton,
+                            "!p-2.5 !rounded-xl",
+                            viewMode === 'list' ? "bg-white dark:bg-white/10 theme-text-primary shadow-md" : "theme-text-muted"
+                        )}
                         title="List View"
                     >
-                        <List size={18} />
+                        <List size={20} />
                     </button>
                 </div>
 
-                <div className="h-8 w-[1px] theme-border border-r mx-1 hidden md:block" />
+                <div className="h-10 w-[1px] theme-border border-r mx-1 hidden md:block opacity-20" />
 
-                <button
+                <Motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={onToggleCreate}
-                    className="flex items-center gap-2 px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold transition-all shadow-md shadow-indigo-600/20 active:scale-95"
+                    className={cx(
+                        buttonStyles.base,
+                        showCreate ? "!bg-red-500 !text-white !shadow-red-500/20" : buttonStyles.primary,
+                        "!h-14 !px-8 !rounded-2xl flex items-center gap-3 !text-xs !font-black !uppercase !tracking-widest shadow-xl"
+                    )}
                 >
-                    <Plus size={18} />
-                    <span>{showCreate ? 'Close' : 'Create Template'}</span>
-                </button>
+                    {showCreate ? <X size={20} /> : <Plus size={20} />}
+                    <span>{showCreate ? 'Cancel' : 'New Template'}</span>
+                </Motion.button>
             </div>
         </div>
     );
 };
 
 export default StudioDashboardToolbar;
-

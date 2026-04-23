@@ -11,11 +11,17 @@ const fadeUp = {
 
 const PricingCard = ({ plan }) => {
     const navigate = useNavigate();
-    const { isAuthenticated } = useAuthStore();
+    const { isAuthenticated, user } = useAuthStore();
     const { processSubscription } = usePayment();
 
+    const currentPlanId = user?.subscription?.plan || 'FREE';
+    const isCurrent = currentPlanId === plan.name.toUpperCase() || (currentPlanId === 'CREATOR' && plan.name === 'Creator') || (currentPlanId === 'TEAMS' && plan.name === 'Teams');
+    const isTeamsPlan = currentPlanId === 'TEAMS';
+    const isThisTeams = plan.name === 'Teams';
+    const isThisFree = plan.name === 'Free';
+
     const handleAction = (e) => {
-        if (plan.isComingSoon) return;
+        if (plan.isComingSoon || isCurrent || isTeamsPlan || isThisTeams || isThisFree) return;
         
         if (!isAuthenticated) {
             navigate('/login');
@@ -32,6 +38,25 @@ const PricingCard = ({ plan }) => {
             navigate('/dashboard');
         });
     };
+
+    let btnLabel = plan.ctaLabel;
+    let forceDisabled = plan.isComingSoon;
+
+    if (isAuthenticated) {
+        if (isCurrent) {
+            btnLabel = 'Current Plan';
+            forceDisabled = true;
+        } else if (isTeamsPlan) {
+            btnLabel = 'Plan Managed';
+            forceDisabled = true;
+        } else if (isThisTeams) {
+            btnLabel = 'Contact Admin';
+            forceDisabled = true;
+        } else if (isThisFree) {
+            btnLabel = 'Included';
+            forceDisabled = true;
+        }
+    }
 
     return (
         <Motion.div
@@ -117,19 +142,28 @@ const PricingCard = ({ plan }) => {
             </div>
 
             {/* 🔥 CTA ALWAYS BOTTOM */}
-            <button
-                type="button"
-                onClick={handleAction}
-                disabled={plan.isComingSoon}
-                className={`${plan.featured
-                    ? 'btn-premium bg-gradient-to-r from-indigo-500 to-indigo-600 shadow-[0_10px_40px_rgba(99,102,241,0.4)] text-white'
-                    : plan.isComingSoon
-                        ? 'theme-surface-soft border border-dashed theme-border opacity-50 cursor-not-allowed theme-text-muted'
-                        : 'theme-surface-soft border theme-border hover:border-indigo-500/40 theme-text-primary'
-                    } mt-4 w-full h-16 flex items-center justify-center rounded-2xl font-semibold text-[12px] uppercase tracking-[0.2em] transition-all`}
-            >
-                {plan.ctaLabel}
-            </button>
+            <div className="relative group">
+                <button
+                    type="button"
+                    onClick={handleAction}
+                    disabled={forceDisabled}
+                    className={`${plan.featured && !forceDisabled
+                        ? 'btn-premium bg-gradient-to-r from-indigo-500 to-indigo-600 shadow-[0_10px_40px_rgba(99,102,241,0.4)] text-white'
+                        : forceDisabled
+                            ? 'theme-surface-soft border border-dashed theme-border opacity-50 cursor-not-allowed theme-text-muted'
+                            : 'theme-surface-soft border theme-border hover:border-indigo-500/40 theme-text-primary'
+                        } mt-4 w-full h-16 flex items-center justify-center rounded-2xl font-semibold text-[12px] uppercase tracking-[0.2em] transition-all`}
+                >
+                    {btnLabel}
+                </button>
+
+                {/* Custom Tooltip for Teams */}
+                {isThisTeams && !isCurrent && isAuthenticated && (
+                    <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-48 p-3 bg-gray-900 text-white text-[10px] rounded-xl shadow-2xl z-50 text-center animate-in fade-in zoom-in duration-200">
+                        Teams plan requires enterprise setup. Contact administrator.
+                    </span>
+                )}
+            </div>
 
         </Motion.div>
     );

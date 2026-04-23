@@ -1,6 +1,9 @@
 export const components = {
     appShell: 'app-shell',
     appMain: 'app-main',
+    ui: {
+        glowOrb: 'absolute left-1/2 top-[-15%] h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-[color-mix(in_srgb,var(--qb-primary)_14%,transparent)] blur-[90px] pointer-events-none',
+    },
     button: {
         base: 'inline-flex items-center justify-center rounded-lg font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60',
         sizes: {

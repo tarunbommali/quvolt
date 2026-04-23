@@ -22,6 +22,8 @@ export const textStyles = {
     breadcrumbBase: 'text-sm text-gray-400 dark:text-gray-500',
     breadcrumbLink: 'text-sm text-gray-400 hover:underline dark:text-gray-500',
     breadcrumbActive: 'text-sm font-medium text-gray-900 dark:text-gray-100',
+    link: 'text-[var(--qb-primary)] hover:underline font-bold transition-all',
+    emphasis: 'font-black text-slate-900 dark:text-white',
 };
 
 export const tagStyles = {

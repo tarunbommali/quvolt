@@ -1,6 +1,6 @@
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { useUIStore } from '../../../stores/useUIStore';
-import { components } from '../../../styles/components';
+import { components } from '../../../styles/index';
 
 const COLORS = ['#16a34a', '#dc2626'];
 

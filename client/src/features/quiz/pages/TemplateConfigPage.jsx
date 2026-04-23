@@ -21,10 +21,12 @@ import {
 
 import SubHeader from '../../../components/layout/SubHeader';
 import LoadingScreen from '../../../components/common/LoadingScreen';
-import { buttonStyles } from '../../../styles/buttonStyles';
+
 import { useAuthStore } from '../../../stores/useAuthStore';
 import { useQuizStore } from '../../../stores/useQuizStore';
 import * as templateApi from '../../../services/template.api';
+import { updateQuiz } from '../../host/services/host.service';
+import { buttonStyles } from '../../../styles/index';
 
 // ── Plan helpers ───────────────────────────────────────────────────────────────
 const getPlan     = (user) => (user?.subscription?.plan || 'FREE').toUpperCase();
@@ -106,7 +108,7 @@ const PlanBadge = ({ plan }) => {
 
 // ── Config form ────────────────────────────────────────────────────────────────
 
-const ConfigForm = ({ draft, setDraft, globalDefaultsMode, saving, error, onSave, onSaveAndStart }) => {
+const ConfigForm = ({ draft, setDraft, globalDefaultsMode, saving, error, onSave, onSaveAndStart, quizAccessType, onQuizAccessTypeChange }) => {
     const user    = useAuthStore((s) => s.user);
     const plan    = getPlan(user);
     const creator = isCreator(plan);
@@ -266,6 +268,11 @@ const ConfigForm = ({ draft, setDraft, globalDefaultsMode, saving, error, onSave
                     {open.access && (
                         <Motion.div key="access" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
                             <div className="px-4 py-1 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50">
+                                {!globalDefaultsMode && (
+                                    <Row label="Template Privacy" hint={quizAccessType === 'public' ? 'Public (Discoverable on the global marketplace)' : 'Private (Exclusive encrypted access via link)'}>
+                                        <Toggle checked={quizAccessType === 'private'} onChange={(v) => onQuizAccessTypeChange(v ? 'private' : 'public')} planLock={!creator && quizAccessType === 'public'} />
+                                    </Row>
+                                )}
                                 <Row label="Allow late join" hint="Participants can join after quiz starts">
                                     <Toggle checked={draft.access?.allowLateJoin ?? true} onChange={(v) => setVal('access.allowLateJoin', v)} />
                                 </Row>
@@ -363,18 +370,23 @@ const TemplateConfigPage = () => {
     const [saving, setSaving]     = useState(false);
     const [error, setError]       = useState(null);
     const [quizTitle, setQuizTitle] = useState('');
+    const [quizAccessType, setQuizAccessType] = useState('public');
 
     // Resolve quiz title in per-quiz mode
     useEffect(() => {
         if (!id) return;
         if (activeQuiz && String(activeQuiz._id) === String(id)) {
             setQuizTitle(activeQuiz.title || '');
+            setQuizAccessType(activeQuiz.accessType || 'public');
             return;
         }
         getQuizzesForParent('none')
             .then((quizzes) => {
                 const match = quizzes?.find((q) => String(q._id) === String(id));
-                if (match) setQuizTitle(match.title || '');
+                if (match) {
+                    setQuizTitle(match.title || '');
+                    setQuizAccessType(match.accessType || 'public');
+                }
             })
             .catch(() => {});
     }, [id, activeQuiz, getQuizzesForParent]);
@@ -417,6 +429,21 @@ const TemplateConfigPage = () => {
             const updated = await templateApi.updateTemplate(draft._id, draft);
             setTemplate(updated);
             setDraft(JSON.parse(JSON.stringify(updated)));
+            
+            // Save Template Privacy if applicable
+            if (!globalDefaultsMode && id && quizAccessType) {
+                try {
+                    await updateQuiz(id, { accessType: quizAccessType });
+                    if (activeQuiz && activeQuiz._id === id) {
+                        useQuizStore.getState().setActiveQuiz({ ...activeQuiz, accessType: quizAccessType });
+                    }
+                    const quizzes = useQuizStore.getState().quizzes || [];
+                    const updatedQuizzes = quizzes.map(q => String(q._id) === String(id) ? { ...q, accessType: quizAccessType } : q);
+                    useQuizStore.setState({ quizzes: updatedQuizzes });
+                } catch (accessErr) {
+                    console.error("Failed to update template privacy", accessErr);
+                }
+            }
         } catch (err) {
             setError(err?.response?.data?.message || 'Failed to save settings.');
         } finally {
@@ -493,6 +520,8 @@ const TemplateConfigPage = () => {
                     error={error}
                     onSave={handleSave}
                     onSaveAndStart={handleSaveAndStart}
+                    quizAccessType={quizAccessType}
+                    onQuizAccessTypeChange={setQuizAccessType}
                 />
             )}
         </div>

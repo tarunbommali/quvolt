@@ -1,14 +1,17 @@
+
+
 import LegalLayout, { LegalSection, LegalList } from './LegalLayout';
+import { typography, cx } from '../../../styles/index';
 
 export default function DisclaimerPage() {
     return (
         <LegalLayout title="Disclaimer" lastUpdated={new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}>
-            <div className="space-y-4 text-sm md:text-base font-medium theme-text-secondary leading-relaxed mb-8">
-                <p>By using <strong>Quvolt</strong>, you agree to the conditions outlined in this disclaimer.</p>
+            <div className={cx(typography.body, "mb-8 leading-relaxed")}>
+                <p>This Disclaimer contains important information regarding your use of <strong className={typography.bodyStrong}>Quvolt</strong>.</p>
             </div>
 
             <LegalSection title="1. General">
-                <p>Quvolt is provided on an &quot;as is&quot; and &quot;as available&quot; basis without any warranties of any kind, whether express, implied, statutory, or otherwise.</p>
+                <p className={typography.body}>Quvolt is provided on an &quot;as is&quot; and &quot;as available&quot; basis without any warranties of any kind, whether express, implied, statutory, or otherwise.</p>
             </LegalSection>
 
             <LegalSection title="2. No Guarantees">
@@ -33,7 +36,7 @@ export default function DisclaimerPage() {
             </LegalSection>
 
             <LegalSection title="5. Contact">
-                <p>If you have any questions regarding this Disclaimer, please reach out to: <a href="mailto:support@quvolt.com" className="text-[var(--qb-primary)] hover:underline font-bold">support@quvolt.com</a></p>
+                <p>If you have any questions regarding this Disclaimer, please reach out to: <a href="mailto:support@quvolt.com" className={typography.link}>support@quvolt.com</a></p>
             </LegalSection>
         </LegalLayout>
     );

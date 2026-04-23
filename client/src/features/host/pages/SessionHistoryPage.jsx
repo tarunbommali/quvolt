@@ -1,9 +1,9 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 /* eslint-disable react-hooks/preserve-manual-memoization */
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion as Motion, AnimatePresence } from 'framer-motion';
 import { getMyScheduledJoins, isTransientApiError } from '../services/host.service';
-import SearchBar from '../../../components/common/ui/SearchBar';
 import HistoryErrorState from '../components/HistoryErrorState';
 import HistoryEmptyState from '../components/HistoryEmptyState';
 import HistoryNoResultsState from '../components/HistoryNoResultsState';
@@ -14,6 +14,9 @@ import SubHeader from '../../../components/layout/SubHeader';
 import { prefetchHistoryDetailRoute } from '../../../utils/routePrefetch';
 import { useAuthStore } from '../../../stores/useAuthStore';
 import { useQuizStore } from '../../../stores/useQuizStore';
+
+import { Search, Calendar, Database } from 'lucide-react';
+import { textStyles, components, layout, typography, forms, cx } from '../../../styles/index';
 
 const REQUEST_TIMEOUT_MS = 12000;
 
@@ -43,40 +46,28 @@ const SessionHistoryPage = () => {
 
     const fetchHistory = useCallback(async () => {
         if (authLoading || !user?.role) return undefined;
-
         let active = true;
         try {
             setError(null);
-
             const data = await withTimeout(useQuizStore.getState().getHistoryForRole(user.role));
             if (!active) return undefined;
             setHistory(data);
-
             if (user.role === 'participant') {
                 const joined = await withTimeout(getMyScheduledJoins());
                 if (!active) return undefined;
                 setScheduledJoins(joined);
-            } else {
-                setScheduledJoins([]);
             }
         } catch {
             if (active) setError('Failed to load history. Please try again.');
         }
-
-        return () => {
-            active = false;
-        };
+        return () => { active = false; };
     }, [authLoading, user?.role]);
 
     const openLeaderboard = async (e, record) => {
         e.stopPropagation();
         try {
             const qId = record.quizId || record.quiz?._id || record._id;
-            if (!qId) {
-                setError('Cannot fetch standings for this record.');
-                return;
-            }
-
+            if (!qId) return setError('Cannot fetch standings for this record.');
             const data = await withTimeout(useQuizStore.getState().getQuizLeaderboardCached(qId));
             setSubjectLeaderboard(data);
             setLeaderboardMeta({
@@ -86,11 +77,7 @@ const SessionHistoryPage = () => {
             });
             setIsLeaderboardOpen(true);
         } catch (err) {
-            setError(
-                isTransientApiError(err)
-                    ? 'Temporary network issue. Standings request failed after retries.'
-                    : 'Failed to fetch standings. Please try again.',
-            );
+            setError(isTransientApiError(err) ? 'Temporary network issue.' : 'Failed to fetch standings.');
         }
     };
 
@@ -98,68 +85,42 @@ const SessionHistoryPage = () => {
         prefetchHistoryDetailRoute().catch(() => { });
         useQuizStore.getState().prefetchHistoryForRole(user.role).catch(() => { });
         const qId = record?.quizId || record?.quiz?._id || record?._id;
-        if (qId) {
-            useQuizStore.getState().prefetchQuizLeaderboard(qId).catch(() => { });
-        }
+        if (qId) useQuizStore.getState().prefetchQuizLeaderboard(qId).catch(() => { });
     }, [user?.role]);
 
     useEffect(() => {
-        if (authLoading || !user?.role) return undefined;
-
-        const cleanup = fetchHistory();
-        return () => {
-            if (cleanup && typeof cleanup.then === 'function') {
-                cleanup.then((fn) => typeof fn === 'function' && fn());
-            } else if (typeof cleanup === 'function') {
-                cleanup();
-            }
-        };
+        if (authLoading || !user?.role) return;
+        fetchHistory();
     }, [authLoading, user?.role, fetchHistory]);
 
-    useEffect(() => {
-        if (authLoading || !user?.role) return undefined;
-
-        const refresh = () => {
-            fetchHistory();
-        };
-
-        const onVisibilityChange = () => {
-            if (document.visibilityState === 'visible') {
-                refresh();
-            }
-        };
-
-        window.addEventListener('focus', refresh);
-        document.addEventListener('visibilitychange', onVisibilityChange);
-        const intervalId = window.setInterval(refresh, 30000);
-
-        return () => {
-            window.removeEventListener('focus', refresh);
-            document.removeEventListener('visibilitychange', onVisibilityChange);
-            window.clearInterval(intervalId);
-        };
-    }, [authLoading, fetchHistory, user?.role]);
-
-    const searchFilteredHistory = history.filter((record) =>
+    const filteredHistory = history.filter((record) =>
         (record.title || record.quizTitle || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
         (record.roomCode || '').toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    const filteredHistory = searchFilteredHistory;
-
     return (
-        <div className="app-page space-y-8 animate-in fade-in duration-500">
+        <Motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className={cx(layout.page, "min-h-screen pb-24")}
+        >
             <SubHeader
-                title="History"
-                subtitle={user.role === 'host' ? 'Archive of your conducted sessions' : 'Recap of your quiz performances'}
-                breadcrumbs={[{ label: 'Dashboard', href: user.role === 'host' ? '/studio' : '/join' }, { label: 'HISTORY' }]}
+                title="Activity Journal"
+                subtitle={user.role === 'host' ? 'A record of your conducted sessions and performance metrics.' : 'Your learning history and achievement vault.'}
+                breadcrumbs={[{ label: 'Studio', href: user.role === 'host' ? '/studio' : '/join' }, { label: 'Activity' }]}
                 actions={(
-                    <SearchBar
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search by title or code..."
-                        className="w-full md:w-96"
-                    />
+                    <div className={cx(forms.searchWrap, 'w-full md:w-80')}>
+                        <div className={cx(forms.searchIcon)}>
+                            <Search size={15} />
+                        </div>
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search sessions…"
+                            className={cx(forms.inputField, 'pl-9')}
+                        />
+                    </div>
                 )}
             />
 
@@ -167,25 +128,56 @@ const SessionHistoryPage = () => {
                 <HistoryErrorState error={error} onRetry={fetchHistory} />
             )}
 
-            {!error && user.role === 'participant' && scheduledJoins.length > 0 && (
-                <ScheduledSessionsSection
-                    sessions={scheduledJoins}
-                    onJoin={(session) => navigate(`/quiz/${session.roomCode}`)}
-                />
-            )}
+            {!error && (
+                <div className={layout.sectionLg}>
+                    {user.role === 'participant' && scheduledJoins.length > 0 && (
+                        <section className={layout.section}>
+                            <div className={layout.rowBetween}>
+                                <div className={layout.rowStart}>
+                                    <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                                        <Calendar size={15} />
+                                    </div>
+                                    <h2 className={typography.h2}>Scheduled Sessions</h2>
+                                </div>
+                                <span className="text-xs font-medium text-amber-600 bg-amber-50 dark:bg-amber-900/20 dark:text-amber-400 px-2.5 py-1 rounded-full">
+                                    Action Required
+                                </span>
+                            </div>
+                            <ScheduledSessionsSection
+                                sessions={scheduledJoins}
+                                onJoin={(session) => navigate(`/quiz/${session.roomCode}`)}
+                            />
+                        </section>
+                    )}
 
-            {!error && history.length === 0 ? (
-                <HistoryEmptyState />
-            ) : !error && filteredHistory.length === 0 ? (
-                <HistoryNoResultsState />
-            ) : !error && (
-                <HistoryGrid
-                    records={filteredHistory}
-                    userRole={user.role}
-                    onNavigate={(record) => navigate(`/history/${record.sessionId || record._id || record.roomCode}`)}
-                    onOpenLeaderboard={openLeaderboard}
-                    onPrefetch={prefetchHistoryNavigation}
-                />
+                    <section className={layout.section}>
+                        <div className={layout.rowBetween}>
+                            <div className={layout.rowStart}>
+                                <div className="w-7 h-7 rounded-lg bg-[var(--qb-primary)]/10 text-[var(--qb-primary)] flex items-center justify-center">
+                                    <Database size={15} />
+                                </div>
+                                <h2 className={typography.h2}>Session Archive</h2>
+                            </div>
+                            <span className={typography.metaLabel}>
+                                {filteredHistory.length} session{filteredHistory.length !== 1 ? 's' : ''}
+                            </span>
+                        </div>
+
+                        {history.length === 0 ? (
+                            <HistoryEmptyState />
+                        ) : filteredHistory.length === 0 ? (
+                            <HistoryNoResultsState />
+                        ) : (
+                            <HistoryGrid
+                                records={filteredHistory}
+                                userRole={user.role}
+                                onNavigate={(record) => navigate(`/history/${record.sessionId || record._id || record.roomCode}`)}
+                                onOpenLeaderboard={openLeaderboard}
+                                onPrefetch={prefetchHistoryNavigation}
+                            />
+                        )}
+                    </section>
+                </div>
             )}
 
             <HistoryLeaderboardModal
@@ -194,7 +186,7 @@ const SessionHistoryPage = () => {
                 meta={leaderboardMeta}
                 onClose={() => setIsLeaderboardOpen(false)}
             />
-        </div>
+        </Motion.div>
     );
 };
 

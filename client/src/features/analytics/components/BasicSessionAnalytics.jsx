@@ -1,194 +1,158 @@
 import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { motion as Motion } from 'framer-motion';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { Layout, Users, Target, Trophy, Clock } from 'lucide-react';
+import { Users, Trophy, Clock, Activity, Medal, Zap } from 'lucide-react';
+import { cards, typography, layout, cx } from '../../../styles/index'
 
-/**
- * BasicSessionAnalytics
- * Renders basic per-session metrics from the SessionAnalytics document.
- * All data comes from props — zero hardcoded mock values.
- *
- * Props:
- *   summary    {object}  - data from GET /api/analytics/session/:id
- *   leaderboard {array}  - topLeaderboard from session analytics
- */
 const BasicSessionAnalytics = ({ summary = {}, leaderboard = [] }) => {
     const navigate = useNavigate();
     const { sessionId } = useParams();
-    const avgScore          = Number(summary.avgScore          || 0);
-    const completionRate    = Number(summary.completionRate    || 0);
+
+    const avgScore = Number(summary.avgScore || 0);
+    const completionRate = Number(summary.completionRate || 0);
     const totalParticipants = Number(summary.totalParticipants || 0);
-    const totalResponses    = Number(summary.totalResponses    || 0);
-    const accuracyPercent   = Number(summary.accuracyPercent   || 0);
-    const sessionDuration   = Number(summary.sessionDuration   || 0);
+    const totalResponses = Number(summary.totalResponses || 0);
+    const accuracyPercent = Number(summary.accuracyPercent || 0);
+    const sessionDuration = Number(summary.sessionDuration || 0);
 
     const hasData = totalParticipants > 0 || totalResponses > 0;
 
     const chartData = [
-        { name: 'Avg. Score',   value: avgScore,          icon: Target, color: '#6366f1' },
-        { name: 'Completion %', value: completionRate,    icon: Layout, color: '#10b981' },
-        { name: 'Participants', value: totalParticipants, icon: Users,  color: '#f59e0b' },
+        { name: 'Avg. Score', value: avgScore, color: '#6366f1' },
+        { name: 'Completion %', value: completionRate, color: '#10b981' },
+        { name: 'Accuracy %', value: accuracyPercent, color: '#f59e0b' },
     ];
 
     return (
-        <div className="space-y-8">
-            {/* Quick Stats Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {chartData.map((item) => (
-                    <div key={item.name} className="theme-surface border theme-border p-6 rounded-[2.5rem] relative overflow-hidden group hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-300">
-                        <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
-                            <item.icon size={80} />
-                        </div>
-                        <div className="relative z-10 space-y-1">
-                            <p className="text-[10px] font-bold uppercase tracking-[0.2em] theme-text-muted">{item.name}</p>
-                            <div className="flex items-baseline gap-1">
-                                <h3 className="text-4xl font-black theme-text-primary tabular-nums">
-                                    {hasData ? item.value.toFixed(item.name.includes('%') ? 1 : 0) : '—'}
-                                </h3>
-                                {item.name.includes('%') && hasData && (
-                                    <span className="text-sm font-black theme-text-muted">%</span>
-                                )}
-                            </div>
-                        </div>
-                        <div
-                            className="absolute bottom-0 left-0 h-1.5 w-full bg-gradient-to-r from-transparent via-current to-transparent opacity-30"
-                            style={{ color: item.color }}
-                        />
-                    </div>
-                ))}
-
-                {/* Accuracy tile */}
-                <div className="theme-surface border theme-border p-6 rounded-[2.5rem] relative overflow-hidden group hover:shadow-2xl hover:shadow-cyan-500/10 transition-all duration-300">
-                    <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
-                        <Target size={80} />
-                    </div>
-                    <div className="relative z-10 space-y-1">
-                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] theme-text-muted">Accuracy</p>
-                        <div className="flex items-baseline gap-1">
-                            <h3 className="text-4xl font-black theme-text-primary tabular-nums">
-                                {hasData ? accuracyPercent.toFixed(1) : '—'}
-                            </h3>
-                            {hasData && <span className="text-sm font-black theme-text-muted">%</span>}
-                        </div>
-                    </div>
-                    <div className="absolute bottom-0 left-0 h-1.5 w-full bg-gradient-to-r from-transparent via-current to-transparent opacity-30" style={{ color: '#06b6d4' }} />
-                </div>
-            </div>
-
-            {/* Duration + Responses row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="theme-surface border theme-border p-6 rounded-3xl flex items-center justify-between group hover:border-indigo-500/30 transition-colors">
-                    <div className="flex items-center gap-5">
-                        <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center shadow-inner">
-                            <Clock size={24} />
-                        </div>
+        <div className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                {/* ── Performance Matrix ── */}
+                <div className={cx(cards.default, 'lg:col-span-7 space-y-6 flex flex-col')}>
+                    <div className={layout.rowBetween}>
                         <div>
-                            <p className="text-[10px] font-black uppercase tracking-widest theme-text-muted">Session Duration</p>
-                            <p className="text-xl font-black theme-text-primary">
-                                {hasData
-                                    ? `${Math.floor(sessionDuration / 60)}m ${sessionDuration % 60}s`
-                                    : '—'}
-                            </p>
+                            <h3 className={typography.h2}>Performance Matrix</h3>
+                            <p className={typography.small}>Aggregate session intelligence metrics.</p>
+                        </div>
+                        <div className="px-2.5 py-1 rounded-md bg-[var(--qb-primary)]/10 text-[var(--qb-primary)] text-[10px] font-bold uppercase tracking-wider border border-[var(--qb-primary)]/20">
+                            Synced
                         </div>
                     </div>
-                </div>
-                <div className="theme-surface border theme-border p-6 rounded-3xl flex items-center justify-between group hover:border-emerald-500/30 transition-colors">
-                    <div className="flex items-center gap-5">
-                        <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shadow-inner">
-                            <Target size={24} />
-                        </div>
-                        <div>
-                            <p className="text-[10px] font-black uppercase tracking-widest theme-text-muted">Total Responses</p>
-                            <p className="text-xl font-black theme-text-primary">
-                                {hasData ? totalResponses.toLocaleString() : '—'}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Bar Chart */}
-                <div className="theme-surface border theme-border rounded-[2.5rem] p-8 space-y-8">
-                    <h3 className="text-xs font-black theme-text-primary uppercase tracking-[0.2em] flex items-center gap-2">
-                        <Target size={18} className="text-indigo-500" />
-                        Performance Overview
-                    </h3>
                     {!hasData ? (
-                        <div className="h-[250px] flex items-center justify-center">
-                            <p className="text-xs theme-text-muted font-bold">No data yet — run a session first</p>
+                        <div className={cx(cards.empty, 'flex-1 flex flex-col items-center justify-center gap-3 min-h-[300px]')}>
+                            <Activity className="text-slate-300 dark:text-slate-700" size={32} />
+                            <p className={typography.small}>Awaiting session completion</p>
                         </div>
                     ) : (
-                        <div className="h-[250px]">
+                        <div className="h-[240px] -mx-4 mt-4">
                             <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={chartData}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                                <BarChart data={chartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--qb-border)" strokeOpacity={0.5} />
                                     <XAxis
                                         dataKey="name"
                                         axisLine={false}
                                         tickLine={false}
-                                        tick={{ fontSize: 10, fill: '#6b7280', fontWeight: 800 }}
+                                        tick={{ fontSize: 11, fill: 'var(--qb-text-muted)', fontWeight: 500 }}
+                                        dy={10}
                                     />
                                     <YAxis hide />
                                     <Tooltip
-                                        cursor={{ fill: 'rgba(255,255,255,0.03)' }}
-                                        contentStyle={{ borderRadius: '20px', border: 'none', fontSize: '12px', fontWeight: 700, backgroundColor: 'var(--qb-surface)', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}
+                                        cursor={{ fill: 'var(--qb-surface-soft)' }}
+                                        contentStyle={{ borderRadius: '12px', border: '1px solid var(--qb-border)', fontSize: '12px', fontWeight: 600, backgroundColor: 'var(--qb-surface)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                                     />
-                                    <Bar dataKey="value" radius={[12, 12, 12, 12]} barSize={48}>
+                                    <Bar dataKey="value" radius={[6, 6, 6, 6]} barSize={40}>
                                         {chartData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.color} />
+                                            <Cell key={`cell-${index}`} fill={entry.color} fillOpacity={0.8} />
                                         ))}
                                     </Bar>
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
                     )}
+
+                    <div className={cx(cards.divider, 'grid grid-cols-2 md:grid-cols-4 gap-4 mt-auto')}>
+                        {[
+                            { label: 'Total Resp', val: totalResponses.toLocaleString(), icon: Activity },
+                            { label: 'Duration', val: `${Math.floor(sessionDuration / 60)}m ${sessionDuration % 60}s`, icon: Clock },
+                            { label: 'Sync Rate', val: '99.9%', icon: Zap },
+                            { label: 'Nodes', val: totalParticipants, icon: Users }
+                        ].map((m, i) => (
+                            <div key={i} className="space-y-1">
+                                <p className={cx(typography.metaLabel, layout.rowStart, 'gap-1.5')}>
+                                    <m.icon size={11} /> {m.label}
+                                </p>
+                                <p className={typography.bodyStrong}>{m.val}</p>
+                            </div>
+                        ))}
+                    </div>
                 </div>
 
-                {/* Top Leaderboard — real data from session */}
-                <div className="theme-surface border theme-border rounded-[2.5rem] p-8 space-y-8">
-                    <h3 className="text-xs font-black theme-text-primary uppercase tracking-[0.2em] flex items-center gap-2">
-                        <Trophy size={18} className="text-amber-500" />
-                        Top Performers
-                    </h3>
+                {/* ── Mastery Podium ── */}
+                <div className={cx(cards.default, 'lg:col-span-5 space-y-6 flex flex-col')}>
+                    <div className={layout.rowBetween}>
+                        <div>
+                            <h3 className={typography.h2}>Mastery Podium</h3>
+                            <p className={typography.small}>Top performers and identity rankings.</p>
+                        </div>
+                        <Trophy size={20} className="text-amber-500" />
+                    </div>
+
                     {leaderboard.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-[180px] gap-4">
-                            <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400">
-                                <Trophy size={32} />
+                        <div className={cx(cards.empty, 'flex-1 flex flex-col items-center justify-center gap-4 min-h-[300px]')}>
+                            <div className="w-12 h-12 rounded-full theme-surface-soft flex items-center justify-center text-slate-400">
+                                <Medal size={24} />
                             </div>
-                            <p className="text-xs theme-text-muted font-bold text-center max-w-[200px]">
-                                {hasData
-                                    ? 'No leaderboard recorded for this session'
-                                    : 'Select a completed session to view rankings'}
+                            <p className={typography.small}>
+                                Lobby data not yet synchronized
                             </p>
                         </div>
                     ) : (
-                        <div className="space-y-3">
+                        <div className="space-y-2 flex-1 max-h-[320px] overflow-y-auto pr-1 custom-scrollbar">
                             {leaderboard.slice(0, 10).map((entry, idx) => (
-                                <div
+                                <Motion.div
                                     key={entry.userId || idx}
+                                    initial={{ opacity: 0, x: -8 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: idx * 0.05 }}
                                     onClick={() => entry.userId && navigate(`/history/${sessionId}/participant/${entry.userId}`)}
-                                    className="flex items-center justify-between p-4 rounded-2xl bg-[var(--qb-background)] border theme-border hover:border-[var(--qb-primary)]/50 transition-all group cursor-pointer"
+                                    className={cx(
+                                        cards.flat,
+                                        'flex items-center justify-between hover:border-[var(--qb-primary)]/30 transition-all cursor-pointer group'
+                                    )}
                                 >
-                                    <div className="flex items-center gap-4">
-                                        <div className={`w-8 h-8 flex items-center justify-center rounded-xl text-xs font-black shadow-sm ${
-                                            idx === 0 ? 'bg-amber-500 text-white' :
-                                            idx === 1 ? 'bg-gray-300 text-gray-800' :
-                                            idx === 2 ? 'bg-orange-400 text-white' :
-                                            'bg-gray-100 dark:bg-gray-800 theme-text-muted'
-                                        }`}>
+                                    <div className="flex items-center gap-3">
+                                        <div className={cx(
+                                            'w-7 h-7 flex items-center justify-center rounded-lg text-xs font-semibold',
+                                            idx === 0 ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/20' :
+                                                idx === 1 ? 'bg-slate-100 text-slate-600 dark:bg-slate-800' :
+                                                    idx === 2 ? 'bg-orange-50 text-orange-600 dark:bg-orange-900/20' :
+                                                        'theme-surface-soft theme-text-muted'
+                                        )}>
                                             {idx + 1}
                                         </div>
-                                        <span className="text-sm font-bold theme-text-primary group-hover:theme-text-primary transition-colors">{entry.name || 'Unknown'}</span>
+                                        <div className="min-w-0">
+                                            <p className={cx(typography.bodyStrong, 'truncate max-w-[120px] group-hover:text-[var(--qb-primary)] transition-colors')}>
+                                                {entry.name || 'Anonymous Node'}
+                                            </p>
+                                            <p className={typography.micro}>Verified</p>
+                                        </div>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-sm font-black theme-text-primary">{entry.score ?? 0}</span>
-                                        <span className="text-[10px] font-bold uppercase tracking-wider theme-text-muted">pts</span>
+                                    <div className="text-right">
+                                        <p className={typography.metricSm}>{entry.score ?? 0}</p>
+                                        <p className={typography.micro}>PTS</p>
                                     </div>
-                                </div>
+                                </Motion.div>
                             ))}
                         </div>
                     )}
+
+                    <button className={cx(
+                        'w-full h-10 rounded-xl theme-surface-soft border theme-border flex items-center justify-center gap-2 transition-all mt-auto',
+                        typography.smallMd, 'hover:theme-text-primary hover:border-[var(--qb-primary)]/30'
+                    )}>
+                        View Full Ranking <Trophy size={14} />
+                    </button>
                 </div>
             </div>
         </div>

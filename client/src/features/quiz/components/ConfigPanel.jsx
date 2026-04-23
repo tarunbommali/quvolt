@@ -1,8 +1,5 @@
 import { Shuffle, Trash2, Zap } from 'lucide-react';
-import { buttonStyles } from '../../../styles/buttonStyles';
-import { textStyles } from '../../../styles/commonStyles';
-import { components } from '../../../styles/components';
-import { cx } from '../../../styles/theme';
+import { buttonStyles, textStyles, components, cx } from '../../../styles/index';
 
 const ConfigPanel = ({
     mobile = false,

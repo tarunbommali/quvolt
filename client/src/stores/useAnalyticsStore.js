@@ -46,14 +46,15 @@ const useAnalyticsStore = create()(
             questionInsights: null,   // { questions[], summary }
             audienceInsights: null,   // { deviceBreakdown, participationTimeline, … }
             activePlan:       'FREE', // plan returned from backend for this session
+            isPaidSession:    false,  // whether the quiz was a paid one
 
             // ── Live updates ───────────────────────────────────────────────────
             liveParticipantCount: 0,
-
+ 
             // ─────────────────────────────────────────────────────────────────
             // Actions
             // ─────────────────────────────────────────────────────────────────
-
+ 
             /**
              * Load recent sessions and auto-select the most recent one.
              * Guards against concurrent calls.
@@ -76,7 +77,7 @@ const useAnalyticsStore = create()(
                     });
                 }
             },
-
+ 
             /**
              * Switch active session.
              * Clears stale analytics data and cancels any in-flight request
@@ -103,10 +104,11 @@ const useAnalyticsStore = create()(
                     questionInsights: null,
                     audienceInsights: null,
                     activePlan:       'FREE',
+                    isPaidSession:    false,
                     liveParticipantCount: 0,
                 });
             },
-
+ 
             /**
              * Fetch the unified analytics payload for the active session.
              * Race-condition-safe: stale responses are discarded via seqId.
@@ -118,15 +120,16 @@ const useAnalyticsStore = create()(
                 set({ analyticsLoading: true, analyticsError: null });
                 try {
                     const data = await fetchFullAnalytics(sessionId);
-
+ 
                     // Discard if user switched session while this was in-flight
                     if (seq !== _analyticsRequestSeq) return;
-
+ 
                     set({
-                        sessionAnalytics: data.session   || null,
-                        questionInsights: data.questions || null,
-                        audienceInsights: data.audience  || null,
-                        activePlan:       data.plan      || 'FREE',
+                        sessionAnalytics: data.session       || null,
+                        questionInsights: data.questions     || null,
+                        audienceInsights: data.audience      || null,
+                        activePlan:       data.plan          || 'FREE',
+                        isPaidSession:    data.isPaidSession || false,
                         analyticsLoading: false,
                         analyticsError:   null,
                     });
@@ -265,6 +268,7 @@ const useAnalyticsStore = create()(
                     questionInsights:    null,
                     audienceInsights:    null,
                     activePlan:          'FREE',
+                    isPaidSession:       false,
                     liveParticipantCount: 0,
                 });
             },

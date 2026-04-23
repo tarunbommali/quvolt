@@ -1,6 +1,6 @@
 import DifficultyBarChart from './DifficultyBarChart';
 import PerformanceLineChart from './PerformanceLineChart';
-import { layout } from '../../../styles/layout';
+import { layout } from '../../../styles/index';
 
 const ChartsSection = ({ performanceOverTime, questionStats }) => (
     <div className={layout.chartGrid}>

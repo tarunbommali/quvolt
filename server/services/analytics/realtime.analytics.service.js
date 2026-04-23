@@ -26,6 +26,7 @@ async function handleAnswerIncrementalUpdate({
     selectedOption,
     isCorrect,
     correctOption,
+    explanation,
     responseTime
 }) {
     // 1. O(1) Atomical Increment
@@ -48,6 +49,7 @@ async function handleAnswerIncrementalUpdate({
             $setOnInsert: {
                 questionText: questionText || '',
                 correctOption: correctOption || null,
+                explanation: explanation || '',
             }
         },
         { upsert: true, new: true }

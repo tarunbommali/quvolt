@@ -1,102 +1,105 @@
-import { Calendar, Users, Activity, BarChart2, ChevronRight } from 'lucide-react';
-import Card from '../../../components/common/ui/Card';
+import React from 'react';
+import { Calendar, Users, Activity, BarChart2, ChevronRight, Hash, ShieldCheck, Zap } from 'lucide-react';
+import { typography, cards, buttonStyles, layout, cx } from '../../../styles/index';
 
 const StatusBadge = ({ status }) => {
     if (!status) return null;
-    const isLive = status.toLowerCase() === 'live';
-    const isCompleted = status.toLowerCase() === 'completed';
+    const s = status.toLowerCase();
     
-    if (isLive) {
+    if (s === 'live') {
         return (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-600 text-[10px] font-bold uppercase tracking-wider border border-emerald-100">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Live Now
-            </span>
+            <div className="px-2.5 py-1 rounded-lg bg-red-500/10 text-red-600 border border-red-500/20 flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                <span className={typography.micro}>Live Now</span>
+            </div>
         );
     }
     
-    if (isCompleted) {
+    if (s === 'completed') {
         return (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gray-50 text-gray-600 text-[10px] font-bold uppercase tracking-wider border border-gray-200">
-                <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
-                Completed
-            </span>
+            <div className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                <span className={typography.micro}>Completed</span>
+            </div>
         );
     }
 
     return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-50 text-amber-600 text-[10px] font-bold uppercase tracking-wider border border-amber-100">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-            {status}
-        </span>
+        <div className={cx(cards.subtle, '!p-1 px-2.5 gap-1.5 flex items-center')}>
+            <div className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+            <span className={typography.micro}>{status}</span>
+        </div>
     );
 };
 
 const HistoryRecordCard = ({ record, userRole, onNavigate, onPrefetch }) => {
     const participantCount = Number(record.participantCount ?? record.joinedParticipants ?? (userRole === 'participant' ? 1 : 0));
     const isTemplate = !record.sessionCode && !record.roomCode && record.type !== 'session';
-    
-    // Fallback labels for template view vs session view
     const code = record.sessionCode || record.roomCode;
     const avgScore = record.avgScore ? `${record.avgScore}%` : '--';
 
     return (
-        <div
+        <article
             onClick={() => onNavigate(record)}
             onMouseEnter={() => onPrefetch(record)}
             onFocus={() => onPrefetch(record)}
-            className="group cursor-pointer bg-white border border-gray-200 hover:border-indigo-300 rounded-xl p-4 md:p-5 transition-all duration-200 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm hover:shadow-md relative overflow-hidden"
+            className={cx(cards.interactive, 'p-5 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 group')}
         >
-            {/* Left side: Name and meta */}
-            <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-                <div className="flex items-center gap-3">
-                    <h3 className="text-base font-bold text-gray-900 truncate">
-                        {record.quizTitle || record.title || 'Untitled'}
+            <div className="flex flex-col gap-3 flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-4">
+                    <h3 className={cx(typography.h3, 'truncate')} title={record.quizTitle || record.title}>
+                        {record.quizTitle || record.title || 'Untitled Session'}
                     </h3>
-                    {code && (
-                        <span className="px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 text-xs font-medium font-mono shrink-0">
-                            {code}
-                        </span>
-                    )}
-                    <StatusBadge status={record.status} />
+                    <div className="flex items-center gap-3">
+                        {code && (
+                            <div className={cx(cards.subtle, '!p-1 px-2.5 gap-1.5 flex items-center')}>
+                                <Hash size={12} className="opacity-40" />
+                                <span className={typography.micro}>{code}</span>
+                            </div>
+                        )}
+                        <StatusBadge status={record.status} />
+                    </div>
                 </div>
                 
-                <div className="flex items-center gap-5 text-sm text-gray-500 mt-1 font-medium">
-                    <span className="flex items-center gap-1.5">
-                        <Calendar size={14} className="text-gray-400" />
-                        {new Date(record.date || record.startedAt || record.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                        <Users size={14} className="text-gray-400" />
-                        {participantCount} {participantCount === 1 ? 'user' : 'users'}
-                    </span>
-                    {/* Only show avg score if it's a session (not a template) or if the record specifically provides it */}
-                    {(!isTemplate || record.avgScore) && (
-                        <span className="flex items-center gap-1.5 hidden md:flex">
-                            <Activity size={14} className="text-gray-400" />
-                            Avg Score: {avgScore}
+                <div className="flex flex-wrap items-center gap-6">
+                    <div className="flex items-center gap-1.5">
+                        <Calendar size={14} className="theme-text-muted" />
+                        <span className={typography.metaLabel}>
+                            {new Date(record.date || record.startedAt || record.createdAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <Users size={14} className="theme-text-muted" />
+                        <span className={typography.metaLabel}>
+                            {participantCount} {participantCount === 1 ? 'Participant' : 'Participants'}
+                        </span>
+                    </div>
+                    {(!isTemplate || record.avgScore) && (
+                        <div className="flex items-center gap-1.5">
+                            <Activity size={14} className="theme-text-muted" />
+                            <span className={typography.metaLabel}>Avg. Score: {avgScore}</span>
+                        </div>
                     )}
                 </div>
             </div>
 
-            {/* Right side: Action CTA */}
-            <div className="flex items-center shrink-0 mt-2 md:mt-0">
+            <div className="flex items-center shrink-0">
                 <button
                     type="button"
                     onClick={(e) => {
                         e.stopPropagation();
                         onNavigate(record);
                     }}
-                    className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors"
+                    className={cx(buttonStyles.base, buttonStyles.secondary, buttonStyles.sizeSm, 'gap-2 group-hover:bg-[var(--qb-primary)] group-hover:text-white group-hover:border-[var(--qb-primary)]')}
                 >
-                    <BarChart2 size={16} />
-                    {isTemplate ? 'View Sessions' : 'View Analytics'}
-                    <ChevronRight size={16} className="opacity-70 group-hover:translate-x-0.5 transition-transform" />
+                    <BarChart2 size={14} />
+                    <span>{isTemplate ? 'View Sessions' : 'View Analytics'}</span>
+                    <ChevronRight size={14} className="opacity-40 group-hover:translate-x-1 transition-transform" />
                 </button>
             </div>
-        </div>
+        </article>
     );
 };
 
 export default HistoryRecordCard;
+

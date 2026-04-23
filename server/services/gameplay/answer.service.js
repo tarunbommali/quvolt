@@ -160,6 +160,7 @@ const submitAnswer = async ({ io, socket, roomCode, sessionId, questionId, selec
         selectedOption: String(selectedOption),
         isCorrect,
         correctOption: question.options?.[question.correctOption] || null,
+        explanation: question.explanation || '',
         responseTime: timeTaken
     }).catch(err => logger.error('Incremental Analytics failed', { error: err.message }));
     

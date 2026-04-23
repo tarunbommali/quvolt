@@ -22,8 +22,8 @@ const JoinSessionPage = lazy(() => import('../features/quiz/pages/QuizJoinRoom')
 const UnauthorizedPage = lazy(() => import('../pages/public/error/UnauthorizedPage'));
 const AuthLoginPage = lazy(() => import('../features/auth/pages/AuthLoginPage'));
 const AuthRegisterPage = lazy(() => import('../features/auth/pages/AuthRegisterPage'));
-const UpgradePlansPage = lazy(() => import('../pages/public/UpgradePlansPage'));
-const CheckoutPage = lazy(() => import('../pages/public/CheckoutPage'));
+const UpgradePlansPage = lazy(() => import('../features/billing/pages/UpgradePlansPage'));
+const CheckoutPage = lazy(() => import('../features/billing/pages/CheckoutPage'));
 
 // Legal
 const TermsPage = lazy(() => import('../pages/public/legal/TermsPage'));

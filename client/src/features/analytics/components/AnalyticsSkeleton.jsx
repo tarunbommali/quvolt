@@ -1,68 +1,69 @@
 import React from 'react';
+import { cx } from '../../../styles/index';
 
-/**
- * SkeletonBlock — single animated pulse block.
- */
 const SkeletonBlock = ({ className = '' }) => (
-    <div className={`rounded-3xl bg-gray-200 dark:bg-gray-800 animate-pulse ${className}`} />
+    <div className={cx("bg-slate-100 dark:bg-slate-800 animate-pulse", className)} />
 );
 
-/**
- * AnalyticsSkeleton
- * Shows a realistic loading skeleton that matches the analytics dashboard layout.
- * Replaces the generic spinner to give users a sense of content shape.
- */
 const AnalyticsSkeleton = () => (
-    <div className="space-y-10 pb-20" aria-busy="true" aria-label="Loading analytics…">
+    <div className="space-y-12 pb-16" aria-busy="true" aria-label="Loading analytics…">
 
-        {/* Session picker skeleton */}
-        <SkeletonBlock className="h-16 w-full" />
-
-        {/* Section 1 — Session Summary */}
-        <section className="space-y-5">
-            <div className="flex items-center justify-between">
-                <SkeletonBlock className="h-5 w-40" />
-                <SkeletonBlock className="h-5 w-24 rounded-full" />
+        {/* Header Section */}
+        <div className="space-y-6">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div className="space-y-3">
+                    <SkeletonBlock className="h-4 w-32 rounded-full" />
+                    <SkeletonBlock className="h-12 w-[300px] rounded-xl" />
+                    <SkeletonBlock className="h-5 w-80 rounded-lg" />
+                </div>
+                <SkeletonBlock className="h-10 w-32 rounded-xl" />
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+            {/* Quick Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 {Array.from({ length: 4 }).map((_, i) => (
-                    <SkeletonBlock key={i} className="h-28" />
+                    <SkeletonBlock key={i} className="h-32 rounded-2xl" />
                 ))}
             </div>
-            <div className="grid grid-cols-2 gap-4">
-                <SkeletonBlock className="h-16" />
-                <SkeletonBlock className="h-16" />
+        </div>
+
+        {/* Section 1 — Performance Matrix */}
+        <section className="space-y-6">
+            <div className="space-y-2">
+                <SkeletonBlock className="h-8 w-48 rounded-lg" />
+                <SkeletonBlock className="h-4 w-72 rounded-md" />
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <SkeletonBlock className="h-64" />
-                <SkeletonBlock className="h-64" />
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <SkeletonBlock className="lg:col-span-7 h-[400px] rounded-2xl" />
+                <SkeletonBlock className="lg:col-span-5 h-[400px] rounded-2xl" />
             </div>
         </section>
 
         {/* Section 2 — Audience */}
-        <section className="space-y-5">
-            <div className="flex items-center justify-between">
-                <SkeletonBlock className="h-5 w-52" />
-                <SkeletonBlock className="h-5 w-32 rounded-full" />
+        <section className="space-y-6">
+            <div className="space-y-2">
+                <SkeletonBlock className="h-8 w-64 rounded-lg" />
+                <SkeletonBlock className="h-4 w-80 rounded-md" />
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <SkeletonBlock className="h-80" />
-                <SkeletonBlock className="h-80" />
-            </div>
-        </section>
-
-        {/* Section 3 — Questions */}
-        <section className="space-y-5">
-            <div className="flex items-center justify-between">
-                <SkeletonBlock className="h-5 w-48" />
-                <SkeletonBlock className="h-5 w-28 rounded-full" />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {Array.from({ length: 3 }).map((_, i) => (
-                    <SkeletonBlock key={i} className="h-28" />
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                    <SkeletonBlock key={i} className="h-32 rounded-2xl" />
                 ))}
             </div>
-            <SkeletonBlock className="h-64" />
+            <SkeletonBlock className="h-24 rounded-2xl" />
+        </section>
+
+        {/* Section 3 — Question Intelligence */}
+        <section className="space-y-6">
+            <div className="space-y-2">
+                <SkeletonBlock className="h-8 w-56 rounded-lg" />
+                <SkeletonBlock className="h-4 w-72 rounded-md" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {Array.from({ length: 8 }).map((_, i) => (
+                    <SkeletonBlock key={i} className="h-48 rounded-2xl" />
+                ))}
+            </div>
         </section>
     </div>
 );

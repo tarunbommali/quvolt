@@ -1,13 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Play, Zap, CalendarClock, Clock, Copy, Check } from 'lucide-react';
+import { Zap, Clock, Copy, Check, Play, Share2, Users, AlertCircle } from 'lucide-react';
 import { motion as Motion } from 'framer-motion';
 import SubHeader from '../../layout/SubHeader';
 import { LivePulseBadge } from '../ui';
-import { buttonStyles } from '../../../styles/buttonStyles';
-import ErrorState from '../common/ErrorState';
-import { motionTokens } from '../../../design';
+import { cards, typography, buttonStyles, layout, cx } from '../../../styles/index'
 
-// Formats ms remaining into HH:MM:SS
 const formatCountdown = (ms) => {
     if (ms <= 0) return '00:00:00';
     const totalSec = Math.floor(ms / 1000);
@@ -24,11 +21,11 @@ const LiveLobby = ({ activeQuiz, joinCode, participants, startQuizBroadcast, sho
     const displayedCode = joinCode || activeQuiz?.activeSessionCode || activeQuiz?.roomCode;
 
     const joinUrl = `${window.location.origin}/quiz/${displayedCode}`;
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(joinUrl)}&bgcolor=e0e7ff&color=4f46e5&margin=10`;
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(joinUrl)}&bgcolor=ffffff&color=4f46e5&margin=10`;
 
     const [copied, setCopied] = useState(false);
     const [copiedCode, setCopiedCode] = useState(false);
-    const [now, setNow] = useState(0);
+    const [now, setNow] = useState(Date.now());
 
     const countdown = useMemo(() => {
         if (!isScheduled || !scheduledDate) return 0;
@@ -37,16 +34,9 @@ const LiveLobby = ({ activeQuiz, joinCode, participants, startQuizBroadcast, sho
 
     const canLaunch = !isScheduled || countdown <= 0;
 
-    // Countdown timer for scheduled sessions
     useEffect(() => {
         if (!isScheduled || !scheduledDate) return undefined;
-
-        const id = setInterval(tick, 1000);
-
-        function tick() {
-            setNow(Date.now());
-        }
-
+        const id = setInterval(() => setNow(Date.now()), 1000);
         return () => clearInterval(id);
     }, [isScheduled, scheduledDate]);
 
@@ -65,10 +55,10 @@ const LiveLobby = ({ activeQuiz, joinCode, participants, startQuizBroadcast, sho
     };
 
     return (
-        <div className="app-page mx-auto  space-y-6 animate-in fade-in duration-300">
+        <div className="app-page mx-auto max-w-5xl space-y-8 animate-in fade-in duration-500">
             <SubHeader
-                title="Invite Room"
-                subtitle={`Active: ${activeQuiz.title}`}
+                title="Creator Lobby"
+                subtitle={`Preparing session for ${activeQuiz.title}`}
                 breadcrumbs={[
                     { label: 'Studio', href: '/studio' },
                     { label: activeQuiz.title },
@@ -78,147 +68,186 @@ const LiveLobby = ({ activeQuiz, joinCode, participants, startQuizBroadcast, sho
                     <button
                         type="button"
                         onClick={onAbort}
-                        className={`${buttonStyles.danger} rounded-xl px-4 py-2 text-xs font-bold`}
+                        className={cx(buttonStyles.base, buttonStyles.danger, buttonStyles.sizeMd)}
                     >
-                        Abort
+                        Terminate Session
                     </button>
                 )}
             />
 
-            <section className="space-y-4">
-                {realtimeError ? (
-                    <ErrorState
-                        title="Realtime sync issue"
-                        message={realtimeError}
-                    />
-                ) : null}
-
-                {isScheduled && scheduledDate && !canLaunch && (
-                    <div className="flex items-center justify-between gap-3 rounded-xl border border-violet-200 bg-violet-50 px-5 py-4">
-                        <div className="flex items-center gap-3">
-                            <span className="rounded-lg bg-violet-100 p-2 text-violet-700">
-                                <Clock size={16} />
-                            </span>
-                            <div>
-                                <p className="text-sm font-semibold text-violet-900">Scheduled Session</p>
-                                <p className="text-xs text-violet-700">
-                                    Starts at {scheduledDate.toLocaleString('en-IN', {
-                                        weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
-                                    })}
-                                </p>
-                            </div>
+            <div className="space-y-6">
+                {realtimeError && (
+                    <div className={cx(cards.flat, "bg-red-50/50 border-red-200 dark:bg-red-900/10 dark:border-red-900/30", layout.rowStart, "items-start gap-3")}>
+                        <AlertCircle className="text-red-600 shrink-0" size={20} />
+                        <div className="space-y-0.5">
+                            <p className={typography.bodyStrong}>Real-time sync issue</p>
+                            <p className={typography.small}>{realtimeError}</p>
                         </div>
-                        <p className="text-lg font-black tracking-wide text-violet-700 tabular-nums">{formatCountdown(countdown)}</p>
                     </div>
                 )}
 
-                <Motion.div
-                    initial={motionTokens.fadeUp.hidden}
-                    animate={motionTokens.fadeUp.visible}
-                    transition={motionTokens.transition.smooth}
-                    className="flex items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white px-5 py-4"
-                >
-                    <div className="space-y-2">
-                        <div className="space-y-1">
-                            <p className="text-xs font-bold text-gray-500">{isScheduled ? 'Permanent code' : 'Live session code'}</p>
-                            <p className="text-xl font-black tracking-widest text-gray-900">{displayedCode}</p>
-                        </div>
-                        <div>
-                            <LivePulseBadge count={participants.length} label="users connected" />
-                        </div>
-                    </div>
-                    <button
-                        type="button"
-                        onClick={handleCopyCode}
-                        className={`${buttonStyles.secondary} rounded-lg px-3 py-1.5 text-sm font-semibold`}
+                {isScheduled && scheduledDate && !canLaunch && (
+                    <Motion.div
+                        initial={{ opacity: 0, y: -16 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className={cx(cards.elevated, layout.rowBetween, "flex-col sm:flex-row bg-[var(--qb-primary)]/[0.02] border-[var(--qb-primary)]/20")}
                     >
-                        {copiedCode ? 'Copied' : 'Copy Code'}
-                    </button>
-                </Motion.div>
-
-                <div className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-white px-5 py-4 md:flex-row md:items-center md:justify-between">
-                    <div className="space-y-1">
-                        <p className="text-xs font-bold text-gray-500">Join link</p>
-                        <p className="max-w-2xl truncate text-sm font-medium text-gray-700">{joinUrl}</p>
-                    </div>
-                    <button
-                        type="button"
-                        onClick={handleCopyLink}
-                        className={`${buttonStyles.secondary} rounded-lg px-3 py-1.5 text-sm font-semibold`}
-                    >
-                        {copied ? 'Copied' : 'Copy Link'}
-                    </button>
-                </div>
-
-                <div className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-white px-5 py-4 md:flex-row md:items-center md:justify-between">
-                    <div className="flex items-center gap-3">
-                        <span className="rounded-lg bg-indigo-50 p-2 text-indigo-600">
-                            <Play size={16} className="fill-indigo-600" />
-                        </span>
-                        <div>
-                            <p className="text-sm font-semibold text-gray-900">Start Quiz Session</p>
-                            <p className="text-sm text-gray-500">Launch the room for participants and begin real-time flow</p>
-                        </div>
-                    </div>
-                    <button
-                        type="button"
-                        onClick={startQuizBroadcast}
-                        disabled={isScheduled && !canLaunch}
-                        className={`${buttonStyles.primary} rounded-lg px-3 py-1.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60`}
-                    >
-                        Launch Session
-                    </button>
-                </div>
-            </section>
-
-            <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                <div className="rounded-xl border border-gray-200 bg-white p-4">
-                    <h3 className="text-xs font-bold text-gray-500">Join QR</h3>
-                    <div className="mt-3 flex flex-col items-center gap-3">
-                        <img src={qrUrl} alt="Quiz QR Code" className="h-48 w-48 rounded-xl border border-gray-100" />
-                        <p className="text-xs text-gray-500">Scan to join with code {displayedCode}</p>
-                    </div>
-                </div>
-
-                <Motion.div
-                    initial={motionTokens.fadeUp.hidden}
-                    animate={motionTokens.fadeUp.visible}
-                    transition={motionTokens.transition.smooth}
-                    className="rounded-xl border border-gray-200 bg-white p-4"
-                >
-                    <div className="mb-3 flex items-center justify-between gap-3">
-                        <div>
-                            <h3 className="text-xs font-bold text-gray-500">Participants</h3>
-                            <p className="mt-1 text-[11px] font-semibold text-slate-400">Connected: {participants.length}</p>
-                        </div>
-                        <span className="rounded-full bg-indigo-100 px-3 py-1 text-xs font-bold text-indigo-700">{participants.length}</span>
-                    </div>
-
-                    <div className="max-h-64 space-y-2 overflow-y-auto pr-1 custom-scrollbar">
-                        {participants.map((p, i) => (
-                            <Motion.div
-                                initial={motionTokens.fadeUp.hidden}
-                                animate={motionTokens.fadeUp.visible}
-                                transition={{ ...motionTokens.transition.snappy, delay: i * 0.03 }}
-                                key={p._id || i}
-                                className="flex items-center gap-2 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-800"
-                            >
-                                <span className="h-2 w-2 rounded-full bg-green-500" />
-                                {p.name}
-                            </Motion.div>
-                        ))}
-
-                        {participants.length === 0 && (
-                            <div className="py-8 text-center text-xs font-semibold text-gray-400">
-                                Waiting for participants...
+                        <div className={cx(layout.rowStart, "gap-4")}>
+                            <div className="w-12 h-12 rounded-xl theme-surface flex items-center justify-center text-[var(--qb-primary)] shadow-sm border theme-border">
+                                <Clock size={24} />
                             </div>
-                        )}
+                            <div>
+                                <h3 className={typography.h2}>Scheduled Session</h3>
+                                <p className={typography.small}>
+                                    Live at {scheduledDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {scheduledDate.toLocaleDateString()}
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex flex-col items-end">
+                            <p className={typography.metaLabel}>Commencing in</p>
+                            <p className={cx(typography.metricLg, "text-[var(--qb-primary)] tabular-nums")}>{formatCountdown(countdown)}</p>
+                        </div>
+                    </Motion.div>
+                )}
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    {/* Left Column: Connection Intel */}
+                    <div className="lg:col-span-7 space-y-6">
+                        {/* Room Code Card */}
+                        <div className={cx(cards.elevated, "group")}>
+                            <div className={cx(layout.rowBetween, "mb-6 items-start")}>
+                                <div className="space-y-1">
+                                    <p className={typography.eyebrow}>
+                                        {isScheduled ? 'Permanent Room Code' : 'Live Session ID'}
+                                    </p>
+                                    <h3 className={cx(typography.display, "tracking-[0.1em] font-bold")}>{displayedCode}</h3>
+                                </div>
+                                <button
+                                    onClick={handleCopyCode}
+                                    className={cx(buttonStyles.base, buttonStyles.secondary, buttonStyles.sizeMd, "gap-2")}
+                                >
+                                    {copiedCode ? <Check size={16} /> : <Copy size={16} />}
+                                    {copiedCode ? 'Copied' : 'Copy'}
+                                </button>
+                            </div>
+                            <div className={cx(layout.rowStart, "gap-3")}>
+                                <LivePulseBadge count={participants.length} label="Creators Connected" />
+                                <div className="h-4 w-px bg-slate-200 dark:bg-slate-800" />
+                                <div className={cx(layout.rowStart, typography.micro, "gap-1.5 px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800")}>
+                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                    Global Sync Active
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Join Link Card */}
+                        <div className={cx(cards.default, layout.rowBetween, "flex-col sm:flex-row")}>
+                            <div className={cx(layout.rowStart, "gap-3 min-w-0 flex-1")}>
+                                <div className="w-10 h-10 rounded-xl theme-surface-soft flex items-center justify-center theme-text-muted shrink-0">
+                                    <Share2 size={18} />
+                                </div>
+                                <div className="min-w-0 flex-1 space-y-0.5">
+                                    <p className={typography.metaLabel}>Direct Invite URL</p>
+                                    <p className={cx(typography.bodyStrong, "truncate")}>{joinUrl}</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={handleCopyLink}
+                                className={cx(buttonStyles.base, buttonStyles.secondary, buttonStyles.sizeMd, "mt-4 sm:mt-0 w-full sm:w-auto")}
+                            >
+                                {copied ? 'Copied' : 'Copy Link'}
+                            </button>
+                        </div>
+
+                        {/* Launch Action Card */}
+                        <div className={cx(cards.elevated, "border-[var(--qb-primary)]/40 shadow-lg shadow-[var(--qb-primary)]/10 bg-[var(--qb-primary)]/[0.02]")}>
+                            <div className={cx(layout.rowBetween, "flex-col sm:flex-row gap-6")}>
+                                <div className={cx(layout.rowStart, "gap-4")}>
+                                    <div className="w-14 h-14 rounded-2xl bg-[var(--qb-primary)] text-white flex items-center justify-center shadow-md shadow-[var(--qb-primary)]/20 shrink-0">
+                                        <Play size={24} fill="currentColor" className="ml-1" />
+                                    </div>
+                                    <div>
+                                        <h3 className={typography.h2}>Initiate Sequence</h3>
+                                        <p className={typography.small}>Launch the room and begin the real-time interaction flow.</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={startQuizBroadcast}
+                                    disabled={isScheduled && !canLaunch}
+                                    className={cx(buttonStyles.base, buttonStyles.primary, buttonStyles.sizeLg, "gap-2 w-full sm:w-auto")}
+                                >
+                                    <Zap size={16} fill="currentColor" />
+                                    Launch Room
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                </Motion.div>
-            </section>
+
+                    {/* Right Column: Visual Access */}
+                    <div className="lg:col-span-5 space-y-6">
+                        {/* QR Intel */}
+                        <div className={cx(cards.elevated, "flex flex-col items-center text-center space-y-5")}>
+                            <div>
+                                <p className={typography.eyebrow}>Visual Gateway</p>
+                                <h3 className={typography.h2}>Express Access QR</h3>
+                            </div>
+                            <div className="relative group p-2">
+                                <div className="absolute -inset-2 bg-[var(--qb-primary)]/5 rounded-3xl blur-xl group-hover:bg-[var(--qb-primary)]/10 transition-all" />
+                                <div className="relative bg-white p-3 rounded-2xl border-2 border-slate-100 shadow-xl shadow-[var(--qb-primary)]/5">
+                                    <img src={qrUrl} alt="Room QR" className="w-48 h-48 rounded-lg" />
+                                </div>
+                            </div>
+                            <p className={cx(typography.small, "max-w-[200px]")}>
+                                Participants can scan this unique identity token to bypass code entry.
+                            </p>
+                        </div>
+
+                        {/* Roster Intel */}
+                        <div className={cx(cards.default, "flex flex-col")}>
+                            <div className={cx(layout.rowBetween, "mb-4")}>
+                                <div className={cx(layout.rowStart, "gap-2")}>
+                                    <Users size={16} className="text-[var(--qb-primary)]" />
+                                    <h3 className={typography.h3}>Active Roster</h3>
+                                </div>
+                                <div className={cx(typography.micro, "px-2.5 py-1 rounded-md bg-[var(--qb-primary)]/10 text-[var(--qb-primary)] border border-[var(--qb-primary)]/20 font-bold")}>
+                                    {participants.length} Present
+                                </div>
+                            </div>
+
+                            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+                                {participants.map((p, i) => (
+                                    <Motion.div
+                                        key={p._id || i}
+                                        initial={{ opacity: 0, x: 8 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: i * 0.05 }}
+                                        className={cx(cards.flat, layout.rowBetween, "py-3")}
+                                    >
+                                        <div className={cx(layout.rowStart, "gap-3")}>
+                                            <div className="w-7 h-7 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800 flex items-center justify-center">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                            </div>
+                                            <span className={typography.bodyStrong}>{p.name}</span>
+                                        </div>
+                                        <span className={cx(typography.micro, "text-emerald-600 dark:text-emerald-400 font-bold")}>Live</span>
+                                    </Motion.div>
+                                ))}
+
+                                {participants.length === 0 && (
+                                    <div className={cx(cards.empty, "py-8")}>
+                                        <div className="w-10 h-10 rounded-full theme-surface-soft flex items-center justify-center text-slate-400 mb-2">
+                                            <Users size={20} />
+                                        </div>
+                                        <p className={typography.small}>Waiting for participants...</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 };
 
 export default LiveLobby;
-

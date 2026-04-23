@@ -1,7 +1,6 @@
 import { motion } from 'framer-motion';
 import { BarChart3, TrendingUp, Users } from 'lucide-react';
-import { components } from '../../../styles/components';
-import { cx } from '../../../styles/theme';
+import { components, cx } from '../../../styles/index';
 
 const MotionCard = motion(
     ({ className, children, ...props }) => (

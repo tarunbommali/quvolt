@@ -1,37 +1,38 @@
-import { AlertCircle, CheckCircle, XCircle, Clock } from 'lucide-react';
-import Card from '../../common/ui/Card';
-import { cardStyles } from '../../../styles/cardStyles';
-import { textStyles } from '../../../styles/commonStyles';
+import React from 'react';
+import { motion as Motion } from 'framer-motion';
+import { AlertCircle, CheckCircle, XCircle, Clock, Loader2, Sparkles, TrendingUp } from 'lucide-react';
+import { textStyles, components } from '../../../styles/index';
 
 const PaymentStatusCard = ({ status, lastPaymentDate, nextPaymentDate, amount, planName }) => {
     const statusConfig = {
         success: {
             icon: CheckCircle,
-            label: 'Payment Successful',
-            color: 'text-green-600',
-            bgColor: 'bg-green-50',
-            borderColor: 'border-green-200',
+            label: 'Transaction Confirmed',
+            tone: 'text-emerald-500',
+            bg: 'bg-emerald-500/[0.03]',
+            border: 'border-emerald-500/20',
         },
         failed: {
             icon: XCircle,
-            label: 'Payment Failed',
-            color: 'text-red-600',
-            bgColor: 'bg-red-50',
-            borderColor: 'border-red-200',
+            label: 'Transaction Declined',
+            tone: 'text-red-500',
+            bg: 'bg-red-500/[0.03]',
+            border: 'border-red-500/20',
         },
         pending: {
             icon: Clock,
-            label: 'Payment Pending',
-            color: 'theme-tone-warning',
-            bgColor: 'theme-status-warning',
-            borderColor: '',
+            label: 'Awaiting Authorization',
+            tone: 'text-amber-500',
+            bg: 'bg-amber-500/[0.03]',
+            border: 'border-amber-500/20',
         },
         processing: {
-            icon: Clock,
-            label: 'Processing',
-            color: 'text-blue-600',
-            bgColor: 'bg-blue-50',
-            borderColor: 'border-blue-200',
+            icon: Loader2,
+            label: 'Validating Logic...',
+            tone: 'text-indigo-500',
+            bg: 'bg-indigo-500/[0.03]',
+            border: 'border-indigo-500/20',
+            animate: true
         },
     };
 
@@ -39,43 +40,63 @@ const PaymentStatusCard = ({ status, lastPaymentDate, nextPaymentDate, amount, p
     const Icon = config.icon;
 
     return (
-        <Card className={`${cardStyles.statusCardBase} ${config.bgColor} ${config.borderColor}`}>
-            <div className="mb-4 flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                    <Icon size={24} className={config.color} />
+        <Motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`${components.analytics.card} !p-10 !rounded-[3rem] ${config.bg} ${config.border} border-2 relative overflow-hidden`}
+        >
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-10">
+                <div className="flex items-center gap-6">
+                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${config.tone} bg-white dark:bg-white/10 shadow-xl border theme-border`}>
+                        <Icon size={32} className={config.animate ? 'animate-spin' : ''} />
+                    </div>
                     <div>
-                        <h3 className="font-bold text-slate-900">{config.label}</h3>
-                        <p className={`mt-1 ${textStyles.captionStrong}`}>{planName} Plan</p>
+                        <h3 className={`text-xl font-black ${config.tone} tracking-tight`}>{config.label}</h3>
+                        <div className="flex items-center gap-2 mt-1">
+                            <Sparkles size={12} className="text-indigo-500/50" />
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] theme-text-muted opacity-60">Tier: {planName}</p>
+                        </div>
                     </div>
                 </div>
-                <div className="text-right">
-                    <p className={textStyles.titleLg}>₹{amount}</p>
+
+                <div className="text-left md:text-right p-6 rounded-[2rem] bg-white/40 dark:bg-black/20 border theme-border">
+                    <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-1">Invoice Value</p>
+                    <p className={`text-4xl font-black ${config.tone} tracking-tighter`}>₹{amount}</p>
                 </div>
             </div>
 
             {(lastPaymentDate || nextPaymentDate) && (
-                <div className={`${cardStyles.detailGrid2} ${cardStyles.borderedTop}`}>
+                <div className="mt-10 pt-10 border-t theme-border grid grid-cols-1 sm:grid-cols-2 gap-10">
                     {lastPaymentDate && (
-                        <div>
-                            <p className={`${textStyles.metaValue} mb-1 text-xs`}>Last Payment</p>
-                            <p className="text-sm font-bold text-slate-900">
-                                {new Date(lastPaymentDate).toLocaleDateString()}
-                            </p>
+                        <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/5 flex items-center justify-center text-slate-400">
+                                <TrendingUp size={18} />
+                            </div>
+                            <div className="space-y-0.5">
+                                <p className="text-[9px] font-black uppercase tracking-widest opacity-40">Previous Settlement</p>
+                                <p className="text-sm font-black theme-text-primary">
+                                    {new Date(lastPaymentDate).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
+                                </p>
+                            </div>
                         </div>
                     )}
                     {nextPaymentDate && (
-                        <div>
-                            <p className={`${textStyles.metaValue} mb-1 text-xs`}>Next Renewal</p>
-                            <p className="text-sm font-bold text-slate-900">
-                                {new Date(nextPaymentDate).toLocaleDateString()}
-                            </p>
+                        <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-500">
+                                <Clock size={18} />
+                            </div>
+                            <div className="space-y-0.5">
+                                <p className="text-[9px] font-black uppercase tracking-widest text-indigo-500 opacity-60">Cycle Renewal</p>
+                                <p className="text-sm font-black theme-text-primary">
+                                    {new Date(nextPaymentDate).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
+                                </p>
+                            </div>
                         </div>
                     )}
                 </div>
             )}
-        </Card>
+        </Motion.div>
     );
 };
 
 export default PaymentStatusCard;
-

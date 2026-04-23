@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { AlertCircle, CheckCircle2, Zap } from 'lucide-react';
-import { components } from '../../../styles/components';
-import { cx } from '../../../styles/theme';
+import { components, cx } from '../../../styles/index';
 
 const QuestionCanvas = ({
     activeQuestion,

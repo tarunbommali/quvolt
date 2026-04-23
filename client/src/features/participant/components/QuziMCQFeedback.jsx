@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, XCircle } from 'lucide-react';
-import { cx } from '../../../styles/theme';
+import { cx } from '../../../styles/index';
 
 const QuziMCQFeedback = ({ myResult, showFeedback }) => {
     if (!myResult || !showFeedback) return null;

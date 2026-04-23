@@ -1,7 +1,7 @@
-import { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { AnimatePresence, motion as Motion } from 'framer-motion';
-import { Play, Zap, Clock, Copy, Check, Settings2 } from 'lucide-react';
+import { Zap, Clock, Copy, Settings2, ShieldCheck, Share2, Users, ArrowRight, X } from 'lucide-react';
 import { startLiveSession, abortSession, getSessionState } from '../services/host.service';
 import Toast from '../../../components/common/Toast';
 import useToast from '../../../hooks/useToast';
@@ -12,11 +12,8 @@ import { LivePulseBadge } from '../../../components/common/ui';
 import { useQuizStore } from '../../../stores/useQuizStore';
 import { useSocketStore } from '../../../stores/useSocketStore';
 import { resolveSessionRoute } from '../../../utils/sessionRouteResolver';
-import { buttonStyles } from '../../../styles/buttonStyles';
-import { motionTokens } from '../../../design/motion';
+import { textStyles, components } from '../../../styles/index';
 
-
-// Formats ms remaining into HH:MM:SS
 const formatCountdown = (ms) => {
     if (ms <= 0) return '00:00:00';
     const totalSec = Math.floor(ms / 1000);
@@ -31,23 +28,21 @@ const InviteRoom = () => {
     const navigate = useNavigate();
     const location = useLocation();
 
-    // Socket Store
-    const connectSocket = useSocketStore((state) => state.connectSocket);
-    const socket = useSocketStore((state) => state.socket);
-    const connected = useSocketStore((state) => state.connected);
-    const joinRoom = useSocketStore((state) => state.joinRoom);
-    const startQuizSocketBroadcast = useSocketStore((state) => state.startQuizBroadcast);
-    const realtimeError = useSocketStore((state) => state.lastError);
+    const connectSocket = useSocketStore((s) => s.connectSocket);
+    const socket = useSocketStore((s) => s.socket);
+    const connected = useSocketStore((s) => s.connected);
+    const joinRoom = useSocketStore((s) => s.joinRoom);
+    const startQuizSocketBroadcast = useSocketStore((s) => s.startQuizBroadcast);
+    const realtimeError = useSocketStore((s) => s.lastError);
 
-    // Quiz Store
-    const getQuizzesForParent = useQuizStore((state) => state.getQuizzesForParent);
-    const activeQuiz = useQuizStore((state) => state.activeQuiz);
-    const sessionCode = useQuizStore((state) => state.sessionCode);
-    const participants = useQuizStore((state) => state.participants);
-    const setActiveQuiz = useQuizStore((state) => state.setActiveQuiz);
-    const setSessionCode = useQuizStore((state) => state.setSessionCode);
-    const setStatus = useQuizStore((state) => state.setStatus);
-    const resetRealtimeState = useQuizStore((state) => state.resetRealtimeState);
+    const getQuizzesForParent = useQuizStore((s) => s.getQuizzesForParent);
+    const activeQuiz = useQuizStore((s) => s.activeQuiz);
+    const sessionCode = useQuizStore((s) => s.sessionCode);
+    const participants = useQuizStore((s) => s.participants);
+    const setActiveQuiz = useQuizStore((s) => s.setActiveQuiz);
+    const setSessionCode = useQuizStore((s) => s.setSessionCode);
+    const setStatus = useQuizStore((s) => s.setStatus);
+    const resetRealtimeState = useQuizStore((s) => s.resetRealtimeState);
 
     const { toast, showToast, clearToast } = useToast();
     const [loading, setLoading] = useState(true);
@@ -61,7 +56,7 @@ const InviteRoom = () => {
     const displayedCode = sessionCode || activeQuiz?.activeSessionCode || activeQuiz?.sessionCode || activeQuiz?.roomCode;
 
     const joinUrl = `${window.location.origin}/join/${displayedCode}`;
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(joinUrl)}&bgcolor=f8fafc&color=4f46e5&margin=10`;
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(joinUrl)}&bgcolor=ffffff&color=4f46e5&margin=0`;
 
     const countdown = useMemo(() => {
         if (!isScheduled || !scheduledDate) return 0;
@@ -75,57 +70,40 @@ const InviteRoom = () => {
     }, [resetRealtimeState]);
 
     useEffect(() => {
-        if (location.state?.quiz) {
-            setActiveQuiz(location.state.quiz);
-        }
+        if (location.state?.quiz) setActiveQuiz(location.state.quiz);
     }, [location.state?.quiz, setActiveQuiz]);
 
     useEffect(() => {
         let active = true;
-
         const initInviteRoom = async () => {
             try {
                 let quiz = activeQuiz;
-
                 if (!quiz || String(quiz._id) !== String(id)) {
                     let quizzes = await getQuizzesForParent('none');
                     quiz = quizzes.find((item) => String(item._id) === String(id));
-
                     if (!quiz) {
                         quizzes = await getQuizzesForParent('none', { force: true });
                         quiz = quizzes.find((item) => String(item._id) === String(id));
                     }
-
                     if (!quiz) throw new Error('Quiz not found');
                     if (!active) return;
                     setActiveQuiz(quiz);
                 }
-
-                if (!active) return;
-
                 const nextCode = quiz.sessionCode || quiz.activeSessionCode || quiz.roomCode;
                 const normalizedStatus = String(quiz.status || '').toLowerCase();
-                const isFinalStatus = ['live', 'finished', 'completed', 'aborted'].includes(normalizedStatus);
-                const nextStatus = nextCode && !isFinalStatus
-                    ? 'waiting'
-                    : (normalizedStatus || 'waiting');
-
+                const nextStatus = nextCode && !['live', 'finished', 'completed', 'aborted'].includes(normalizedStatus) ? 'waiting' : (normalizedStatus || 'waiting');
                 if (String(quiz.status) !== nextStatus || (!quiz.sessionCode && nextCode)) {
-                    const nextQuiz = { ...quiz, status: nextStatus, ...(nextCode ? { sessionCode: nextCode } : {}) };
-                    setActiveQuiz(nextQuiz);
+                    setActiveQuiz({ ...quiz, status: nextStatus, ...(nextCode ? { sessionCode: nextCode } : {}) });
                 }
-
                 if (nextCode && sessionCode !== nextCode) setSessionCode(nextCode);
                 setStatus(nextStatus);
-
                 setLoading(false);
             } catch (error) {
                 if (!active) return;
-                showToast(`Invite room error: ${error?.message || 'Unknown'}`);
+                showToast(`Error: ${error?.message}`);
                 navigate('/studio');
             }
         };
-
         initInviteRoom();
         return () => { active = false; };
     }, [activeQuiz?._id, getQuizzesForParent, id, navigate, setActiveQuiz, setSessionCode, setStatus, showToast]);
@@ -133,61 +111,39 @@ const InviteRoom = () => {
     const status = useQuizStore((state) => state.status);
 
     useEffect(() => {
-        if (!activeQuiz) return undefined;
+        if (!activeQuiz) return;
         const code = sessionCode || activeQuiz.activeSessionCode || activeQuiz.sessionCode || activeQuiz.roomCode;
-        if (!code) return undefined;
-
+        if (!code) return;
         if (!socket || !connected) connectSocket();
         joinRoom(code.toUpperCase(), activeQuiz.sessionId);
-
-        // Listen for session:start to handle cases where HTTP call is slow/timeouts
         const handleSessionStart = (data) => {
-            console.log('[InviteRoom] Received session:start via socket', data);
-            if (activeQuiz && (data.roomCode === code.toUpperCase() || data.status === 'live')) {
-                setStatus('live');
-            }
+            if (activeQuiz && (data.roomCode === code.toUpperCase() || data.status === 'live')) setStatus('live');
         };
-
         socket?.on('session:start', handleSessionStart);
-        socket?.on('quiz:started', handleSessionStart);
-
-        return () => {
-            socket?.off('session:start', handleSessionStart);
-            socket?.off('quiz:started', handleSessionStart);
-        };
+        return () => { socket?.off('session:start', handleSessionStart); };
     }, [activeQuiz?._id, sessionCode, joinRoom, socket, connected, connectSocket, setStatus]);
 
-    // Force navigation when status becomes live (catches both HTTP success and socket fallback)
     useEffect(() => {
         if (status === 'live' && activeQuiz?._id) {
-            console.log('[InviteRoom] Session is live, navigating to console...');
-            const route = resolveSessionRoute(activeQuiz);
-            navigate(route, { replace: true, state: { quiz: { ...activeQuiz, status: 'live' } } });
+            navigate(resolveSessionRoute(activeQuiz), { replace: true, state: { quiz: { ...activeQuiz, status: 'live' } } });
         }
     }, [status, activeQuiz, navigate]);
 
     useEffect(() => {
-        if (!isScheduled || !scheduledDate) return undefined;
+        if (!isScheduled || !scheduledDate) return;
         const tid = setInterval(() => setNow(Date.now()), 1000);
         return () => clearInterval(tid);
     }, [isScheduled, scheduledDate]);
 
-    // Heartbeat for participant sync
     useEffect(() => {
         const code = sessionCode || activeQuiz?.activeSessionCode || activeQuiz?.roomCode;
-        if (!code) return undefined;
-
+        if (!code) return;
         const tid = setInterval(async () => {
             try {
                 const response = await getSessionState(code.toUpperCase());
-                if (response.success && response.data.participants) {
-                    useQuizStore.getState().setParticipants(response.data.participants);
-                }
-            } catch (err) {
-                console.warn('[InviteHeartbeat] Sync failed:', err.message);
-            }
+                if (response.success && response.data.participants) useQuizStore.getState().setParticipants(response.data.participants);
+            } catch { /* suppress heartbeat logs */ }
         }, 5000);
-
         return () => clearInterval(tid);
     }, [activeQuiz?._id, sessionCode]);
 
@@ -208,20 +164,17 @@ const InviteRoom = () => {
     const startQuizBroadcast = async () => {
         const code = sessionCode || activeQuiz?.sessionCode || activeQuiz?.activeSessionCode || activeQuiz?.roomCode;
         if (!activeQuiz?._id) return;
-
         try {
             const updatedQuiz = await startLiveSession(activeQuiz?._id);
             const nextCode = updatedQuiz?.sessionCode || updatedQuiz?.activeSessionCode || updatedQuiz?.roomCode || code;
             const nextQuiz = { ...activeQuiz, ...updatedQuiz, status: 'live', sessionCode: nextCode };
-
             setActiveQuiz(nextQuiz);
             setSessionCode(nextCode);
             setStatus('live');
-
             if (nextCode) startQuizSocketBroadcast(nextCode, nextQuiz?.sessionId);
             navigate(resolveSessionRoute(nextQuiz), { replace: true, state: { quiz: nextQuiz } });
         } catch (error) {
-            showToast(error?.response?.data?.message || error?.message || 'Failed to launch live session');
+            showToast(error?.response?.data?.message || 'Failed to launch live session');
         }
     };
 
@@ -229,10 +182,9 @@ const InviteRoom = () => {
         try {
             if (activeQuiz) {
                 await abortSession(activeQuiz._id, sessionCode);
-                setActiveQuiz({ ...activeQuiz, status: 'aborted', sessionCode: null, activeSessionCode: null });
+                setActiveQuiz({ ...activeQuiz, status: 'aborted' });
                 setSessionCode(null);
                 setStatus('aborted');
-                useQuizStore.getState().getQuizzesForParent('none', { force: true }).catch(() => { });
             }
         } catch { /* best effort */ }
         finally { navigate('/studio'); }
@@ -241,149 +193,172 @@ const InviteRoom = () => {
     if (loading || !activeQuiz) return <LoadingScreen />;
 
     return (
-        <div className="app-page mx-auto space-y-6 animate-in fade-in duration-300">
+        <Motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="min-h-screen pb-20 px-4 md:px-8 max-w-[1400px] mx-auto space-y-10"
+        >
             <AnimatePresence>
                 {toast && <Toast message={toast.message} type={toast.type} onClose={clearToast} />}
             </AnimatePresence>
 
             <SubHeader
-                title="Invite Room"
-                subtitle={`Active: ${activeQuiz.title}`}
-                breadcrumbs={[
-                    { label: 'Studio', href: '/studio' },
-                    { label: activeQuiz.title },
-                    { label: 'Invite Room' },
-                ]}
+                title="Lobby Room"
+                subtitle={`Preparing session for "${activeQuiz.title}"`}
+                breadcrumbs={[{ label: 'Studio', href: '/studio' }, { label: 'Invite' }]}
                 actions={(
-                    <button type="button" onClick={handleAbort} className={`${buttonStyles.danger} rounded-xl px-4 py-2 text-xs font-bold`}>
-                        Abort
+                    <button onClick={handleAbort} className={`${components.button.base} ${components.button.sizes.md} bg-red-500 hover:bg-red-600 text-white !rounded-2xl flex items-center gap-2 font-black uppercase tracking-widest text-[11px] shadow-lg shadow-red-500/20 px-6 h-12`}>
+                        <X size={14} />
+                        <span>Abort Session</span>
                     </button>
                 )}
             />
 
-            <section className="space-y-4">
-                {realtimeError && <ErrorState title="Realtime sync issue" message={realtimeError} />}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                {/* Left Column: QR & Codes */}
+                <div className="lg:col-span-8 space-y-6">
+                    {isScheduled && scheduledDate && !canLaunch && (
+                        <Motion.div 
+                            initial={{ y: 20, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            className={`${components.analytics.card} !bg-indigo-500 !text-white flex items-center justify-between !p-8 !rounded-[2.5rem]`}
+                        >
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center">
+                                    <Clock size={24} />
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Scheduled Start</p>
+                                    <p className="text-xl font-bold">{scheduledDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Commencing In</p>
+                                <p className="text-4xl font-black tabular-nums">{formatCountdown(countdown)}</p>
+                            </div>
+                        </Motion.div>
+                    )}
 
-                {isScheduled && scheduledDate && !canLaunch && (
-                    <div className="flex items-center justify-between gap-3 rounded-xl border theme-border theme-surface px-5 py-4">
-                        <div className="flex items-center gap-3">
-                            <span className="rounded-lg bg-indigo-50 p-2 text-indigo-600">
-                                <Clock size={16} />
-                            </span>
-                            <div>
-                                <p className="text-sm font-semibold theme-text-primary">Scheduled Session</p>
-                                <p className="text-xs theme-text-muted">
-                                    Starts at {scheduledDate.toLocaleString('en-IN', {
-                                        weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
-                                    })}
-                                </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className={`${components.analytics.card} !p-8 !rounded-[2.5rem] space-y-6 border theme-border`}>
+                            <div className="space-y-1">
+                                <p className={textStyles.metaLabel + " font-black uppercase tracking-widest opacity-60"}>Room Access Code</p>
+                                <h2 className="text-5xl font-black tracking-[0.3em] text-indigo-500 uppercase">{displayedCode}</h2>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <LivePulseBadge count={participants.length} label="Users Waiting" />
+                                <button onClick={handleCopyCode} className="ml-auto w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/5 flex items-center justify-center theme-text-primary hover:bg-gray-200 dark:hover:bg-white/10 transition-colors">
+                                    <Copy size={18} />
+                                </button>
                             </div>
                         </div>
-                        <p className="text-lg font-black tracking-wide text-indigo-600 tabular-nums">{formatCountdown(countdown)}</p>
-                    </div>
-                )}
 
-                <Motion.div
-                    initial={motionTokens.fadeUp.hidden}
-                    animate={motionTokens.fadeUp.visible}
-                    transition={motionTokens.transition.smooth}
-                    className="flex items-center justify-between gap-4 rounded-xl border theme-border theme-surface px-5 py-4"
-                >
-                    <div className="space-y-2">
-                        <div className="space-y-1">
-                            <p className="text-xs font-bold theme-text-muted">{isScheduled ? 'Permanent code' : 'Live session code'}</p>
-                            <p className="text-xl font-black tracking-widest theme-text-primary">{displayedCode}</p>
-                        </div>
-                        <LivePulseBadge count={participants.length} label="users connected" />
-                    </div>
-                    <button type="button" onClick={handleCopyCode} className={`${buttonStyles.secondary} rounded-lg px-3 py-1.5 text-sm font-semibold`}>
-                        {copiedCode ? 'Copied' : 'Copy Code'}
-                    </button>
-                </Motion.div>
-
-                <div className="flex flex-col gap-3 rounded-xl border theme-border theme-surface px-5 py-4 md:flex-row md:items-center md:justify-between">
-                    <div className="space-y-1">
-                        <p className="text-xs font-bold theme-text-muted">Join link</p>
-                        <p className="max-w-2xl truncate text-sm font-medium theme-text-primary">{joinUrl}</p>
-                    </div>
-                    <button type="button" onClick={handleCopyLink} className={`${buttonStyles.secondary} rounded-lg px-3 py-1.5 text-sm font-semibold`}>
-                        {copied ? 'Copied' : 'Copy Link'}
-                    </button>
-                </div>
-
-                <div className="flex flex-col gap-3 rounded-xl border theme-border theme-surface px-5 py-4 md:flex-row md:items-center md:justify-between">
-                    <div className="flex items-center gap-3">
-                        <span className="rounded-lg bg-indigo-50 p-2 text-indigo-600">
-                            <Play size={16} className="fill-indigo-600" />
-                        </span>
-                        <div>
-                            <p className="text-sm font-semibold theme-text-primary">Start Quiz Session</p>
-                            <p className="text-sm theme-text-muted">Launch the room for participants and begin real-time flow</p>
+                        <div className={`${components.analytics.card} !p-8 !rounded-[2.5rem] space-y-6 border theme-border`}>
+                            <div className="space-y-1">
+                                <p className={textStyles.metaLabel + " font-black uppercase tracking-widest opacity-60"}>Direct Join URL</p>
+                                <p className="text-sm font-bold theme-text-primary truncate opacity-80">{joinUrl}</p>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className="px-4 py-2 rounded-xl bg-gray-100 dark:bg-white/5 text-[10px] font-black uppercase tracking-widest theme-text-muted border theme-border">
+                                    Click to share link
+                                </div>
+                                <button onClick={handleCopyLink} className="ml-auto w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/5 flex items-center justify-center theme-text-primary hover:bg-gray-200 dark:hover:bg-white/10 transition-colors">
+                                    <Share2 size={18} />
+                                </button>
+                            </div>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                        <button
-                            type="button"
-                            onClick={() => navigate(`/quiz/templates/${id}/settings`)}
-                            title="Session settings"
-                            className={`${buttonStyles.secondary} rounded-lg px-2.5 py-1.5 text-sm font-semibold`}
-                        >
-                            <Settings2 size={15} />
-                        </button>
-                        <button
-                            type="button"
-                            onClick={startQuizBroadcast}
-                            disabled={isScheduled && !canLaunch}
-                            className={`${buttonStyles.primary} rounded-lg px-3 py-1.5 text-sm font-semibold disabled:opacity-60`}
-                        >
-                            Launch Session
-                        </button>
-                    </div>
-                </div>
-            </section>
 
-            <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                <div className="rounded-xl border theme-border theme-surface p-4">
-                    <h3 className="text-xs font-bold theme-text-muted">Join QR</h3>
-                    <div className="mt-3 flex flex-col items-center gap-3">
-                        <img src={qrUrl} alt="Quiz QR Code" className="h-48 w-48 rounded-xl border theme-border" />
-                        <p className="text-xs theme-text-muted">Scan to join with code {displayedCode}</p>
+                    <div className={`${components.analytics.card} !p-10 !rounded-[3rem] border-2 border-indigo-500/20 bg-white dark:bg-gray-900 relative overflow-hidden`}>
+                         <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl pointer-events-none" />
+                         
+                         <div className="relative flex flex-col md:flex-row items-center gap-10">
+                            <div className="p-4 bg-white rounded-3xl shadow-xl shadow-indigo-500/10 border theme-border">
+                                <img src={qrUrl} alt="Join QR" className="w-48 h-48 md:w-56 md:h-56" />
+                            </div>
+                            <div className="flex-1 space-y-6 text-center md:text-left">
+                                <div className="space-y-2">
+                                    <h3 className={textStyles.value2Xl + " !font-black !text-3xl"}>Go Live</h3>
+                                    <p className={textStyles.subtitle}>Everything looks ready. Once you launch, participants will be able to see the first slide.</p>
+                                </div>
+                                <div className="flex flex-col sm:flex-row items-center gap-4">
+                                    <button
+                                        onClick={startQuizBroadcast}
+                                        disabled={isScheduled && !canLaunch}
+                                        className={`${components.button.base} ${components.button.sizes.lg} ${components.button.variants.primary} !rounded-[2rem] px-10 h-16 flex items-center gap-3 font-black uppercase tracking-widest shadow-2xl shadow-indigo-500/30 w-full sm:w-auto transition-all hover:-translate-y-1 active:scale-95 disabled:opacity-50`}
+                                    >
+                                        <Zap size={20} fill="currentColor" />
+                                        <span>Launch Session</span>
+                                        <ArrowRight size={20} />
+                                    </button>
+                                    <button 
+                                        onClick={() => navigate(`/quiz/templates/${id}/settings`)}
+                                        className="p-4 rounded-full border theme-border theme-text-primary hover:bg-gray-100 dark:hover:bg-white/5 transition-all"
+                                    >
+                                        <Settings2 size={24} />
+                                    </button>
+                                </div>
+                            </div>
+                         </div>
                     </div>
                 </div>
 
-                <Motion.div
-                    initial={motionTokens.fadeUp.hidden}
-                    animate={motionTokens.fadeUp.visible}
-                    transition={motionTokens.transition.smooth}
-                    className="rounded-xl border theme-border theme-surface p-4"
-                >
-                    <div className="mb-3 flex items-center justify-between gap-3">
-                        <div>
-                            <h3 className="text-xs font-bold theme-text-muted">Participants</h3>
-                            <p className="mt-1 text-[11px] font-semibold theme-text-muted">Connected: {participants.length}</p>
+                {/* Right Column: Participants */}
+                <div className="lg:col-span-4 space-y-6">
+                    <div className={`${components.analytics.card} !p-8 !rounded-[2.5rem] border theme-border h-full min-h-[500px] flex flex-col`}>
+                        <div className="flex items-center justify-between mb-8">
+                            <div className="flex items-center gap-3">
+                                <Users size={20} className="text-indigo-500" />
+                                <h3 className={textStyles.value2Xl + " !font-black !text-xl"}>Lobby</h3>
+                            </div>
+                            <span className="px-3 py-1 rounded-full bg-indigo-500 text-white text-[10px] font-black">{participants.length}</span>
                         </div>
-                        <span className="rounded-full bg-indigo-100 px-3 py-1 text-xs font-bold text-indigo-700">{participants.length}</span>
-                    </div>
 
-                    <div className="max-h-64 space-y-2 overflow-y-auto pr-1 custom-scrollbar">
-                        {participants.map((p, i) => (
-                            <Motion.div
-                                initial={motionTokens.fadeUp.hidden}
-                                animate={motionTokens.fadeUp.visible}
-                                transition={{ ...motionTokens.transition.snappy, delay: i * 0.03 }}
-                                key={p._id || i}
-                                className="flex items-center gap-2 rounded-lg border theme-border theme-surface-soft px-3 py-2 text-sm font-medium theme-text-primary"
-                            >
-                                <span className="h-2 w-2 rounded-full bg-green-500" />
-                                {p.name}
-                            </Motion.div>
-                        ))}
+                        <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+                            <AnimatePresence mode="popLayout">
+                                {participants.length === 0 ? (
+                                    <Motion.div 
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        className="flex flex-col items-center justify-center py-20 text-center space-y-4"
+                                    >
+                                        <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center text-slate-300">
+                                            <Users size={32} />
+                                        </div>
+                                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Waiting for users...</p>
+                                    </Motion.div>
+                                ) : (
+                                    participants.map((p, i) => (
+                                        <Motion.div
+                                            key={p._id || i}
+                                            initial={{ opacity: 0, x: 20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            exit={{ opacity: 0, scale: 0.95 }}
+                                            transition={{ delay: i * 0.05 }}
+                                            className="flex items-center gap-3 p-4 rounded-2xl bg-gray-50 dark:bg-white/5 border border-transparent hover:border-indigo-500/20 transition-all group"
+                                        >
+                                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-[10px] font-black uppercase">
+                                                {p.name.charAt(0)}
+                                            </div>
+                                            <span className="text-sm font-bold theme-text-primary">{p.name}</span>
+                                            <div className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                                        </Motion.div>
+                                    ))
+                                )}
+                            </AnimatePresence>
+                        </div>
+
+                        <div className="mt-8 pt-6 border-t theme-border">
+                            <div className="flex items-center gap-3 text-emerald-500">
+                                <ShieldCheck size={18} />
+                                <span className="text-[10px] font-black uppercase tracking-widest">Secure Connection Active</span>
+                            </div>
+                        </div>
                     </div>
-                </Motion.div>
-            </section>
-        </div>
+                </div>
+            </div>
+        </Motion.div>
     );
 };
 
 export default InviteRoom;
-

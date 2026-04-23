@@ -1,5 +1,5 @@
-import { cards } from '../../../styles/cards';
-import { cx } from '../../../styles/theme';
+import { cards, cx } from '../../../styles/index';
+
 
 const Card = ({ children, className = '' }) => {
     return (

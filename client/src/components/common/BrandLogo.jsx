@@ -1,6 +1,7 @@
-import { cx } from '../../styles/theme';
+
 import { useSubscriptionTheme } from '../../hooks/useSubscriptionTheme';
 import { motion } from 'framer-motion';
+import { cx } from '../../styles/index';
 
 export const BrandLogo = ({ className, showBadge = true }) => {
     const { theme, plan } = useSubscriptionTheme();

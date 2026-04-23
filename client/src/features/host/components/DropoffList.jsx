@@ -1,4 +1,5 @@
-import { components } from '../../../styles/components';
+import { components } from '../../../styles/index';
+
 
 const DropoffList = ({ data = [] }) => {
     return (

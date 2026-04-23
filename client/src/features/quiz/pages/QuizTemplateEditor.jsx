@@ -7,10 +7,10 @@ import ConfigSidebar from '../components/ConfigSidebar';
 import OrganizerEditHeader from '../components/OrganizerEditHeader';
 import OrganizerEditOverlays from '../components/OrganizerEditOverlays';
 import EditorCommandPalette from '../components/EditorCommandPalette';
-import { components } from '../../../styles/components';
-import { cx } from '../../../styles/theme';
+
 import { resolveSessionRoute } from '../../../utils/sessionRouteResolver';
 import useHostEditController from '../../host/hooks/useHostEditController';
+import { components, cx } from '../../../styles/index';
 
 const HISTORY_LIMIT = 80;
 

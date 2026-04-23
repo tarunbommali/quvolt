@@ -1,16 +1,26 @@
+/**
+ * @file buttonStyles.js
+ * @description Consistent button system — height 36-44px, font-medium, rounded-xl.
+ */
+
 export const buttonStyles = {
-    base: 'btn-ripple-host relative inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-medium transition-[transform,box-shadow,background-color,border-color,color] duration-200 transform-gpu disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--qb-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--qb-surface-1)] active:scale-[0.985]',
-    primary: 'bg-[var(--qb-primary)] text-white shadow-[0_14px_32px_-16px_rgba(79,70,229,0.7)] hover:bg-[var(--qb-primary-strong)] hover:shadow-[0_18px_36px_-16px_rgba(79,70,229,0.82)]',
+    // ── Base — shared structure ────────────────────────────────────────────
+    base: 'inline-flex items-center justify-center gap-2 rounded-xl px-4 text-sm font-medium h-9 transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--qb-primary)] focus-visible:ring-offset-2',
+
+    // ── Variants ────────────────────────────────────────────────────────────
+    primary:   'bg-[var(--qb-primary)] text-white hover:bg-[var(--qb-primary-strong)] shadow-sm',
     secondary: 'border theme-border theme-surface theme-text-secondary hover:theme-surface-soft',
-    danger: 'border border-red-300/45 bg-[var(--qb-danger-soft)] text-[var(--qb-danger-ink)] hover:bg-red-100/70 dark:hover:bg-red-900/28',
-    ghost: 'bg-transparent theme-text-secondary hover:theme-surface-soft hover:theme-text-primary',
-    neutral: 'border theme-border theme-surface theme-text-secondary hover:theme-surface-soft',
-    slatePrimary: 'bg-[var(--qb-text-1)] text-[var(--qb-surface-1)] hover:opacity-90',
-    success: 'bg-green-600 text-white hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600',
-    premium: 'btn-premium',
-    rippleDot: 'btn-ripple-dot',
-    sizeSm: 'px-3 py-1.5 text-sm',
-    sizeMd: 'px-4 py-2 text-sm',
-    sizeLg: 'px-5 py-2.5 text-base',
-    icon: 'inline-flex h-10 w-10 items-center justify-center rounded-xl',
+    ghost:     'theme-text-secondary hover:theme-surface-soft hover:theme-text-primary',
+    danger:    'border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400',
+    success:   'bg-emerald-600 text-white hover:bg-emerald-700',
+    neutral:   'border theme-border theme-surface theme-text-secondary hover:theme-surface-soft',
+
+    // ── Sizes ────────────────────────────────────────────────────────────────
+    sizeSm: 'h-8  px-3 text-xs',
+    sizeMd: 'h-9  px-4 text-sm',
+    sizeLg: 'h-10 px-5 text-sm',
+
+    // ── Icon-only ─────────────────────────────────────────────────────────────
+    icon:   'inline-flex h-9 w-9 items-center justify-center rounded-xl',
+    iconSm: 'inline-flex h-8 w-8 items-center justify-center rounded-lg',
 };

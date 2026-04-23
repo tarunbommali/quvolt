@@ -1,9 +1,6 @@
 import { X } from 'lucide-react';
 import { modalStyles } from '../../../styles/layoutStyles';
-import { controlStyles, formStyles, textStyles, panelStyles } from '../../../styles/commonStyles';
-import { buttonStyles } from '../../../styles/buttonStyles';
-import { components } from '../../../styles/components';
-import { cx } from '../../../styles/theme';
+import { controlStyles, formStyles, textStyles, panelStyles, buttonStyles, components, cx } from '../../../styles/index';
 
 const ImportSlidesModal = ({
     open,
@@ -95,4 +92,3 @@ const ImportSlidesModal = ({
 };
 
 export default ImportSlidesModal;
-

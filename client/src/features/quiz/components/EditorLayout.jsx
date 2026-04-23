@@ -1,4 +1,5 @@
-import { components } from '../../../styles/components';
+import { components } from '../../../styles/index';
+
 
 /**
  * Editor page shell that composes the header, slide panel, canvas, and config sidebar.

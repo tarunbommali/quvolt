@@ -1,8 +1,6 @@
 import { Plus } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { buttonStyles } from '../../../styles/buttonStyles';
-import { components } from '../../../styles/components';
-import { cx } from '../../../styles/theme';
+import { buttonStyles, components, cx } from '../../../styles/index';
 
 const SlideList = ({
     mobile = false,

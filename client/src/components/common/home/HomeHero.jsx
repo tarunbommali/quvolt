@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { motion as Motion } from 'framer-motion';
 import Section from '../../layout/Section';
 import Container from '../../layout/Container';
-import { buttonStyles } from '../../../styles/buttonStyles';
+import { buttonStyles } from '../../../styles/index';
 
 const fadeUp = {
     hidden: { opacity: 0, y: 30 },

@@ -1,11 +1,9 @@
 import { useMemo, useState } from 'react';
 import { Loader2, Sparkles, X, RefreshCw, Save } from 'lucide-react';
 import { modalStyles } from '../../../styles/layoutStyles';
-import { controlStyles, formStyles, textStyles, panelStyles } from '../../../styles/commonStyles';
-import { buttonStyles } from '../../../styles/buttonStyles';
+
 import { cardStyles } from '../../../styles/cardStyles';
-import { components } from '../../../styles/components';
-import { cx } from '../../../styles/theme';
+import { controlStyles, formStyles, textStyles, panelStyles, buttonStyles, components, cx } from '../../../styles/index';
 
 const DISTRIBUTION_STEP = 5;
 const DISTRIBUTION_OPTIONS = Array.from({ length: 21 }, (_, index) => index * DISTRIBUTION_STEP);

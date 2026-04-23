@@ -4,7 +4,7 @@ import Toast from '../../../components/common/Toast';
 import ErrorState from '../../../components/common/ErrorState';
 import ImportSlidesModal from './ImportSlidesModal';
 import AIGeneratorModal from './AIGeneratorModal';
-import { components } from '../../../styles/components';
+import { components } from '../../../styles/index';
 
 /**
  * Overlay stack for the host editor.

@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom';
 import { BrandLogo } from './BrandLogo';
+import { layout } from '../../styles/index';
 
 const Footer = () => {
     return (
         <footer className="border-t theme-border theme-surface pt-16 pb-8 mt-auto">
-            <div className="max-w-7xl mx-auto px-4 md:px-6">
+            <div className={layout.page}>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-12 md:gap-8 mb-12">
                     <div className="md:col-span-1 space-y-4">
                         <BrandLogo />

@@ -4,8 +4,9 @@ import { CheckCircle2, ShieldCheck, Zap } from 'lucide-react';
 import { motion as Motion } from 'framer-motion';
 import Section from '../../../layout/Section';
 import Container from '../../../layout/Container';
-import { buttonStyles } from '../../../../styles/buttonStyles';
+
 import PricingCard from './PricingCard';
+import { buttonStyles } from '../../../../styles/index';
 
 const fadeUp = {
     hidden: { opacity: 0, y: 30 },
@@ -97,6 +98,5 @@ const Subscription = ({ plans }) => {
         </Section>
     );
 };
-
 
 export default Subscription;

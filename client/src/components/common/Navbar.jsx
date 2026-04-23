@@ -6,10 +6,10 @@ import { useAuthStore } from '../../stores/useAuthStore';
 import { logoutUser as logoutService } from '../../features/auth/services/auth.service';
 import { useSocketStore } from '../../stores/useSocketStore';
 import ThemeToggle from './ui/ThemeToggle';
-import { navbar } from '../../styles/navbar';
-import { cx } from '../../styles/theme';
+
 import { BrandLogo } from './BrandLogo';
 import { useSubscriptionTheme } from '../../hooks/useSubscriptionTheme';
+import { navbar, cx } from '../../styles/index';
 
 const STATUS_STYLES = {
     connected: 'theme-status-success',
@@ -77,7 +77,7 @@ const Navbar = () => {
         ? [
             { label: 'Studio', to: '/studio' },
             { label: 'History', to: '/history' },
-            { label: 'Billing', to: '/billing' },
+            { label: "Billing", to: '/billing' }
         ]
         : isParticipant
             ? [
@@ -94,12 +94,11 @@ const Navbar = () => {
         { label: 'Profile', to: '/profile' },
         { label: 'Studio Settings', to: '/studio/settings' },
         { label: 'Account Settings', to: '/profile/edit' },
-        { label: 'Upgrade', to: '/upgrade' },
+        ...(plan === 'FREE' ? [{ label: 'Upgrade', to: '/upgrade' }] : [{ label: 'Billing', to: '/billing' }]),
     ] : [
         { label: 'Profile', to: '/profile' },
         { label: 'Settings', to: '/profile/edit' },
     ];
-
 
     const closeAllMenus = () => {
         setIsMobileMenuOpen(false);
@@ -173,9 +172,7 @@ const Navbar = () => {
 
                 <div className={navbar.actions}>
 
-
                     <ThemeToggle className={navbar.iconButton} />
-
 
                     {/* Removed Open Studio button as requested */}
 

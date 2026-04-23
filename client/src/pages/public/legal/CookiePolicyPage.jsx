@@ -1,14 +1,17 @@
+
+
 import LegalLayout, { LegalSection, LegalList } from './LegalLayout';
+import { typography, cx } from '../../../styles/index';
 
 export default function CookiePolicyPage() {
     return (
         <LegalLayout title="Cookie Policy" lastUpdated={new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}>
-            <div className="space-y-4 text-sm md:text-base font-medium theme-text-secondary leading-relaxed mb-8">
-                <p>At <strong>Quvolt</strong>, we use cookies to ensure that we give you the best experience on our website. This Cookie Policy explains how we use them.</p>
+            <div className={cx(typography.body, "mb-8 leading-relaxed")}>
+                <p>At <strong className={typography.bodyStrong}>Quvolt</strong>, we use cookies to ensure that we give you the best experience on our website. This Cookie Policy explains how we use them.</p>
             </div>
 
             <LegalSection title="1. What Are Cookies">
-                <p>Cookies are small text files that are stored on your device (computer, smartphone, or other electronic device) when you visit our platform.</p>
+                <p className={typography.body}>Cookies are small text files that are stored on your device (computer, smartphone, or other electronic device) when you visit our platform.</p>
             </LegalSection>
 
             <LegalSection title="2. How We Use Cookies">
@@ -42,7 +45,7 @@ export default function CookiePolicyPage() {
             </LegalSection>
 
             <LegalSection title="6. Contact">
-                <p>If you have questions about our use of cookies, contact us at: <a href="mailto:support@quvolt.com" className="text-[var(--qb-primary)] hover:underline font-bold">support@quvolt.com</a></p>
+                <p>If you have questions about our use of cookies, contact us at: <a href="mailto:support@quvolt.com" className={typography.link}>support@quvolt.com</a></p>
             </LegalSection>
         </LegalLayout>
     );

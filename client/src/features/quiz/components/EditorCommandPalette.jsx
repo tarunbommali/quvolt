@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Search } from 'lucide-react';
-import { components } from '../../../styles/components';
-import { cx } from '../../../styles/theme';
+import { components, cx } from '../../../styles/index';
 
 /**
  * Command palette for quickly jumping between slides.

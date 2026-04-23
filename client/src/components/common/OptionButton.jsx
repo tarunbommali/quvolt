@@ -1,6 +1,7 @@
-import { cx } from '../../styles/theme';
+
 import { motion } from 'framer-motion';
 import { CheckCircle2, XCircle } from 'lucide-react';
+import { cx } from '../../styles/index';
 
 // Option color palettes — maps to the 4 quiz option slots
 const OPTION_PALETTES = [

@@ -2,9 +2,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
-import { components } from '../../styles/components';
-import { cx } from '../../styles/theme';
+
 import { useAuthStore } from '../../stores/useAuthStore';
+import { components, cx } from '../../styles/index';
 
 const PALETTE_ITEMS = [
     {

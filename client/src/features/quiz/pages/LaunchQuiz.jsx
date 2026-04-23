@@ -9,7 +9,7 @@ import LoadingScreen from '../../../components/common/LoadingScreen';
 import SubHeader from '../../../components/layout/SubHeader';
 import { useQuizStore } from '../../../stores/useQuizStore';
 import { resolveSessionRoute } from '../../../utils/sessionRouteResolver';
-import { buttonStyles } from '../../../styles/buttonStyles';
+import { buttonStyles } from '../../../styles/index';
 
 const getQuizStatus = (quiz) => String(quiz?.status || '').toLowerCase();
 

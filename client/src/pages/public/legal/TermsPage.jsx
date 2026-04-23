@@ -1,10 +1,13 @@
+
+
 import LegalLayout, { LegalSection, LegalList } from './LegalLayout';
+import { typography, cx } from '../../../styles/index';
 
 export default function TermsPage() {
     return (
         <LegalLayout title="Terms and Conditions" lastUpdated={new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}>
-            <div className="space-y-4 text-sm md:text-base font-medium theme-text-secondary leading-relaxed mb-8">
-                <p>Welcome to <strong>Quvolt</strong>, a real-time quiz platform. By using our services, you agree to these Terms.</p>
+            <div className={cx(typography.body, "mb-8 leading-relaxed")}>
+                <p>Welcome to <strong className={typography.bodyStrong}>Quvolt</strong>, a real-time quiz platform. By using our services, you agree to these Terms.</p>
             </div>
 
             <LegalSection title="1. Use of Service">
@@ -70,7 +73,7 @@ export default function TermsPage() {
             </LegalSection>
 
             <LegalSection title="9. Contact">
-                <p>If you have any questions about these Terms, contact us at: <a href="mailto:support@quvolt.com" className="text-[var(--qb-primary)] hover:underline font-bold">support@quvolt.com</a></p>
+                <p>If you have any questions about these Terms, contact us at: <a href="mailto:support@quvolt.com" className={typography.link}>support@quvolt.com</a></p>
             </LegalSection>
         </LegalLayout>
     );

@@ -1,6 +1,6 @@
 import { Moon, Sun } from 'lucide-react';
 import { useUIStore } from '../../../stores/useUIStore';
-import { cx } from '../../../styles/theme';
+import { cx } from '../../../styles/index';
 
 const ThemeToggle = ({ className = '', size = 18 }) => {
     const theme = useUIStore((state) => state.theme);

@@ -97,6 +97,7 @@ const _formatQuestionInsights = (sessionId, docs) => {
             : 0,
         difficulty: q.difficulty,
         qqsScore: q.qqsScore || 100,
+        explanation: q.explanation || '',
         avgResponseTime: q.avgResponseTime,
         dropOffRate: q.dropOffRate,
         optionDistribution: q.optionDistribution || [],

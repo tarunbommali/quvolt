@@ -1,6 +1,6 @@
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useUIStore } from '../../../stores/useUIStore';
-import { components } from '../../../styles/components';
+import { components } from '../../../styles/index';
 
 const DifficultyBarChart = ({ data = [] }) => {
     const theme = useUIStore((state) => state.theme);

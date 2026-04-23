@@ -1,4 +1,5 @@
-import { cx } from '../../../styles/theme';
+import { cx } from '../../../styles/index';
+
 
 const Loader = ({ className = '' }) => {
     return (

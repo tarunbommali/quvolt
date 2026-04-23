@@ -1,5 +1,5 @@
-import { forms } from '../../../styles/forms';
-import { cx } from '../../../styles/theme';
+import { forms, cx } from '../../../styles/index';
+
 
 const InputField = ({ className = '', ...props }) => {
     return (

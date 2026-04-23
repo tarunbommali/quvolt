@@ -1,5 +1,5 @@
-import { components } from '../../../styles/components';
-import { cx } from '../../../styles/theme';
+import { components, cx } from '../../../styles/index';
+
 
 const TableSection = ({ rows = [] }) => (
     <div className={components.analytics.cardCompact}>

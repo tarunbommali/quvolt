@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { buttonStyles } from '../../../styles/buttonStyles';
+import { buttonStyles } from '../../../styles/index';
 
 /**
  * Reusable pagination component
