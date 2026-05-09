@@ -124,6 +124,7 @@ export default function AppRoutes() {
         <Route path="/o" element={<Navigate to="/studio" replace />} />
         <Route path="/o/dashboard" element={<Studio />} />
         <Route path="/studio" element={<Studio />} />
+        <Route path="/studio/folder/:folderId" element={<Studio />} />
         <Route path="/quiz/templates/:quizId" element={<QuizTemplateEditor />} />
         <Route path="/launch/quiz/:id" element={<LaunchQuiz />} />
         <Route path="/quiz/templates/:id/launch" element={<LaunchQuiz />} />

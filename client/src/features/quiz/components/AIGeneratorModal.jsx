@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Loader2, Sparkles, X, RefreshCw, Save } from 'lucide-react';
+import { Loader2, Sparkles, X, RefreshCw, Save, Check } from 'lucide-react';
 import { modalStyles } from '../../../styles/layoutStyles';
 
 import { cardStyles } from '../../../styles/cardStyles';
@@ -64,6 +64,8 @@ const AIGeneratorModal = ({
     const [generated, setGenerated] = useState([]);
     const [meta, setMeta] = useState(null);
     const [activeTab, setActiveTab] = useState('preview');
+    const [copiedPrompt, setCopiedPrompt] = useState(false);
+    const [copiedJson, setCopiedJson] = useState(false);
 
     const distributionTotal = Number(distribution.easy) + Number(distribution.medium) + Number(distribution.hard);
     const isDistributionValid = distributionTotal === 100;
@@ -129,8 +131,7 @@ const AIGeneratorModal = ({
                 };
 
                 const sampleOptions = optionsByDifficulty[difficulty] || optionsByDifficulty.easy;
-                const correctOption = difficulty === 'hard' ? 2 : difficulty === 'medium' ? 1 : 0;
-
+                const correctOption = Math.floor(Math.random() * 4);
                 return {
                     text: `Question ${questionNumber} about ${topicValue}`,
                     question: `Question ${questionNumber} about ${topicValue}`,
@@ -148,7 +149,14 @@ const AIGeneratorModal = ({
         };
 
         return JSON.stringify({
-            instruction: 'Create a quiz question set in JSON format.',
+            instruction: 'Create a quiz question set in JSON format with high-quality multiple-choice questions.',
+            rules: {
+                correctOptionDistribution: "Distribute correctOption randomly across indexes 0-3. Avoid repeating the same index consecutively.",
+                correctAnswerValidity: "The correctAnswer must always be factually correct and must match the correctOption.",
+                distractorQuality: "All incorrect options must be plausible but clearly incorrect. Avoid generic placeholders like 'random distractor'.",
+                noPattern: true,
+                balancedDifficulty: true
+            },
             input: {
                 topics: topicValue,
                 easy: easyValue,
@@ -191,6 +199,8 @@ const AIGeneratorModal = ({
     const handleCopyJSON = async () => {
         try {
             await navigator.clipboard.writeText(JSON.stringify(generated, null, 2));
+            setCopiedJson(true);
+            setTimeout(() => setCopiedJson(false), 2000);
         } catch {
             setError('Failed to copy JSON');
         }
@@ -199,6 +209,8 @@ const AIGeneratorModal = ({
     const handleCopyPrompt = async () => {
         try {
             await navigator.clipboard.writeText(promptText);
+            setCopiedPrompt(true);
+            setTimeout(() => setCopiedPrompt(false), 2000);
         } catch {
             setError('Failed to copy prompt');
         }
@@ -308,8 +320,14 @@ const AIGeneratorModal = ({
                                 <p className={textStyles.metaLabel}>Copy-ready prompt</p>
                                 <p className={cx(components.analytics.metricCaption, textStyles.subtitle)}>Use this prompt in any AI tool. The placeholders update from the fields above.</p>
                             </div>
-                            <button onClick={handleCopyPrompt} className={cx(buttonStyles.secondary, components.host.aiPromptCopyBtn)}>
-                                Copy Prompt
+                            <button onClick={handleCopyPrompt} className={cx(buttonStyles.secondary, components.host.aiPromptCopyBtn, "transition-all duration-200", copiedPrompt && "bg-emerald-50 text-emerald-600 border-emerald-200 scale-95")}>
+                                {copiedPrompt ? (
+                                    <>
+                                        <Check size={14} className="mr-1 inline" /> Copied!
+                                    </>
+                                ) : (
+                                    'Copy Prompt'
+                                )}
                             </button>
                         </div>
                         <pre className={components.host.aiPromptCode}>{promptText}</pre>
@@ -387,7 +405,15 @@ const AIGeneratorModal = ({
 
                     {!loading && activeTab === 'json' && generated.length > 0 && (
                         <div className={modalStyles.stackMd}>
-                            <button onClick={handleCopyJSON} className={cx(buttonStyles.secondary, components.host.aiPromptCopyBtn)}>Copy JSON</button>
+                            <button onClick={handleCopyJSON} className={cx(buttonStyles.secondary, components.host.aiPromptCopyBtn, "transition-all duration-200", copiedJson && "bg-emerald-50 text-emerald-600 border-emerald-200 scale-95")}>
+                                {copiedJson ? (
+                                    <>
+                                        <Check size={14} className="mr-1 inline" /> Copied JSON!
+                                    </>
+                                ) : (
+                                    'Copy JSON'
+                                )}
+                            </button>
                             <pre className={panelStyles.codePanel}>{JSON.stringify(generated, null, 2)}</pre>
                         </div>
                     )}

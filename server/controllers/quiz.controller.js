@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Quiz = require('../models/Quiz');
 const QuizSession = require('../models/QuizSession');
 const Submission = require('../models/Submission');
@@ -5,12 +6,13 @@ const { generateCode } = require('../utils/codeGenerator');
 const logger = require('../utils/logger');
 const { SESSION_STATUS } = require('../utils/sessionStateMachine');
 const { resolveHostSubscriptionEntitlements } = require('../utils/subscriptionEntitlements');
-const { 
-    ALLOWED_QUIZ_CATEGORIES, 
-    buildQuizAccessQuery, 
+const {
+    ALLOWED_QUIZ_CATEGORIES,
+    buildQuizAccessQuery,
     buildhostScopeQuery,
     sendSuccess,
     sendError,
+    applyPagination,
 } = require('../utils/controllerHelpers');
 
 const createQuiz = async (req, res) => {
@@ -103,12 +105,16 @@ const getMyQuizzes = async (req, res) => {
             query.parentId = parentId;
         }
 
-        const quizzes = await Quiz.find(query).sort('-createdAt');
+        const { data: quizzes, pagination } = await applyPagination(Quiz, query, {
+            ...req.query,
+            searchFields: ['title'],
+        });
+
         const quizIds = quizzes.map(q => q._id);
         const activeSessions = quizIds.length > 0
             ? await QuizSession.find({ quizId: { $in: quizIds }, status: { $in: [SESSION_STATUS.SCHEDULED, SESSION_STATUS.WAITING, SESSION_STATUS.LIVE] } })
                 .sort({ startedAt: -1 })
-                .select('quizId sessionCode startedAt')
+                .select('quizId sessionCode startedAt status')
                 .lean()
             : [];
         const activeSessionMap = {};
@@ -138,15 +144,16 @@ const getMyQuizzes = async (req, res) => {
         );
 
         const enriched = quizzes.map(q => ({
-            ...q.toObject(),
+            ...q,
             sessionCount: sessionCountMap[q._id.toString()] || 0,
             subDirectoryCount: subDirCountMap[q._id.toString()] || 0,
             activeSessionCode: activeSessionMap[q._id.toString()]?.sessionCode || null,
+            activeSessionStatus: activeSessionMap[q._id.toString()]?.status || null,
             activeSessionStartedAt: activeSessionMap[q._id.toString()]?.startedAt || null,
             hasActiveSession: Boolean(activeSessionMap[q._id.toString()]),
         }));
 
-        return sendSuccess(res, enriched);
+        return sendSuccess(res, { data: enriched, pagination });
     } catch (error) {
         logger.error('[QuizController] getMyQuizzes', { message: error.message, stack: error.stack });
         return sendError(res, 'Server Error');
@@ -170,7 +177,7 @@ const getQuizByCode = async (req, res) => {
         }
 
         if (!quiz) return sendError(res, 'Quiz not found', 404);
-        
+
         const quizObj = quiz.toObject();
         if (session) {
             quizObj.sessionId = session._id;
@@ -269,13 +276,24 @@ const getQuizSessions = async (req, res) => {
         const template = await Quiz.findOne(buildQuizAccessQuery(req, targetId));
         if (!template) return sendError(res, 'Template not found', 404);
 
-        const sessions = await QuizSession.find({
+        logger.info('[QuizController] Fetching sessions for template', { targetId, query: req.query });
+
+        const { data: sessions, pagination } = await applyPagination(QuizSession, {
             $or: [
                 { templateId: targetId },
                 { quizId: targetId },
+                { templateId: new mongoose.Types.ObjectId(targetId) },
+                { quizId: new mongoose.Types.ObjectId(targetId) },
             ],
-        }).sort('-startedAt');
-        return sendSuccess(res, { templateId: targetId, templateTitle: template.title, sessions });
+            status: { $in: ['completed', 'aborted'] }
+        }, {
+            ...req.query,
+            searchFields: ['sessionCode'],
+        });
+
+        logger.info('[QuizController] Found sessions', { count: sessions.length, targetId });
+
+        return sendSuccess(res, { templateId: targetId, templateTitle: template.title, data: sessions, pagination });
     } catch (error) {
         logger.error('[QuizController] getQuizSessions', { message: error.message, stack: error.stack });
         return sendError(res, 'Server Error');

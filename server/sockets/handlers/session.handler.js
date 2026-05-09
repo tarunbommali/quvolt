@@ -167,6 +167,37 @@ const registerSessionHandler = (io, socket) => {
     });
 
     /**
+     * Specialized leave event for anti-cheat and explicit reasons
+     */
+    socket.on('leave_quiz', async ({ roomCode, reason } = {}) => {
+        try {
+            const finalCode = roomCode || socket.data.roomCode;
+            if (!finalCode) return;
+
+            const session = await sessionStore.getSession(finalCode);
+            if (session && session.participants?.[user?._id]) {
+                delete session.participants[user._id];
+                await sessionStore.setSession(finalCode, session);
+                
+                const participantsArray = Object.values(session.participants);
+                publishParticipantUpdate(finalCode, participantsArray);
+
+                // Broadcast specific leave event with reason
+                io.to(finalCode).emit('user_left', {
+                    userId: user._id,
+                    name: user.name,
+                    reason: reason || 'left'
+                });
+            }
+
+            socket.leave(finalCode);
+            socket.data.roomCode = null;
+        } catch (err) {
+            logger.error('leave_quiz error', { error: err.message });
+        }
+    });
+
+    /**
      * Host starts the session via socket (called after HTTP start-live).
      * Re-broadcasts the first question to ensure all connected participants receive it.
      */

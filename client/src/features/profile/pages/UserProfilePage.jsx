@@ -124,19 +124,13 @@ const UserProfilePage = () => {
             email={user?.email}
             role={user?.role}
             plan={user?.subscription?.plan || user?.plan}
-            actions={!isEditing ? (
+            actions={!isEditing && (
                 <button
                     onClick={() => navigate('/profile/edit')}
-                    className={cx(buttonStyles.base, buttonStyles.primary, buttonStyles.sizeSm, 'w-full gap-1.5')}
+                    className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/30 flex items-center justify-center text-white transition-all shadow-lg group-hover:scale-110 active:scale-95"
+                    title="Edit Profile"
                 >
-                    <Edit3 size={14} /> Edit Profile
-                </button>
-            ) : (
-                <button
-                    onClick={() => navigate('/profile')}
-                    className={cx(buttonStyles.base, buttonStyles.ghost, buttonStyles.sizeSm, 'w-full gap-1.5')}
-                >
-                    <ArrowLeft size={14} /> Cancel
+                    <Edit3 size={18} />
                 </button>
             )}
         >

@@ -17,6 +17,7 @@ const {
     buildhostScopeQuery,
     findSessionByIdentifier,
     buildTemplateSnapshot,
+    applyPagination,
 } = require('../utils/controllerHelpers');
 const { sendSuccess, sendError } = require('../utils/responseHelper');
 
@@ -339,45 +340,30 @@ const getSubjectLeaderboard = async (req, res) => {
 
 const gethostStats = async (req, res) => {
     try {
-        const quizzes = await Quiz.find(buildhostScopeQuery(req));
-        const quizIds = quizzes.map(q => q._id);
-        const sessions = await Submission.aggregate([
-            { $match: { quizId: { $in: quizIds } } },
-            {
-                $group: {
-                    _id: "$sessionId",
-                    roomCode: { $first: "$roomCode" },
-                    quizId: { $first: "$quizId" },
-                    participantCount: { $addToSet: "$userId" },
-                    totalAnswers: { $count: {} },
-                    firstSubmission: { $min: "$createdAt" }
-                }
-            },
-            {
-                $lookup: {
-                    from: 'quizzes',
-                    localField: 'quizId',
-                    foreignField: '_id',
-                    as: 'quiz'
-                }
-            },
-            { $unwind: "$quiz" },
-            { $sort: { firstSubmission: -1 } }
-        ]);
+        const query = { hostId: req.user._id, status: { $in: ['completed', 'aborted'] } };
+        
+        const { data: sessions, pagination } = await applyPagination(QuizSession, query, {
+            ...req.query,
+            searchFields: ['templateSnapshot.title', 'sessionCode']
+        });
+
+        const quizIds = [...new Set(sessions.map(s => s.quizId))];
+        const quizzes = await Quiz.find({ _id: { $in: quizIds } }).select('title').lean();
+        const quizMap = Object.fromEntries(quizzes.map(q => [q._id.toString(), q.title]));
 
         const stats = sessions.map(s => ({
             _id: s._id,
             sessionId: s._id,
             quizId: s.quizId,
-            title: s.quiz.title,
-            roomCode: s.roomCode,
-            status: 'completed',
-            participantCount: s.participantCount.length,
-            totalAnswers: s.totalAnswers,
-            createdAt: s.firstSubmission
+            title: s.templateSnapshot?.title || quizMap[s.quizId.toString()] || 'Untitled Quiz',
+            roomCode: s.sessionCode,
+            status: s.status,
+            participantCount: s.participantCount || 0,
+            totalAnswers: s.totalSubmissions || 0,
+            createdAt: s.createdAt
         }));
 
-        return sendSuccess(res, stats);
+        return sendSuccess(res, { data: stats, pagination });
     } catch (error) {
         logger.error('[AnalyticsController] gethostStats', { message: error.message, stack: error.stack });
         return sendError(res, 'Server Error');
@@ -386,7 +372,24 @@ const gethostStats = async (req, res) => {
 
 const getUserHistory = async (req, res) => {
     try {
-        const submissions = await Submission.find({ userId: req.user._id })
+        const userId = req.user._id;
+        const page = parseInt(req.query.page) || 1;
+        const limit = Math.min(parseInt(req.query.limit) || 10, 50);
+
+        // 1. Find unique sessions the user participated in
+        const sessionAggregation = await Submission.aggregate([
+            { $match: { userId } },
+            { $group: { _id: '$sessionId', lastActivity: { $max: '$createdAt' } } },
+            { $sort: { lastActivity: -1 } }
+        ]);
+
+        const total = sessionAggregation.length;
+        const totalPages = Math.ceil(total / limit);
+        const paginatedSessions = sessionAggregation.slice((page - 1) * limit, page * limit);
+        const sessionIds = paginatedSessions.map(s => s._id);
+
+        // 2. Fetch submissions for these specific sessions
+        const submissions = await Submission.find({ userId, sessionId: { $in: sessionIds } })
             .populate('quizId', 'title roomCode status questions')
             .populate('sessionId', 'templateSnapshot')
             .sort('-createdAt');
@@ -398,6 +401,7 @@ const getUserHistory = async (req, res) => {
                 acc[sessionKey] = {
                     quizTitle: sub.quizId.title,
                     quizId: sub.quizId._id,
+                    sessionId: sub.sessionId?._id || null,
                     roomCode: sub.roomCode,
                     date: sub.createdAt,
                     totalScore: 0,
@@ -420,30 +424,44 @@ const getUserHistory = async (req, res) => {
             return acc;
         }, {});
 
-        const abortedJoins = await Quiz.find({
-            'joinedParticipants.userId': req.user._id,
-            lastSessionStatus: 'aborted',
-        }).select('title roomCode lastSessionCode lastSessionEndedAt lastSessionMessage').lean();
+        // Handle aborted joins if on first page
+        let finalHistory = Object.values(history);
+        if (page === 1) {
+            const abortedJoins = await Quiz.find({
+                'joinedParticipants.userId': req.user._id,
+                lastSessionStatus: 'aborted',
+            }).select('title roomCode lastSessionCode lastSessionEndedAt lastSessionMessage').lean();
 
-        abortedJoins.forEach((quiz) => {
-            const room = quiz.lastSessionCode || quiz.roomCode;
-            const key = room ? `${quiz._id}_${room}` : quiz._id.toString();
-            if (!history[key]) {
-                history[key] = {
-                    quizTitle: quiz.title,
-                    quizId: quiz._id,
-                    roomCode: room,
-                    date: quiz.lastSessionEndedAt || new Date(),
-                    totalScore: 0,
-                    totalTime: 0,
-                    answers: [],
-                    status: 'aborted',
-                    message: quiz.lastSessionMessage || 'Admin aborted the quiz.',
-                };
+            abortedJoins.forEach((quiz) => {
+                const room = quiz.lastSessionCode || quiz.roomCode;
+                const key = room ? `${quiz._id}_${room}` : quiz._id.toString();
+                if (!history[key]) {
+                    finalHistory.push({
+                        quizTitle: quiz.title,
+                        quizId: quiz._id,
+                        roomCode: room,
+                        date: quiz.lastSessionEndedAt || new Date(),
+                        totalScore: 0,
+                        totalTime: 0,
+                        answers: [],
+                        status: 'aborted',
+                        message: quiz.lastSessionMessage || 'Admin aborted the quiz.',
+                    });
+                }
+            });
+        }
+
+        return sendSuccess(res, {
+            data: finalHistory,
+            pagination: {
+                total,
+                page,
+                limit,
+                totalPages,
+                hasNext: page < totalPages,
+                hasPrev: page > 1
             }
         });
-
-        return sendSuccess(res, Object.values(history));
     } catch (error) {
         logger.error('[AnalyticsController] getUserHistory', { message: error.message, stack: error.stack });
         return sendError(res, 'Server Error');

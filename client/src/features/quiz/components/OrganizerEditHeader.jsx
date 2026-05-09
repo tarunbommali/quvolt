@@ -1,16 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronLeft, EllipsisVertical, Play, Save, Sparkles, FileJson, BarChart3, MonitorCog } from 'lucide-react';
+import { ChevronLeft, EllipsisVertical, Play, Save, Sparkles, FileJson, BarChart3, MonitorCog, Undo2, Redo2, CloudOff, AlertCircle, CheckCircle2, RotateCw } from 'lucide-react';
 
 import { textStyles as textTokens } from '../../../styles/commonStyles';
 import { buttonStyles, components, cx } from '../../../styles/index';
 
 /**
  * Editor header with navigation and primary actions.
- * @param {{ title: string, isSaving: boolean, onBack: () => void, onOpenImport: () => void, onOpenAI: () => void, onOpenResults: () => void, onSave: () => void, onLaunch: () => void, onOpenCommandPalette?: () => void }} props
+ * @param {{ title: string, isSaving: boolean, saveStatus: string, onBack: () => void, onOpenImport: () => void, onOpenAI: () => void, onOpenResults: () => void, onSave: () => void, onLaunch: () => void, onOpenCommandPalette?: () => void, onUndo: () => void, onRedo: () => void, canUndo: boolean, canRedo: boolean }} props
  */
 const OrganizerEditHeader = ({
     title,
     isSaving,
+    saveStatus,
     onBack,
     onOpenImport,
     onOpenAI,
@@ -18,6 +19,10 @@ const OrganizerEditHeader = ({
     onSave,
     onLaunch,
     onOpenCommandPalette,
+    onUndo,
+    onRedo,
+    canUndo,
+    canRedo
 }) => {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const menuRef = useRef(null);
@@ -44,6 +49,23 @@ const OrganizerEditHeader = ({
         };
     }, [mobileMenuOpen]);
 
+    const renderSaveStatus = () => {
+        switch (saveStatus) {
+            case 'saving':
+                return <><RotateCw size={14} className="animate-spin" /> SAVING</>;
+            case 'offline':
+                return <><CloudOff size={14} /> OFFLINE</>;
+            case 'error':
+                return <><AlertCircle size={14} /> ERROR</>;
+            case 'saved':
+                return <><CheckCircle2 size={14} /> SAVED</>;
+            case 'dirty':
+                return <><Save size={14} /> SAVE</>;
+            default:
+                return <><Save size={14} /> SAVE</>;
+        }
+    };
+
     return (
         <header className={components.host.header}>
             <div className={components.host.headerLeft}>
@@ -53,6 +75,25 @@ const OrganizerEditHeader = ({
                 <div className="min-w-0">
                     <p className={components.host.headerEyebrow}>Quiz editor</p>
                     <h1 className={cx(textTokens.title, components.host.titleClamp)}>{title}</h1>
+                </div>
+
+                <div className="ml-4 flex items-center gap-1 border-l theme-border pl-4">
+                    <button 
+                        onClick={onUndo} 
+                        disabled={!canUndo} 
+                        className={cx(buttonStyles.icon, 'h-8 w-8', !canUndo && 'opacity-30 cursor-not-allowed')}
+                        title="Undo (Ctrl+Z)"
+                    >
+                        <Undo2 size={16} />
+                    </button>
+                    <button 
+                        onClick={onRedo} 
+                        disabled={!canRedo} 
+                        className={cx(buttonStyles.icon, 'h-8 w-8', !canRedo && 'opacity-30 cursor-not-allowed')}
+                        title="Redo (Ctrl+Shift+Z)"
+                    >
+                        <Redo2 size={16} />
+                    </button>
                 </div>
             </div>
 
@@ -72,8 +113,17 @@ const OrganizerEditHeader = ({
                     </button>
                 </div>
 
-                <button type="button" onClick={onSave} className={cx(buttonStyles.secondary, components.host.saveBtn)}>
-                    <Save size={14} /> {isSaving ? 'SAVING' : 'SAVE'}
+                <button 
+                    type="button" 
+                    onClick={onSave} 
+                    className={cx(
+                        buttonStyles.secondary, 
+                        components.host.saveBtn,
+                        saveStatus === 'offline' && 'text-amber-600',
+                        saveStatus === 'error' && 'text-red-600'
+                    )}
+                >
+                    {renderSaveStatus()}
                 </button>
 
                 <button
@@ -92,7 +142,7 @@ const OrganizerEditHeader = ({
 
             <div className={components.host.headerActionsMobile} ref={menuRef}>
                 <button type="button" onClick={onSave} className={cx(buttonStyles.secondary, components.host.saveBtn)}>
-                    <Save size={14} /> {isSaving ? 'SAVING' : 'SAVE'}
+                    {renderSaveStatus()}
                 </button>
 
                 <div className={components.host.mobileMenuWrap}>
@@ -130,4 +180,3 @@ const OrganizerEditHeader = ({
 };
 
 export default OrganizerEditHeader;
-

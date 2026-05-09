@@ -207,7 +207,7 @@ class RBACService {
 
     // Host permissions
     if (role === 'host') {
-      return ['create_quiz', 'manage_quiz', 'join_quiz', 'view_revenue', 'process_payment'].includes(permissionName);
+      return ['create_quiz', 'manage_quiz', 'join_quiz', 'view_revenue', 'process_payment', 'manage_payouts', 'manage_session'].includes(permissionName);
     }
 
     // Participant permissions

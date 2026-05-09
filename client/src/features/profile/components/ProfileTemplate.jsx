@@ -43,9 +43,15 @@ const ProfileTemplate = ({
                 className={cx(cards.elevated, '!p-0 overflow-hidden border theme-border')}
             >
                 {/* Banner */}
-                <div className="relative h-36 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500">
-                    <div className="absolute inset-0 bg-black/10" />
-                    <div className="absolute -bottom-12 left-8 flex items-end gap-4">
+                <div className="relative h-44 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 group">
+                    <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    
+                    {/* Floating Edit/Action Trigger */}
+                    <div className="absolute top-6 right-6 z-20">
+                        {actions}
+                    </div>
+
+                    <div className="absolute -bottom-14 left-8 flex items-end gap-5">
                         {/* Avatar */}
                         <div className="relative">
                             <div className="w-24 h-24 rounded-full border-4 border-white dark:border-[var(--qb-surface)] bg-gray-100 dark:bg-gray-800 overflow-hidden shadow-lg">
@@ -87,8 +93,8 @@ const ProfileTemplate = ({
                     </div>
                 </div>
 
-                {/* Main content */}
-                <div className="pt-16 px-6 md:px-8 pb-8">
+                {/* Main content area */}
+                <div className="pt-20 px-6 md:px-10 pb-10">
                     {/* Mobile identity (visible only on small screens) */}
                     <div className="md:hidden mb-4 space-y-0.5">
                         <div className="flex items-center gap-2">
@@ -108,25 +114,14 @@ const ProfileTemplate = ({
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                        {/* Sidebar actions */}
-                        <div className="lg:col-span-3">
-                            <div className={cx(cards.subtle, 'space-y-3')}>
-                                <p className={typography.eyebrow}>Account Actions</p>
-                                {actions}
-                            </div>
-                        </div>
-
-                        {/* Content area */}
-                        <div className="lg:col-span-9">
-                            <Motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                transition={{ delay: 0.1 }}
-                            >
-                                {children}
-                            </Motion.div>
-                        </div>
+                    <div className="w-full">
+                        <Motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.1 }}
+                        >
+                            {children}
+                        </Motion.div>
                     </div>
                 </div>
             </Motion.div>

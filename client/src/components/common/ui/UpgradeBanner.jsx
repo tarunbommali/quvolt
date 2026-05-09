@@ -18,11 +18,11 @@ const UpgradeBanner = () => (
       </div>
     </div>
 
-    <Link 
-        to="/pricing" 
-        className="btn-premium px-8 py-3 rounded-2xl text-[12px] font-semibold uppercase tracking-widest shadow-lg shadow-indigo-500/20 whitespace-nowrap"
+    <Link
+      to="/upgrade"
+      className="btn-premium px-8 py-3 rounded-2xl text-[12px] font-semibold uppercase tracking-widest shadow-lg shadow-indigo-500/20 whitespace-nowrap"
     >
-      Explore Plans
+      Upgrade Plan
     </Link>
   </div>
 );

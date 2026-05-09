@@ -16,6 +16,7 @@ router.get('/quiz/:quizId', protect, requireRole(['host', 'admin']), analyticsCo
  * Global Summary for Host
  */
 router.get('/summary', protect, requireRole(['host', 'admin']), analyticsController.gethostAnalyticsSummary);
+router.get('/host/stats', protect, requireRole(['host', 'admin']), analyticsController.gethostStats);
 
 /**
  * User personal analytics

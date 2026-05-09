@@ -2,6 +2,7 @@ import { memo } from 'react';
 import { BarChart3, Clock3, Flame, Users } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useUIStore } from '../../../stores/useUIStore';
+import { typography, cards, cx } from '../../../styles/index';
 
 const LIGHT_BAR_COLORS = ['#6366f1', '#22c55e', '#f59e0b', '#ec4899'];
 const DARK_BAR_COLORS = ['#818cf8', '#34d399', '#fbbf24', '#f472b6'];
@@ -32,18 +33,18 @@ const AnswerDistributionCard = ({ currentQuestion, answerStats, fastestUser, par
     };
 
     return (
-        <div className="qr-card p-6 space-y-5">
+        <div className={cx(cards.base, "p-8 space-y-6 !rounded-[2.5rem]")}>
             <div className="flex items-start justify-between gap-4">
-                <div>
+                <div className="space-y-1">
                     <div className="flex items-center gap-2 theme-text-primary">
-                        <BarChart3 className="text-(--qb-primary)" size={18} />
-                        <h3 className="qr-panel-title font-medium">Answer distribution</h3>
+                        <BarChart3 className="text-indigo-500" size={18} />
+                        <h3 className={typography.h3}>Answer Distribution</h3>
                     </div>
-                    <p className="mt-1 text-xs font-medium uppercase tracking-wide theme-text-muted">
+                    <p className={typography.micro}>
                         Live responses from {participantCount} participants
                     </p>
                 </div>
-                <div className="flex items-center gap-2 rounded-full bg-[color-mix(in_srgb,var(--qb-primary)_14%,var(--qb-surface-1))] px-3 py-1 text-[11px] font-medium uppercase tracking-wide text-(--qb-primary)">
+                <div className={cx(typography.micro, "flex items-center gap-2 rounded-full bg-indigo-500/10 px-4 py-1.5 text-indigo-500 border border-indigo-500/20")}>
                     <Users size={12} /> {totalAnswers} Answers
                 </div>
             </div>
@@ -77,19 +78,19 @@ const AnswerDistributionCard = ({ currentQuestion, answerStats, fastestUser, par
             )}
 
             {fastestUser && (
-                <div className="rounded-2xl theme-status-warning p-4 text-sm flex items-start gap-3">
-                    <Flame className="mt-0.5 theme-tone-warning" size={18} />
-                    <div>
-                        <p className="font-medium uppercase tracking-wide text-[11px]">Fastest responder</p>
-                        <p className="mt-1 font-medium theme-text-primary">
+                <div className="rounded-2xl bg-amber-500/5 border border-amber-500/20 p-4 flex items-start gap-3">
+                    <Flame className="mt-0.5 text-amber-500" size={18} />
+                    <div className="space-y-0.5">
+                        <p className={typography.micro + " !text-amber-600"}>Fastest Responder</p>
+                        <p className={typography.bodyStrong}>
                             {fastestUser.name}{' '}
-                            <span className="theme-tone-warning">({Number(fastestUser.timeTaken).toFixed(2)}s)</span>
+                            <span className="text-amber-500">({Number(fastestUser.timeTaken).toFixed(2)}s)</span>
                         </p>
                     </div>
                 </div>
             )}
 
-            <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-wide theme-text-muted">
+            <div className={cx(typography.micro, "flex items-center gap-2 !tracking-normal")}>
                 <Clock3 size={12} /> Updates in real time as answers are submitted
             </div>
         </div>

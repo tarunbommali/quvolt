@@ -3,6 +3,8 @@ import { motion as Motion } from 'framer-motion';
 import PricingListItem from './PricingListItem';
 import { useAuthStore } from '../../../../stores/useAuthStore';
 import usePayment from '../../../../hooks/usePayment';
+import { typography, cards, layout, buttonStyles, cx } from '../../../../styles/index';
+import { Sparkles, TrendingUp } from 'lucide-react';
 
 const fadeUp = {
     hidden: { opacity: 0, y: 30 },
@@ -22,7 +24,7 @@ const PricingCard = ({ plan }) => {
 
     const handleAction = (e) => {
         if (plan.isComingSoon || isCurrent || isTeamsPlan || isThisTeams || isThisFree) return;
-        
+
         if (!isAuthenticated) {
             navigate('/login');
             return;
@@ -34,7 +36,6 @@ const PricingCard = ({ plan }) => {
         }
 
         processSubscription(plan.name.toUpperCase(), (sub) => {
-            // Success callback
             navigate('/dashboard');
         });
     };
@@ -61,113 +62,105 @@ const PricingCard = ({ plan }) => {
     return (
         <Motion.div
             variants={fadeUp}
-            whileHover={{ y: -10, scale: 1.02 }}
-            className={`relative flex flex-col h-full  rounded-4xl p-10 border transition-all duration-500 ${plan.featured
-                ? 'md:scale-105 border-[var(--qb-primary)]/50 ring-8 ring-[var(--qb-primary)]/5 shadow-[0_20px_80px_rgba(99,102,241,0.25)] z-10'
-                : 'theme-border shadow-sm hover:border-[var(--qb-primary)]/30'
-                } theme-surface backdrop-blur-3xl`}
-        >
-
-            {/* 🔥 Glow top line */}
-            <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-indigo-500/40 to-transparent" />
-
-            {/* Badge */}
-            {plan.badge && (
-                <span className={`absolute top-6 right-8 text-[9px] font-semibold uppercase tracking-[0.2em] px-4 py-2 rounded-xl ${plan.featured
-                    ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-lg shadow-indigo-500/30'
-                    : 'theme-surface-soft theme-text-secondary border theme-border'
-                    }`}>
-                    {plan.badge}
-                </span>
+            whileHover={{ y: -8 }}
+            className={cx(
+                plan.featured ? cards.elevated : cards.default,
+                'relative flex flex-col h-full !p-8 !rounded-[2.5rem] transition-all duration-500 overflow-hidden',
+                plan.featured && 'border-[var(--qb-primary)] ring-4 ring-[var(--qb-primary)]/5'
             )}
-
-            {/* 🔥 TOP CONTENT */}
-            <div>
-                <h3 className="text-sm font-semibold uppercase tracking-widest theme-text-muted mb-2">
+        >
+            {/* Header / Badge */}
+            <div className={cx(layout.rowBetween, "items-start")}>
+                <h3 className={cx(typography.micro, "text-[var(--qb-primary)] font-bold")}>
                     {plan.name}
                 </h3>
-
-                <div className="flex items-baseline gap-1">
-                    <span className="text-2xl md:text-3xl font-semibold tracking-tighter theme-text-primary">
-                        {plan.price}
-                    </span>
-                    <span className="text-sm font-bold theme-text-muted opacity-60">
-                        {plan.period}
-                    </span>
-                </div>
-
-            </div>
-
-            {/* 🔥 FEATURES (EXPANDS) */}
-            <div className="border-t theme-border pt-4 mt-4 flex-1">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.25em] theme-text-muted mb-6">
-                    Plan Features
-                </p>
-
-                <ul className="space-y-5">
-                    {plan.points.map((point, idx) => (
-                        <PricingListItem key={`${plan.name}-${idx}`} point={point} plan={plan} />
-                    ))}
-                </ul>
-            </div>
-
-            {/* 🔥 COMMISSION */}
-            <div className="mt-2 pt-2 border-t border-dashed theme-border">
-                <div className={`p-5 rounded-3xl flex items-center justify-between ${plan.name === 'Free'
-                    ? 'bg-amber-50 dark:bg-amber-900/10'
-                    : plan.name === 'Creator'
-                        ? 'bg-indigo-50 dark:bg-indigo-900/10'
-                        : 'bg-emerald-50 dark:bg-emerald-900/10'
-                    }`}>
-                    <div>
-                        <p className="text-[9px] font-semibold uppercase tracking-widest theme-text-muted">
-                            Net Commission
-                        </p>
-                        <p className={`text-sm font-semibold ${plan.name === 'Free'
-                            ? 'text-amber-700 dark:text-amber-400'
-                            : plan.name === 'Creator'
-                                ? 'text-indigo-700 dark:text-indigo-400'
-                                : 'text-emerald-700 dark:text-emerald-400'
-                            }`}>
-                            {plan.commission}
-                        </p>
-                    </div>
-
-                    {plan.featured && (
-                        <div className="px-2.5 py-1.5 rounded-lg bg-[var(--qb-primary)] text-[8px] font-semibold text-white uppercase tracking-wider shadow-sm">
-                            Priority
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* 🔥 CTA ALWAYS BOTTOM */}
-            <div className="relative group">
-                <button
-                    type="button"
-                    onClick={handleAction}
-                    disabled={forceDisabled}
-                    className={`${plan.featured && !forceDisabled
-                        ? 'btn-premium bg-gradient-to-r from-indigo-500 to-indigo-600 shadow-[0_10px_40px_rgba(99,102,241,0.4)] text-white'
-                        : forceDisabled
-                            ? 'theme-surface-soft border border-dashed theme-border opacity-50 cursor-not-allowed theme-text-muted'
-                            : 'theme-surface-soft border theme-border hover:border-indigo-500/40 theme-text-primary'
-                        } mt-4 w-full h-16 flex items-center justify-center rounded-2xl font-semibold text-[12px] uppercase tracking-[0.2em] transition-all`}
-                >
-                    {btnLabel}
-                </button>
-
-                {/* Custom Tooltip for Teams */}
-                {isThisTeams && !isCurrent && isAuthenticated && (
-                    <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-48 p-3 bg-gray-900 text-white text-[10px] rounded-xl shadow-2xl z-50 text-center animate-in fade-in zoom-in duration-200">
-                        Teams plan requires enterprise setup. Contact administrator.
+                {plan.badge && (
+                    <span className={cx(
+                        typography.micro,
+                        "px-3 py-1 rounded-lg font-bold border",
+                        plan.featured
+                            ? 'bg-[var(--qb-primary)] text-white border-[var(--qb-primary)]'
+                            : 'theme-surface-soft theme-text-secondary theme-border'
+                    )}>
+                        {plan.badge}
                     </span>
                 )}
             </div>
 
+            {/* Price Area */}
+            <div className="mb-2">
+                <div className="flex items-baseline gap-1">
+                    <span className={typography.metricMd}>
+                        {plan.price}
+                    </span>
+                    <span className={cx(typography.metaLabel, "opacity-60")}>
+                        {plan.period}
+                    </span>
+                </div>
+                {plan.tagline && (
+                    <p className={cx(typography.small, "mt-1 opacity-70")}>{plan.tagline}</p>
+                )}
+            </div>
+
+            {/* Features Section */}
+            <div className="mt-2 pt-2 border-t theme-border flex-1 flex flex-col">
+                <p className={cx(typography.eyebrow, "mb-4 opacity-60")}>
+                    Plan Features
+                </p>
+
+                <ul className="space-y-2 mb-4">
+                    {plan.points.map((point, idx) => (
+                        <PricingListItem key={`${plan.name}-${idx}`} point={point} plan={plan} />
+                    ))}
+                </ul>
+
+                {/* Commission / Earning Share */}
+                <div className="mt-auto">
+                    <div className={cx(
+                        cards.flat,
+                        layout.rowBetween,
+                        "p-4 !rounded-2xl border-dashed border theme-border",
+                        plan.name === 'Free' ? 'bg-amber-500/5' : (plan.name === 'Creator' ? 'bg-indigo-500/5' : 'bg-emerald-500/5')
+                    )}>
+                        <div className="space-y-0.5">
+                            <p className={typography.micro}>Net Commission</p>
+                            <p className={cx(
+                                typography.h4,
+                                plan.name === 'Free' ? 'text-amber-600' : (plan.name === 'Creator' ? 'text-indigo-600' : 'text-emerald-600')
+                            )}>
+                                {plan.commission}
+                            </p>
+                        </div>
+                        <TrendingUp size={16} className={plan.name === 'Free' ? 'text-amber-500' : (plan.name === 'Creator' ? 'text-indigo-500' : 'text-emerald-500')} />
+                    </div>
+                </div>
+            </div>
+
+            {/* Action CTA */}
+            <div className="mt-8">
+                <button
+                    type="button"
+                    onClick={handleAction}
+                    disabled={forceDisabled}
+                    className={cx(
+                        buttonStyles.base,
+                        plan.featured ? buttonStyles.primary : buttonStyles.secondary,
+                        'w-full !py-5 !rounded-2xl justify-center gap-2',
+                        forceDisabled && 'opacity-50 grayscale cursor-not-allowed border-dashed'
+                    )}
+                >
+                    {plan.featured && !forceDisabled && <Sparkles size={14} />}
+                    <span className={typography.micro + " font-bold"}>{btnLabel}</span>
+                </button>
+
+                {isThisTeams && !isCurrent && isAuthenticated && (
+                    <p className={cx(typography.micro, "text-center mt-3 lowercase opacity-60")}>
+                        Enterprise setup required. Contact admin.
+                    </p>
+                )}
+            </div>
         </Motion.div>
     );
 };
-
 
 export default PricingCard;

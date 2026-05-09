@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { motion as Motion, AnimatePresence } from 'framer-motion';
 import { EllipsisVertical, Play, Settings2, History, Copy, Trash2, Edit3, FolderOpen } from 'lucide-react';
 
-import { cx, buttonStyles } from '../../../styles/index';
+import { cx, buttonStyles, typography } from '../../../styles/index';
 
 const toDate = (value) => {
     if (!value) return 'N/A';
@@ -53,7 +53,7 @@ const TemplateCard = ({ template, view = 'grid', cloning, onEdit, onDelete, onCl
 
     const statusLabel = String(template.status || '').toLowerCase();
     const isFolder = template.type === 'subject';
-    
+
     return (
         <article
             onMouseEnter={() => onPrefetch && onPrefetch(template)}
@@ -66,15 +66,16 @@ const TemplateCard = ({ template, view = 'grid', cloning, onEdit, onDelete, onCl
         >
             {/* LINE 1 & 2: LEFT / TOP SECTION */}
             <div className={cx("flex flex-col gap-1 min-w-0 flex-1")}>
-                
+
                 {/* Line 1: Title + Badge */}
                 <div className="flex items-center gap-2">
-                    <h3 className="text-[15px] font-semibold truncate theme-text-primary" title={template.title}>
+                    <h3 className={cx(typography.cardTitle, "truncate text-[15px]")} title={template.title}>
                         {template.title || 'Untitled Template'}
                     </h3>
-                    
+
                     <div className={cx(
-                        "px-2 py-0.5 rounded-full text-[11px] uppercase tracking-wide font-medium whitespace-nowrap",
+                        typography.micro,
+                        "px-2 py-0.5 rounded-full whitespace-nowrap",
                         template.accessType === "private"
                             ? "text-amber-600 bg-amber-50 dark:bg-amber-900/20"
                             : "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20"
@@ -82,15 +83,36 @@ const TemplateCard = ({ template, view = 'grid', cloning, onEdit, onDelete, onCl
                         {template.accessType || 'PUBLIC'}
                     </div>
 
-                    {statusLabel === "live" && (
-                        <div className="px-2 py-0.5 rounded-full text-[11px] uppercase tracking-wide font-medium whitespace-nowrap text-red-600 bg-red-50 dark:bg-red-900/20 flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" /> Live
+                    {!isFolder && (
+                        <div className={cx(
+                            typography.micro,
+                            "px-2 py-0.5 rounded-full whitespace-nowrap",
+                            template.mode === "tutor"
+                                ? "text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20"
+                                : "text-blue-600 bg-blue-50 dark:bg-blue-900/20"
+                        )}>
+                            {template.mode || 'AUTO'}
+                        </div>
+                    )}
+
+                    {template.hasActiveSession && ['live', 'waiting'].includes(String(template.activeSessionStatus || '').toLowerCase()) && (
+                        <div className={cx(typography.micro, "px-2 py-0.5 rounded-full whitespace-nowrap flex items-center gap-1.5", 
+                            String(template.activeSessionStatus).toLowerCase() === 'waiting' 
+                                ? "text-amber-600 bg-amber-50 dark:bg-amber-900/20" 
+                                : "text-red-600 bg-red-50 dark:bg-red-900/20"
+                        )}>
+                            <span className={cx("w-1.5 h-1.5 rounded-full animate-pulse", 
+                                String(template.activeSessionStatus).toLowerCase() === 'waiting' 
+                                    ? "bg-amber-500" 
+                                    : "bg-red-500"
+                            )} /> 
+                            {String(template.activeSessionStatus).toLowerCase() === 'waiting' ? 'Waiting' : 'Live'}
                         </div>
                     )}
                 </div>
 
                 {/* Line 2: Metadata */}
-                <div className="flex items-center gap-1.5 text-[12px] text-slate-500 dark:text-slate-400 truncate">
+                <div className={cx(typography.metaLabel, "flex items-center gap-1.5 truncate")}>
                     {isFolder ? (
                         <>
                             <span>{template.subDirectoryCount || 0} items</span>

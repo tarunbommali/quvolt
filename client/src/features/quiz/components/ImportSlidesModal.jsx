@@ -40,26 +40,28 @@ const ImportSlidesModal = ({
                         onChange={(e) => onJsonChange(e.target.value)}
                         placeholder={`[
   {
-    "text": "Which option is correct?",
-    "question": "Which option is correct?",
-    "title": "Which option is correct?",
-    "options": ["Answer A", "Answer B", "Answer C", "Answer D"],
-    "answers": ["Answer A", "Answer B", "Answer C", "Answer D"],
-    "choices": ["Answer A", "Answer B", "Answer C", "Answer D"],
-    "correctOption": 1,
-    "correctAnswer": "Answer B",
-    "correct": "Answer B",
-    "correctIndex": 1,
+    "text": "What is Python primarily used for?",
+    "question": "What is Python primarily used for?",
+    "options": [
+      "Web development and automation",
+      "Only hardware programming",
+      "Only database storage",
+      "Only graphic design"
+    ],
+    "correctOption": 0,
+    "correctAnswer": "Web development and automation",
     "timeLimit": 15,
     "shuffleOptions": false,
     "questionType": "multiple-choice",
-    "mediaUrl": null
+    "mediaUrl": null,
+    "difficulty": "easy",
+    "explanation": "Python is a general-purpose language used for web development, automation, and more."
   }
 ]`}
                     />
 
                     <div className={panelStyles.mutedBox}>
-                        Supported fields: <span className={formStyles.helperStrong}>text</span>, <span className={formStyles.helperStrong}>question</span>, <span className={formStyles.helperStrong}>title</span>, <span className={formStyles.helperStrong}>options</span>, <span className={formStyles.helperStrong}>answers</span>, <span className={formStyles.helperStrong}>choices</span>, <span className={formStyles.helperStrong}>correctOption</span>, <span className={formStyles.helperStrong}>correctAnswer</span>, <span className={formStyles.helperStrong}>correct</span>, <span className={formStyles.helperStrong}>correctIndex</span>, <span className={formStyles.helperStrong}>timeLimit</span>, <span className={formStyles.helperStrong}>shuffleOptions</span>, <span className={formStyles.helperStrong}>questionType</span>, and <span className={formStyles.helperStrong}>mediaUrl</span>.
+                        Supported fields: <span className={formStyles.helperStrong}>text</span>, <span className={formStyles.helperStrong}>question</span>, <span className={formStyles.helperStrong}>options</span>, <span className={formStyles.helperStrong}>correctOption</span>, <span className={formStyles.helperStrong}>correctAnswer</span>, <span className={formStyles.helperStrong}>timeLimit</span>, <span className={formStyles.helperStrong}>shuffleOptions</span>, <span className={formStyles.helperStrong}>questionType</span>, <span className={formStyles.helperStrong}>mediaUrl</span>, <span className={formStyles.helperStrong}>difficulty</span>, and <span className={formStyles.helperStrong}>explanation</span>.
                     </div>
 
                     {importError && (

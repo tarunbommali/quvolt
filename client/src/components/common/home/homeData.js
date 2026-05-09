@@ -54,6 +54,7 @@ export const plans = [
         period: '/month',
         points: [
             'Up to 5 Quizzes',
+            'Up to 20 Questions / Quiz',
             '10,000 Participants / Month',
             '1 Concurrent Live Session',
             '200 Participants per Session',
@@ -74,6 +75,7 @@ export const plans = [
         audience: 'For trainers, educators & influencers',
         points: [
             'Up to 30 Quizzes',
+            'Up to 100 Questions / Quiz',
             '50,000 Participants / Month',
             '3 Concurrent Live Sessions',
             '1,000 Participants per Session',
@@ -96,6 +98,7 @@ export const plans = [
         audience: 'For universities & organizations',
         points: [
             'Unlimited Quizzes & Traffic',
+            'Up to 300 Questions / Quiz',
             'Unlimited Concurrent Sessions',
             '10,000+ Participants per Session',
             'Enterprise Analytics Suite',

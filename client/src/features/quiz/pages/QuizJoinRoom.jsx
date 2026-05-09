@@ -7,7 +7,7 @@ import { useAuthStore } from '../../../stores/useAuthStore';
 import { useQuizStore } from '../../../stores/useQuizStore';
 import usePayment from '../../../hooks/usePayment';
 import { paymentApi } from '../../../services/payment.api';
-import { textStyles, components } from '../../../styles/index';
+import { textStyles, components, typography, cx } from '../../../styles/index';
 
 const INR_SYMBOL = '₹';
 const LAST_ROOM_KEY = 'qb_last_room_code';
@@ -144,10 +144,10 @@ const QuizJoinRoom = () => {
                     <div className="text-center space-y-4 mb-12">
                         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 mb-2">
                             <Sparkles size={12} fill="currentColor" />
-                            <span className="text-[10px] font-black uppercase tracking-widest">Global Access Portal</span>
+                            <span className={typography.eyebrow}>Global Access Portal</span>
                         </div>
-                        <h2 className="text-4xl font-black theme-text-primary tracking-tighter">Synchronize Room</h2>
-                        <p className="text-sm font-bold theme-text-muted opacity-60">Establish connection via host-provided sequence</p>
+                        <h2 className={typography.display}>Synchronize Room</h2>
+                        <p className={typography.body}>Establish connection via host-provided sequence</p>
                     </div>
 
                     <AnimatePresence mode="wait">
@@ -159,7 +159,7 @@ const QuizJoinRoom = () => {
                                 className="mb-8 p-5 rounded-[1.5rem] bg-red-500/10 border-2 border-red-500/20 flex items-center gap-4 text-red-500"
                             >
                                 <AlertCircle size={20} className="shrink-0" />
-                                <p className="text-sm font-black uppercase tracking-widest">{error}</p>
+                                <p className={typography.eyebrow + " !text-red-500"}>{error}</p>
                             </Motion.div>
                         )}
                     </AnimatePresence>
@@ -175,9 +175,9 @@ const QuizJoinRoom = () => {
                                 <CreditCard size={36} />
                             </div>
                             <div className="space-y-2">
-                                <h3 className="text-2xl font-black theme-text-primary tracking-tight">Premium Access Required</h3>
-                                <p className="text-sm font-bold theme-text-muted leading-relaxed">
-                                    <span className="theme-text-primary">{paymentQuiz.title}</span> is a tiered session requiring a contribution of <span className="text-indigo-500 font-black">{INR_SYMBOL}{paymentQuiz.price}</span>.
+                                <h3 className={typography.h2}>Premium Access Required</h3>
+                                <p className={typography.body}>
+                                    <span className="theme-text-primary font-semibold">{paymentQuiz.title}</span> is a tiered session requiring a contribution of <span className="text-indigo-500 font-bold">{INR_SYMBOL}{paymentQuiz.price}</span>.
                                 </p>
                             </div>
                             <button
@@ -207,17 +207,17 @@ const QuizJoinRoom = () => {
                                     <User size={28} />
                                 </div>
                                 <div>
-                                    <h3 className="text-lg font-black theme-text-primary tracking-tight">Anonymous Access</h3>
-                                    <p className="text-xs font-bold theme-text-muted">Initialize guest identity for this session</p>
+                                    <h3 className={typography.h3}>Anonymous Access</h3>
+                                    <p className={typography.small}>Initialize guest identity for this session</p>
                                 </div>
                             </div>
                             
                             <div className="space-y-4">
-                                <label className="text-[10px] font-black uppercase tracking-widest theme-text-muted ml-1">Identity Display Name</label>
+                                <label className={typography.eyebrow + " ml-1"}>Identity Display Name</label>
                                 <input
                                     type="text"
                                     placeholder="Enter your alias"
-                                    className="w-full h-16 px-6 bg-gray-50 dark:bg-white/5 border-2 theme-border rounded-2xl text-lg font-black theme-text-primary focus:border-indigo-500 outline-none transition-all placeholder:font-bold placeholder:opacity-30"
+                                    className="w-full h-16 px-6 bg-gray-50 dark:bg-white/5 border-2 theme-border rounded-2xl text-lg font-semibold theme-text-primary focus:border-indigo-500 outline-none transition-all placeholder:font-medium placeholder:opacity-30"
                                     value={guestName}
                                     onChange={(e) => setGuestName(e.target.value)}
                                     required
@@ -236,7 +236,7 @@ const QuizJoinRoom = () => {
                                 <button
                                     type="button"
                                     onClick={() => setShowGuestForm(false)}
-                                    className="text-[10px] font-black uppercase tracking-[0.25em] theme-text-muted hover:theme-text-primary transition-colors"
+                                    className={typography.micro + " hover:theme-text-primary transition-colors"}
                                 >
                                     Change Room Code
                                 </button>
@@ -257,9 +257,9 @@ const QuizJoinRoom = () => {
                                         setRoomCode(lastRoomCode);
                                         setError('');
                                     }}
-                                    className="w-full p-4 rounded-2xl bg-indigo-500/5 border-2 border-dashed border-indigo-500/20 text-indigo-500 text-[10px] font-black uppercase tracking-[0.2em] hover:bg-indigo-500/10 transition-colors"
+                                    className="w-full p-4 rounded-2xl bg-indigo-500/5 border-2 border-dashed border-indigo-500/20 text-indigo-500 "
                                 >
-                                    Restore Sequence: {lastRoomCode}
+                                    <span className={typography.eyebrow + " !text-indigo-500"}>Restore Sequence: {lastRoomCode}</span>
                                 </button>
                             )}
 
@@ -271,7 +271,7 @@ const QuizJoinRoom = () => {
                                     <input
                                         type="text"
                                         placeholder="ROOM CODE"
-                                        className="w-full h-24 pl-20 pr-8 text-center text-4xl font-black tracking-[0.4em] uppercase bg-gray-50 dark:bg-white/5 border-2 theme-border rounded-[2rem] theme-text-primary placeholder:text-gray-300 dark:placeholder:text-gray-700 outline-none focus:border-indigo-500 focus:bg-white dark:focus:bg-gray-800 transition-all"
+                                        className="w-full h-24 pl-20 pr-8 text-center text-4xl font-semibold tracking-[0.4em] uppercase bg-gray-50 dark:bg-white/5 border-2 theme-border rounded-[2rem] theme-text-primary placeholder:text-gray-300 dark:placeholder:text-gray-700 outline-none focus:border-indigo-500 focus:bg-white dark:focus:bg-gray-800 transition-all"
                                         maxLength={6}
                                         value={roomCode}
                                         onChange={(e) => {
@@ -281,7 +281,7 @@ const QuizJoinRoom = () => {
                                         required
                                     />
                                 </div>
-                                <p className="text-center text-[10px] font-black uppercase tracking-widest theme-text-muted opacity-40">{helperMessage}</p>
+                                <p className={"text-center " + typography.micro + " opacity-40"}>{helperMessage}</p>
                             </div>
 
                             <button
@@ -299,7 +299,7 @@ const QuizJoinRoom = () => {
                 </div>
 
                 <div className="mt-12 text-center">
-                    <p className="text-[10px] font-black uppercase tracking-[0.3em] theme-text-muted opacity-40">
+                    <p className={typography.micro + " opacity-40"}>
                         Secure Environment • Real-time Data Ingestion Active
                     </p>
                 </div>

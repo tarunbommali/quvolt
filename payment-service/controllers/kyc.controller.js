@@ -46,7 +46,8 @@ class KycController {
         return this._paymentError(res, 400, 'ACCOUNT_EXISTS', error.message, req.correlationId);
       }
       logger.error('Create sub-account error', { error: error.message, stack: error.stack });
-      return this._paymentError(res, 500, 'SERVER_ERROR', 'Failed to create sub-account', req.correlationId);
+      const detailedMessage = error.description || error.message || 'Failed to create sub-account';
+      return this._paymentError(res, 500, 'SERVER_ERROR', `Failed to create sub-account: ${detailedMessage}`, req.correlationId);
     }
   }
 

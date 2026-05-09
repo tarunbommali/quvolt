@@ -8,7 +8,7 @@ const BillingHeader = () => (
         title="Billing"
         subtitle="Manage your subscription, usage, and payment details."
         breadcrumbs={[
-            { label: 'Dashboard', href: '/' },
+            { label: 'Studio', href: '/' },
             { label: 'Billing' },
         ]}
         actions={(

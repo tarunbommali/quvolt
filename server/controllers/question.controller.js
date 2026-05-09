@@ -1,6 +1,7 @@
 const Quiz = require('../models/Quiz');
 const { hashAnswer } = require('../utils/crypto');
 const logger = require('../utils/logger');
+const { resolveHostSubscriptionEntitlements } = require('../utils/subscriptionEntitlements');
 const { 
     buildQuizAccessQuery,
     sendSuccess,
@@ -22,9 +23,37 @@ const addQuestion = async (req, res) => {
         const quiz = await Quiz.findOne(quizQuery);
         if (!quiz) return sendError(res, 'Quiz not found', 404);
 
-        const hashedCorrectAnswer = hashAnswer(options[correctOption]);
+        const entitlements = await resolveHostSubscriptionEntitlements(quiz.hostId);
+        
+        if (quiz.questions.length >= entitlements.maxQuestionsPerQuiz) {
+            logger.warn('QUIZ_LIMIT_HIT', { 
+                userId: req.user?._id, 
+                plan: entitlements.plan, 
+                attempted: quiz.questions.length + 1 
+            });
+            return sendError(res, `Your plan limits you to ${entitlements.maxQuestionsPerQuiz} questions per quiz.`, 403);
+        }
 
-        quiz.questions.push({ text, options, correctOption, hashedCorrectAnswer, timeLimit, shuffleOptions: !!shuffleOptions });
+        if (options.length > entitlements.maxOptionsPerQuestion) {
+            return sendError(res, `Your plan limits you to ${entitlements.maxOptionsPerQuestion} options per question.`, 403);
+        }
+
+        if (correctOption < 0 || correctOption >= options.length) {
+            return sendError(res, 'Invalid correct option index', 400);
+        }
+
+        const sanitizedText = String(text || '').trim().slice(0, 300);
+        const sanitizedOptions = options.map((opt) => String(opt || '').trim().slice(0, 200));
+        const hashedCorrectAnswer = hashAnswer(sanitizedOptions[correctOption]);
+
+        quiz.questions.push({ 
+            text: sanitizedText, 
+            options: sanitizedOptions, 
+            correctOption, 
+            hashedCorrectAnswer, 
+            timeLimit: Math.min(Number(timeLimit) || 15, 60), 
+            shuffleOptions: !!shuffleOptions 
+        });
         await quiz.save();
 
         return sendSuccess(res, quiz, 'Question added successfully');
@@ -45,14 +74,30 @@ const updateQuestion = async (req, res) => {
         const question = quiz.questions.id(questionId);
         if (!question) return sendError(res, 'Question not found', 404);
 
-        if (text) question.text = text;
-        if (options) question.options = options;
+        const entitlements = await resolveHostSubscriptionEntitlements(quiz.hostId);
+
+        if (options) {
+            if (options.length > entitlements.maxOptionsPerQuestion) {
+                return sendError(res, `Your plan limits you to ${entitlements.maxOptionsPerQuestion} options per question.`, 403);
+            }
+            if (options.length < 2) {
+                return sendError(res, 'At least 2 options are required', 400);
+            }
+            question.options = options.map((opt) => String(opt || '').trim().slice(0, 200));
+        }
+
+        if (text) question.text = String(text || '').trim().slice(0, 300);
+        
         if (correctOption !== undefined) {
-            question.correctOption = correctOption;
             const targetOptions = options || question.options;
+            if (correctOption < 0 || correctOption >= targetOptions.length) {
+                return sendError(res, 'Invalid correct option index', 400);
+            }
+            question.correctOption = correctOption;
             question.hashedCorrectAnswer = hashAnswer(targetOptions[correctOption]);
         }
-        if (timeLimit) question.timeLimit = timeLimit;
+        
+        if (timeLimit) question.timeLimit = Math.min(Number(timeLimit) || 15, 60);
         if (shuffleOptions !== undefined) question.shuffleOptions = shuffleOptions;
 
         await quiz.save();
@@ -94,21 +139,58 @@ const updateQuizFullState = async (req, res) => {
         const quiz = await Quiz.findOne(buildQuizAccessQuery(req, id));
         if (!quiz) return sendError(res, 'Quiz not found', 404);
 
+        const entitlements = await resolveHostSubscriptionEntitlements(quiz.hostId);
+
+        const existingCount = quiz.questions.length;
+        const incomingCount = slides.length;
+
+        if (incomingCount > entitlements.maxQuestionsPerQuiz) {
+            logger.warn('QUIZ_LIMIT_HIT', { 
+                userId: req.user?._id, 
+                plan: entitlements.plan, 
+                attempted: incomingCount 
+            });
+            return sendError(res, `Your plan limits you to ${entitlements.maxQuestionsPerQuiz} questions per quiz.`, 403);
+        }
+
+        if (incomingCount - existingCount > 100) {
+            logger.warn('QUIZ_DIFF_LIMIT_HIT', { 
+                userId: req.user?._id, 
+                existingCount, 
+                incomingCount, 
+                diff: incomingCount - existingCount 
+            });
+            return sendError(res, 'Too many changes in one request. Max bulk addition is 100 questions at a time.', 400);
+        }
+
+        const uniqueQuestions = new Set();
+
         const normalizedSlides = slides.map((slide, index) => {
-            const text = String(slide?.text || '').trim();
+            const text = String(slide?.text || '').trim().slice(0, 300);
+            
+            if (!text || text.length < 3) {
+                throw new Error(`Slide ${index + 1} is missing or has an invalid question text`);
+            }
+
+            if (uniqueQuestions.has(text.toLowerCase())) {
+                throw new Error(`Duplicate question detected: "${text}"`);
+            }
+            uniqueQuestions.add(text.toLowerCase());
+
             const options = Array.isArray(slide?.options)
-                ? slide.options.map((option) => String(option || '').trim()).filter(Boolean)
+                ? slide.options.map((option) => String(option || '').trim().slice(0, 200)).filter(Boolean)
                 : [];
+            
             const correctOption = Number.isInteger(slide?.correctOption)
                 ? slide.correctOption
                 : Number(slide?.correctOption ?? 0);
 
-            if (!text) {
-                throw new Error(`Slide ${index + 1} is missing text`);
-            }
-
             if (options.length < 2) {
                 throw new Error(`Slide ${index + 1} must contain at least 2 options`);
+            }
+            
+            if (options.length > entitlements.maxOptionsPerQuestion) {
+                throw new Error(`Slide ${index + 1} exceeds max options limit (${entitlements.maxOptionsPerQuestion})`);
             }
 
             if (!Number.isInteger(correctOption) || correctOption < 0 || correctOption >= options.length) {
@@ -121,7 +203,7 @@ const updateQuizFullState = async (req, res) => {
                 options,
                 correctOption,
                 hashedCorrectAnswer: hashAnswer(options[correctOption]),
-                timeLimit: Number(slide?.timeLimit) || 15,
+                timeLimit: Math.min(Number(slide?.timeLimit) || 15, 60),
                 shuffleOptions: Boolean(slide?.shuffleOptions),
                 questionType: slide?.questionType || 'multiple-choice',
                 mediaUrl: slide?.mediaUrl || null,
@@ -144,14 +226,16 @@ const updateQuizFullState = async (req, res) => {
 
         quiz.questions = orderedSlides.map((slide) => ({
             ...(slide._id ? { _id: slide._id } : {}),
-            text: slide.text,
-            options: slide.options,
-            correctOption: slide.correctOption,
-            hashedCorrectAnswer: slide.hashedCorrectAnswer,
-            timeLimit: slide.timeLimit,
-            shuffleOptions: slide.shuffleOptions,
-            questionType: slide.questionType,
-            mediaUrl: slide.mediaUrl,
+            text: String(slide.text).slice(0, 300),
+            options: (slide.options || []).map(opt => String(opt).slice(0, 200)),
+            correctOption: Number(slide.correctOption),
+            hashedCorrectAnswer: String(slide.hashedCorrectAnswer),
+            difficulty: ['easy', 'medium', 'hard'].includes(slide.difficulty) ? slide.difficulty : 'easy',
+            timeLimit: Math.min(Number(slide.timeLimit) || 15, 60),
+            explanation: String(slide.explanation || '').slice(0, 500),
+            shuffleOptions: Boolean(slide.shuffleOptions),
+            questionType: slide.questionType === 'multiple-choice' ? 'multiple-choice' : 'multiple-choice',
+            mediaUrl: slide.mediaUrl && typeof slide.mediaUrl === 'string' ? slide.mediaUrl.slice(0, 500) : null,
         }));
 
         if (config && typeof config === 'object') {
@@ -176,7 +260,7 @@ const updateQuizFullState = async (req, res) => {
         return sendSuccess(res, quiz, 'Quiz state updated successfully');
     } catch (error) {
         logger.error('[QuestionController] updateQuizFullState', { message: error.message, stack: error.stack });
-        if (error.message?.includes('Slide')) {
+        if (error.message?.includes('Slide') || error.message?.includes('Duplicate question')) {
             return sendError(res, error.message, 400);
         }
         return sendError(res, 'Server Error');

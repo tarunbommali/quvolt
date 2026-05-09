@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { List, SlidersHorizontal } from 'lucide-react';
 import EditorLayout from '../components/EditorLayout';
 import SlidePanel from '../components/SlidePanel';
@@ -11,20 +11,11 @@ import EditorCommandPalette from '../components/EditorCommandPalette';
 import { resolveSessionRoute } from '../../../utils/sessionRouteResolver';
 import useHostEditController from '../../host/hooks/useHostEditController';
 import { components, cx } from '../../../styles/index';
-
-const HISTORY_LIMIT = 80;
-
-const cloneSnapshot = (snapshot) => JSON.parse(JSON.stringify(snapshot));
-
-const snapshotKey = (snapshot) => JSON.stringify({
-    slides: snapshot.slides,
-    order: snapshot.order,
-    activeSlideId: snapshot.activeSlideId,
-    config: snapshot.config,
-});
+import { EditorProvider } from '../../host/context/EditorContext.jsx';
 
 /**
  * Full host editor view that composes the editor chrome and modal states.
+ * Upgraded to use the elite modular system with history and command layer.
  */
 const QuizTemplateEditor = () => {
     const editor = useHostEditController();
@@ -32,22 +23,16 @@ const QuizTemplateEditor = () => {
     const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
     const [isCanvasEditing, setIsCanvasEditing] = useState(false);
 
-    const undoStackRef = useRef([]);
-    const redoStackRef = useRef([]);
-    const lastSnapshotKeyRef = useRef('');
-    const restoringRef = useRef(false);
-
     const {
         activeQuiz,
         config,
         isSaving,
+        saveStatus,
         persistFullState,
         orderedSlides,
         activeQuestionIndex,
         activeQuestion,
         activeSlideId,
-        getSnapshot,
-        restoreSnapshot,
         handleDeleteQuestion,
         handleQuestionTextChange,
         handleOptionChange,
@@ -64,56 +49,13 @@ const QuizTemplateEditor = () => {
         setActiveSlideByIndex,
         addSlide,
         navigate,
+        undo,
+        redo,
+        canUndo,
+        canRedo
     } = editor;
 
-    useEffect(() => {
-        const currentSnapshot = getSnapshot();
-        const key = snapshotKey(currentSnapshot);
-
-        if (!lastSnapshotKeyRef.current) {
-            lastSnapshotKeyRef.current = key;
-            return;
-        }
-
-        if (restoringRef.current || lastSnapshotKeyRef.current === key) {
-            lastSnapshotKeyRef.current = key;
-            return;
-        }
-
-        undoStackRef.current.push(cloneSnapshot({ ...currentSnapshot, __from: 'state' }));
-        if (undoStackRef.current.length > HISTORY_LIMIT) undoStackRef.current.shift();
-        redoStackRef.current = [];
-        lastSnapshotKeyRef.current = key;
-    }, [orderedSlides, config, activeSlideId, getSnapshot]);
-
-    const runUndo = useCallback(() => {
-        const stack = undoStackRef.current;
-        if (!stack.length) return;
-        const previous = stack.pop();
-        const current = cloneSnapshot(getSnapshot());
-        redoStackRef.current.push(current);
-        restoringRef.current = true;
-        restoreSnapshot(previous);
-        window.setTimeout(() => {
-            restoringRef.current = false;
-            lastSnapshotKeyRef.current = snapshotKey(getSnapshot());
-        }, 0);
-    }, [getSnapshot, restoreSnapshot]);
-
-    const runRedo = useCallback(() => {
-        const stack = redoStackRef.current;
-        if (!stack.length) return;
-        const next = stack.pop();
-        const current = cloneSnapshot(getSnapshot());
-        undoStackRef.current.push(current);
-        restoringRef.current = true;
-        restoreSnapshot(next);
-        window.setTimeout(() => {
-            restoringRef.current = false;
-            lastSnapshotKeyRef.current = snapshotKey(getSnapshot());
-        }, 0);
-    }, [getSnapshot, restoreSnapshot]);
-
+    // Global Keyboard Shortcuts
     useEffect(() => {
         const handleGlobalShortcuts = (event) => {
             if (event.defaultPrevented) return;
@@ -163,14 +105,8 @@ const QuizTemplateEditor = () => {
 
             if (withCtrl && event.key.toLowerCase() === 'z') {
                 event.preventDefault();
-                if (event.shiftKey) runRedo();
-                else runUndo();
-                return;
-            }
-
-            if (!withCtrl && event.shiftKey && event.key.toLowerCase() === 'z' && !isInput) {
-                event.preventDefault();
-                runRedo();
+                if (event.shiftKey) redo();
+                else undo();
                 return;
             }
 
@@ -205,8 +141,8 @@ const QuizTemplateEditor = () => {
         handleDuplicateSlide,
         orderedSlides.length,
         persistFullState,
-        runRedo,
-        runUndo,
+        undo,
+        redo,
         setActiveSlideByIndex,
     ]);
 
@@ -231,13 +167,11 @@ const QuizTemplateEditor = () => {
 
     const mobileShell = (
         <section className={components.host.mobileShellContainer}>
-            {/* Simple Header */}
             <div className={components.host.mobileHeader}>
                 <h2 className={components.host.mobileHeaderTitle}>{activeQuiz.title}</h2>
                 <span className={components.host.mobileHeaderMeta}>Q{activeQuestionIndex + 1} / {orderedSlides.length}</span>
             </div>
 
-            {/* Canvas Full Focus */}
             <div className={components.host.mobileCanvasWrapper}>
                 <CanvasView
                     activeQuestion={activeQuestion}
@@ -251,7 +185,6 @@ const QuizTemplateEditor = () => {
                 />
             </div>
 
-            {/* Fixed Bottom Navigation */}
             <div className={components.host.mobileBottomNav} role="tablist" aria-label="Editor sections">
                 <button
                     type="button"
@@ -281,7 +214,6 @@ const QuizTemplateEditor = () => {
                 </button>
             </div>
 
-            {/* Bottom Drawer */}
             {mobileTab && (
                 <div className={components.host.mobileDrawer}>
                     {mobileTab === 'slides' ? (
@@ -314,7 +246,7 @@ const QuizTemplateEditor = () => {
     );
 
     return (
-        <>
+        <EditorProvider value={editor}>
             <OrganizerEditOverlays editor={editor} />
 
             <EditorLayout
@@ -323,6 +255,7 @@ const QuizTemplateEditor = () => {
                     <OrganizerEditHeader
                         title={activeQuiz.title}
                         isSaving={isSaving}
+                        saveStatus={saveStatus}
                         onOpenCommandPalette={() => setCommandPaletteOpen(true)}
                         onBack={() => navigate('/studio')}
                         onOpenImport={() => setImportDialogOpen(true)}
@@ -330,6 +263,10 @@ const QuizTemplateEditor = () => {
                         onOpenResults={() => navigate(`/quiz/templates/${activeQuiz._id}/sessions`, { state: { quiz: activeQuiz } })}
                         onSave={() => persistFullState()}
                         onLaunch={openSessionRoom}
+                        onUndo={undo}
+                        onRedo={redo}
+                        canUndo={canUndo}
+                        canRedo={canRedo}
                     />
                 )}
                 slidePanel={(
@@ -382,9 +319,8 @@ const QuizTemplateEditor = () => {
                 }}
                 onClose={() => setCommandPaletteOpen(false)}
             />
-        </>
+        </EditorProvider>
     );
 };
 
 export default QuizTemplateEditor;
-

@@ -67,7 +67,7 @@ const AnalyticsDashboardPage = () => {
             <SubHeader
                 title="Analytics"
                 subtitle="Track accuracy, difficulty, time-score trends, and participant behavior with cached summary data."
-                breadcrumbs={[{ label: 'Dashboard', href: dashboardHref }, { label: 'Analytics' }]}
+                breadcrumbs={[{ label: ishost ? 'Studio' : 'Join', href: dashboardHref }, { label: 'Analytics' }]}
             />
 
             {hasError ? (

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import { ChevronDown, LogOut, Menu, X, Info, ChevronRight } from 'lucide-react';
 import { AnimatePresence, motion as Motion } from 'framer-motion';
 import { useAuthStore } from '../../stores/useAuthStore';
@@ -58,6 +58,7 @@ const Navbar = () => {
     const isHost = role === 'host' || role === 'admin';
     const isParticipant = Boolean(user) && !isHost;
     const { theme, plan } = useSubscriptionTheme();
+    const location = useLocation();
 
     const primaryCta = isHost
         ? { label: 'Open Studio', to: '/studio' }
@@ -93,7 +94,6 @@ const Navbar = () => {
     const accountItems = isHost ? [
         { label: 'Profile', to: '/profile' },
         { label: 'Studio Settings', to: '/studio/settings' },
-        { label: 'Account Settings', to: '/profile/edit' },
         ...(plan === 'FREE' ? [{ label: 'Upgrade', to: '/upgrade' }] : [{ label: 'Billing', to: '/billing' }]),
     ] : [
         { label: 'Profile', to: '/profile' },
@@ -105,6 +105,16 @@ const Navbar = () => {
         setIsProfileMenuOpen(false);
         setIsLearnMoreOpen(false);
     };
+
+    // Close all menus when auth state changes (login/logout)
+    useEffect(() => {
+        closeAllMenus();
+    }, [user?._id]);
+
+    // Close all menus when route changes
+    useEffect(() => {
+        closeAllMenus();
+    }, [location.pathname]);
 
     useEffect(() => {
         if (!isMobileMenuOpen) {
@@ -143,6 +153,7 @@ const Navbar = () => {
     };
 
     const handleLogout = async () => {
+        closeAllMenus();
         await logoutService();
         clearAuth();
     };

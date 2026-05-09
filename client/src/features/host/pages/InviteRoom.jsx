@@ -7,12 +7,11 @@ import Toast from '../../../components/common/Toast';
 import useToast from '../../../hooks/useToast';
 import LoadingScreen from '../../../components/common/LoadingScreen';
 import SubHeader from '../../../components/layout/SubHeader';
-import ErrorState from '../../../components/common/ErrorState';
 import { LivePulseBadge } from '../../../components/common/ui';
 import { useQuizStore } from '../../../stores/useQuizStore';
 import { useSocketStore } from '../../../stores/useSocketStore';
 import { resolveSessionRoute } from '../../../utils/sessionRouteResolver';
-import { textStyles, components } from '../../../styles/index';
+import { typography, layout, buttonStyles, cards, cx } from '../../../styles/index';
 
 const formatCountdown = (ms) => {
     if (ms <= 0) return '00:00:00';
@@ -33,7 +32,6 @@ const InviteRoom = () => {
     const connected = useSocketStore((s) => s.connected);
     const joinRoom = useSocketStore((s) => s.joinRoom);
     const startQuizSocketBroadcast = useSocketStore((s) => s.startQuizBroadcast);
-    const realtimeError = useSocketStore((s) => s.lastError);
 
     const getQuizzesForParent = useQuizStore((s) => s.getQuizzesForParent);
     const activeQuiz = useQuizStore((s) => s.activeQuiz);
@@ -46,7 +44,6 @@ const InviteRoom = () => {
 
     const { toast, showToast, clearToast } = useToast();
     const [loading, setLoading] = useState(true);
-    const [copied, setCopied] = useState(false);
     const [copiedCode, setCopiedCode] = useState(false);
     const [now, setNow] = useState(Date.now());
 
@@ -120,8 +117,19 @@ const InviteRoom = () => {
             if (activeQuiz && (data.roomCode === code.toUpperCase() || data.status === 'live')) setStatus('live');
         };
         socket?.on('session:start', handleSessionStart);
-        return () => { socket?.off('session:start', handleSessionStart); };
-    }, [activeQuiz?._id, sessionCode, joinRoom, socket, connected, connectSocket, setStatus]);
+        
+        const handleUserLeft = (data) => {
+            if (data.reason && data.reason !== 'left') {
+                showToast(`${data.name} was removed: ${data.reason}`, 'info');
+            }
+        };
+        socket?.on('user_left', handleUserLeft);
+
+        return () => { 
+            socket?.off('session:start', handleSessionStart); 
+            socket?.off('user_left', handleUserLeft);
+        };
+    }, [activeQuiz?._id, sessionCode, joinRoom, socket, connected, connectSocket, setStatus, showToast]);
 
     useEffect(() => {
         if (status === 'live' && activeQuiz?._id) {
@@ -149,9 +157,7 @@ const InviteRoom = () => {
 
     const handleCopyLink = () => {
         navigator.clipboard.writeText(joinUrl);
-        setCopied(true);
         showToast('Link copied!', 'success');
-        setTimeout(() => setCopied(false), 2000);
     };
 
     const handleCopyCode = () => {
@@ -196,7 +202,7 @@ const InviteRoom = () => {
         <Motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="min-h-screen pb-20 px-4 md:px-8 max-w-[1400px] mx-auto space-y-10"
+            className={cx(layout.page, "min-h-screen pb-20 space-y-10")}
         >
             <AnimatePresence>
                 {toast && <Toast message={toast.message} type={toast.type} onClose={clearToast} />}
@@ -207,7 +213,10 @@ const InviteRoom = () => {
                 subtitle={`Preparing session for "${activeQuiz.title}"`}
                 breadcrumbs={[{ label: 'Studio', href: '/studio' }, { label: 'Invite' }]}
                 actions={(
-                    <button onClick={handleAbort} className={`${components.button.base} ${components.button.sizes.md} bg-red-500 hover:bg-red-600 text-white !rounded-2xl flex items-center gap-2 font-black uppercase tracking-widest text-[11px] shadow-lg shadow-red-500/20 px-6 h-12`}>
+                    <button 
+                        onClick={handleAbort} 
+                        className={cx(buttonStyles.base, buttonStyles.danger, buttonStyles.sizeMd, 'gap-2 shadow-lg shadow-red-500/20')}
+                    >
                         <X size={14} />
                         <span>Abort Session</span>
                     </button>
@@ -215,35 +224,34 @@ const InviteRoom = () => {
             />
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                {/* Left Column: QR & Codes */}
                 <div className="lg:col-span-8 space-y-6">
                     {isScheduled && scheduledDate && !canLaunch && (
                         <Motion.div 
                             initial={{ y: 20, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
-                            className={`${components.analytics.card} !bg-indigo-500 !text-white flex items-center justify-between !p-8 !rounded-[2.5rem]`}
+                            className={cx(cards.base, "!bg-indigo-500 !text-white flex items-center justify-between !p-8 !rounded-[2.5rem] shadow-xl shadow-indigo-500/20")}
                         >
                             <div className="flex items-center gap-4">
                                 <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center">
                                     <Clock size={24} />
                                 </div>
-                                <div>
-                                    <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Scheduled Start</p>
-                                    <p className="text-xl font-bold">{scheduledDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                <div className="space-y-0.5">
+                                    <p className={cx(typography.micro, "!text-white/60")}>Scheduled Start</p>
+                                    <p className={typography.h2}>{scheduledDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                                 </div>
                             </div>
-                            <div className="text-right">
-                                <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Commencing In</p>
-                                <p className="text-4xl font-black tabular-nums">{formatCountdown(countdown)}</p>
+                            <div className="text-right space-y-0.5">
+                                <p className={cx(typography.micro, "!text-white/60")}>Commencing In</p>
+                                <p className={typography.metricLg}>{formatCountdown(countdown)}</p>
                             </div>
                         </Motion.div>
                     )}
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className={`${components.analytics.card} !p-8 !rounded-[2.5rem] space-y-6 border theme-border`}>
+                        <div className={cx(cards.base, "!p-8 !rounded-[2.5rem] space-y-6 border theme-border")}>
                             <div className="space-y-1">
-                                <p className={textStyles.metaLabel + " font-black uppercase tracking-widest opacity-60"}>Room Access Code</p>
-                                <h2 className="text-5xl font-black tracking-[0.3em] text-indigo-500 uppercase">{displayedCode}</h2>
+                                <p className={typography.eyebrow}>Room Access Code</p>
+                                <h2 className={cx(typography.metricLg, "text-indigo-500 tracking-[0.3em] uppercase")}>{displayedCode}</h2>
                             </div>
                             <div className="flex items-center gap-3">
                                 <LivePulseBadge count={participants.length} label="Users Waiting" />
@@ -253,13 +261,13 @@ const InviteRoom = () => {
                             </div>
                         </div>
 
-                        <div className={`${components.analytics.card} !p-8 !rounded-[2.5rem] space-y-6 border theme-border`}>
+                        <div className={cx(cards.base, "!p-8 !rounded-[2.5rem] space-y-6 border theme-border")}>
                             <div className="space-y-1">
-                                <p className={textStyles.metaLabel + " font-black uppercase tracking-widest opacity-60"}>Direct Join URL</p>
-                                <p className="text-sm font-bold theme-text-primary truncate opacity-80">{joinUrl}</p>
+                                <p className={typography.eyebrow}>Direct Join URL</p>
+                                <p className={cx(typography.bodyStrong, "truncate opacity-80")}>{joinUrl}</p>
                             </div>
                             <div className="flex items-center gap-3">
-                                <div className="px-4 py-2 rounded-xl bg-gray-100 dark:bg-white/5 text-[10px] font-black uppercase tracking-widest theme-text-muted border theme-border">
+                                <div className={cx(typography.micro, "px-4 py-2 rounded-xl bg-gray-100 dark:bg-white/5 border theme-border")}>
                                     Click to share link
                                 </div>
                                 <button onClick={handleCopyLink} className="ml-auto w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/5 flex items-center justify-center theme-text-primary hover:bg-gray-200 dark:hover:bg-white/10 transition-colors">
@@ -269,7 +277,7 @@ const InviteRoom = () => {
                         </div>
                     </div>
 
-                    <div className={`${components.analytics.card} !p-10 !rounded-[3rem] border-2 border-indigo-500/20 bg-white dark:bg-gray-900 relative overflow-hidden`}>
+                    <div className={cx(cards.base, "!p-10 !rounded-[3rem] border-2 border-indigo-500/20 bg-white dark:bg-gray-900 relative overflow-hidden shadow-2xl shadow-indigo-500/5")}>
                          <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl pointer-events-none" />
                          
                          <div className="relative flex flex-col md:flex-row items-center gap-10">
@@ -278,14 +286,14 @@ const InviteRoom = () => {
                             </div>
                             <div className="flex-1 space-y-6 text-center md:text-left">
                                 <div className="space-y-2">
-                                    <h3 className={textStyles.value2Xl + " !font-black !text-3xl"}>Go Live</h3>
-                                    <p className={textStyles.subtitle}>Everything looks ready. Once you launch, participants will be able to see the first slide.</p>
+                                    <h3 className={typography.metricMd}>Go Live</h3>
+                                    <p className={typography.body}>Everything looks ready. Once you launch, participants will be able to see the first slide.</p>
                                 </div>
                                 <div className="flex flex-col sm:flex-row items-center gap-4">
                                     <button
                                         onClick={startQuizBroadcast}
                                         disabled={isScheduled && !canLaunch}
-                                        className={`${components.button.base} ${components.button.sizes.lg} ${components.button.variants.primary} !rounded-[2rem] px-10 h-16 flex items-center gap-3 font-black uppercase tracking-widest shadow-2xl shadow-indigo-500/30 w-full sm:w-auto transition-all hover:-translate-y-1 active:scale-95 disabled:opacity-50`}
+                                        className={cx(buttonStyles.base, buttonStyles.primary, buttonStyles.sizeLg, "!rounded-full px-10 gap-3 shadow-2xl shadow-indigo-500/30 w-full sm:w-auto")}
                                     >
                                         <Zap size={20} fill="currentColor" />
                                         <span>Launch Session</span>
@@ -293,7 +301,7 @@ const InviteRoom = () => {
                                     </button>
                                     <button 
                                         onClick={() => navigate(`/quiz/templates/${id}/settings`)}
-                                        className="p-4 rounded-full border theme-border theme-text-primary hover:bg-gray-100 dark:hover:bg-white/5 transition-all"
+                                        className="p-4 rounded-full border theme-border theme-text-primary hover:bg-gray-100 dark:hover:bg-white/5 transition-all shadow-sm"
                                     >
                                         <Settings2 size={24} />
                                     </button>
@@ -303,15 +311,16 @@ const InviteRoom = () => {
                     </div>
                 </div>
 
-                {/* Right Column: Participants */}
-                <div className="lg:col-span-4 space-y-6">
-                    <div className={`${components.analytics.card} !p-8 !rounded-[2.5rem] border theme-border h-full min-h-[500px] flex flex-col`}>
+                <div className="lg:col-span-4 space-y-6 h-full">
+                    <div className={cx(cards.base, "!p-8 !rounded-[2.5rem] border theme-border h-full min-h-[600px] flex flex-col shadow-xl shadow-indigo-500/5")}>
                         <div className="flex items-center justify-between mb-8">
                             <div className="flex items-center gap-3">
                                 <Users size={20} className="text-indigo-500" />
-                                <h3 className={textStyles.value2Xl + " !font-black !text-xl"}>Lobby</h3>
+                                <h3 className={typography.h3}>Lobby</h3>
                             </div>
-                            <span className="px-3 py-1 rounded-full bg-indigo-500 text-white text-[10px] font-black">{participants.length}</span>
+                            <span className={cx(typography.smallMd, "px-3 py-1 rounded-full bg-indigo-500 text-white")}>
+                                {participants.length}
+                            </span>
                         </div>
 
                         <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
@@ -325,7 +334,7 @@ const InviteRoom = () => {
                                         <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center text-slate-300">
                                             <Users size={32} />
                                         </div>
-                                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Waiting for users...</p>
+                                        <p className={typography.micro}>Waiting for users...</p>
                                     </Motion.div>
                                 ) : (
                                     participants.map((p, i) => (
@@ -337,10 +346,10 @@ const InviteRoom = () => {
                                             transition={{ delay: i * 0.05 }}
                                             className="flex items-center gap-3 p-4 rounded-2xl bg-gray-50 dark:bg-white/5 border border-transparent hover:border-indigo-500/20 transition-all group"
                                         >
-                                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-[10px] font-black uppercase">
+                                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-[10px] font-semibold uppercase">
                                                 {p.name.charAt(0)}
                                             </div>
-                                            <span className="text-sm font-bold theme-text-primary">{p.name}</span>
+                                            <span className={typography.bodyStrong}>{p.name}</span>
                                             <div className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
                                         </Motion.div>
                                     ))
@@ -351,7 +360,7 @@ const InviteRoom = () => {
                         <div className="mt-8 pt-6 border-t theme-border">
                             <div className="flex items-center gap-3 text-emerald-500">
                                 <ShieldCheck size={18} />
-                                <span className="text-[10px] font-black uppercase tracking-widest">Secure Connection Active</span>
+                                <span className={typography.micro}>Secure Connection Active</span>
                             </div>
                         </div>
                     </div>

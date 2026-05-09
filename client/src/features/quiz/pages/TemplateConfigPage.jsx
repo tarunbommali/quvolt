@@ -332,17 +332,6 @@ const ConfigForm = ({ draft, setDraft, globalDefaultsMode, saving, error, onSave
                             ? <><Check size={14} className="text-green-500" /> Saved</>
                             : <><Save size={14} /> Save</>}
                     </button>
-                    {!globalDefaultsMode && (
-                        <button
-                            type="button"
-                            onClick={onSaveAndStart}
-                            disabled={saving}
-                            className={`${buttonStyles.primary} inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-medium disabled:opacity-60`}
-                        >
-                            <Zap size={14} fill="currentColor" />
-                            Save &amp; Go to Lobby
-                        </button>
-                    )}
                 </div>
             </div>
         </div>
@@ -437,8 +426,8 @@ const TemplateConfigPage = () => {
                     if (activeQuiz && activeQuiz._id === id) {
                         useQuizStore.getState().setActiveQuiz({ ...activeQuiz, accessType: quizAccessType });
                     }
-                    const quizzes = useQuizStore.getState().quizzes || [];
-                    const updatedQuizzes = quizzes.map(q => String(q._id) === String(id) ? { ...q, accessType: quizAccessType } : q);
+                    const storeQuizzes = useQuizStore.getState().quizzes || [];
+                    const updatedQuizzes = storeQuizzes.map(q => String(q._id) === String(id) ? { ...q, accessType: quizAccessType } : q);
                     useQuizStore.setState({ quizzes: updatedQuizzes });
                 } catch (accessErr) {
                     console.error("Failed to update template privacy", accessErr);
@@ -482,19 +471,6 @@ const TemplateConfigPage = () => {
                 title={pageTitle}
                 subtitle={pageSubtitle}
                 breadcrumbs={breadcrumbs}
-                actions={
-                    !globalDefaultsMode && (
-                        <button
-                            type="button"
-                            onClick={handleSaveAndStart}
-                            disabled={saving || !draft}
-                            className={`${buttonStyles.primary} inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium disabled:opacity-60`}
-                        >
-                            <Zap size={15} fill="currentColor" />
-                            Save &amp; Go to Lobby
-                        </button>
-                    )
-                }
             />
 
             {error && !draft && (

@@ -20,14 +20,13 @@ import Toast from '../../../components/common/Toast';
 import LoadingScreen from '../../../components/common/LoadingScreen';
 import BillingHeader from '../components/BillingHeader';
 import CurrentPlanCard from '../components/CurrentPlanCard';
-import UsageCards from '../components/UsageCards';
 import PaymentOverviewCards from '../components/PaymentOverviewCards';
 import BillingSidebar from '../components/BillingSidebar';
 import PlanGrid from '../components/PlanGrid';
-import RecentPaymentsCard from '../components/RecentPaymentsCard';
+import TransactionLedger from '../components/TransactionLedger';
 import PaymentModal from '../components/PaymentModal';
 
-import { Layout, ShieldCheck, CreditCard, Wallet, Activity, ArrowRight, Sparkles } from 'lucide-react';
+import { Layout, ShieldCheck, CreditCard, Wallet, Activity, ArrowRight, Sparkles, Receipt } from 'lucide-react';
 import { textStyles, components, layout, typography, cx } from '../../../styles/index';
 
 const INR_SYMBOL = '₹';
@@ -151,7 +150,7 @@ const BillingOverviewPage = () => {
                 const res = await createRazorpaySubAccount({
                     name: user.name,
                     email: user.email,
-                    phone: user.participantProfile?.phone || ''
+                    phone: user.participantProfile?.phone || user.hostProfile?.contactPhone || ''
                 });
                 if (res.success) {
                     setHostAccount((prev) => ({ ...prev, ...res.data, isLoadingKyc: false }));
@@ -272,9 +271,18 @@ const BillingOverviewPage = () => {
 
     if (loadingPlans) return <LoadingScreen />;
 
+    const COMMISSION_MAP = { 'FREE': 25, 'CREATOR': 10, 'TEAMS': 5 };
     const currentPlanDetails = plans.find((p) => p.id === currentPlanId) || plans.find((p) => p.id === 'FREE');
     const participantLimit = user?.subscription?.participantLimit || currentPlanDetails?.participants || 10000;
-    const commissionPercent = user?.subscription?.commissionPercent || currentPlanDetails?.commissionPercent || 25;
+
+    // Dynamic commission calculation
+    const commissionPercent = user?.subscription?.commissionPercent
+        || (user?.subscription?.commission ? user.subscription.commission * 100 : null)
+        || currentPlanDetails?.commissionPercent
+        || (currentPlanDetails?.commission ? currentPlanDetails.commission * 100 : null)
+        || COMMISSION_MAP[currentPlanId]
+        || 25;
+
     const limitFree = currentPlanId === 'TEAMS' ? 'Unlimited' : (currentPlanId === 'CREATOR' ? 30 : 5);
     const limitJoin = participantLimit >= 1000 ? `${(participantLimit / 1000).toLocaleString()}k` : participantLimit;
     const totals = payoutSummary?.totals || { pending: 0, processing: 0, transferred: 0, blocked_kyc: 0 };
@@ -285,6 +293,17 @@ const BillingOverviewPage = () => {
         { key: 'transferred', label: 'Transferred', value: totals.transferred, tone: 'text-emerald-500' },
         { key: 'blocked_kyc', label: 'Verification Block', value: totals.blocked_kyc, tone: 'text-red-500' },
     ];
+
+    const ledgerData = payoutSummary?.recent?.map(tx => ({
+        transactionId: tx.transactionId || tx._id || `TX-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
+        type: tx.type || 'QUIZ_PAYMENT',
+        status: tx.payoutStatus === 'paid' ? 'COMPLETED' : (tx.payoutStatus === 'failed' ? 'FAILED' : (tx.payoutStatus === 'processing' ? 'PROCESSING' : 'PENDING')),
+        amount: tx.amount || 0,
+        commission: tx.platformFeeAmount || 0,
+        hostEarning: tx.hostAmount || 0,
+        quizTitle: tx.quizTitle || tx.quizId || 'Quiz Session',
+        createdAt: tx.createdAt || tx.updatedAt || new Date().toISOString(),
+    })) || [];
 
     return (
         <Motion.div
@@ -310,15 +329,9 @@ const BillingOverviewPage = () => {
 
             <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
                 {/* Main Content */}
-                <div className="xl:col-span-8 space-y-8">
+                <div className="col-span-1 xl:col-span-12">
                     <section className={layout.section}>
-                        <div className={layout.rowStart}>
-                            <div className="w-7 h-7 rounded-lg bg-[var(--qb-primary)]/10 text-[var(--qb-primary)] flex items-center justify-center">
-                                <ShieldCheck size={14} />
-                            </div>
-                            <h2 className={typography.h2}>Current Plan</h2>
-                        </div>
-                        <div className="space-y-4">
+                        <div className="space-y-4 ">
                             <CurrentPlanCard
                                 currentPlanId={currentPlanId}
                                 subStatus={subStatus}
@@ -327,15 +340,16 @@ const BillingOverviewPage = () => {
                                 commissionPercent={commissionPercent}
                                 actionLoading={actionLoading}
                                 onCancel={handleCancel}
+                                usage={usage}
+                                limitFree={limitFree}
                             />
-                            <UsageCards usage={usage} limitFree={limitFree} commLimit={commissionPercent} participantLimit={participantLimit} />
                         </div>
                     </section>
 
                     {user?.role === 'host' && (
-                        <section className={layout.section}>
+                        <section className={`${layout.section} mt-10`}>
                             <div className={layout.rowStart}>
-                                <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+                                <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-500 flex  items-center justify-center">
                                     <Wallet size={14} />
                                 </div>
                                 <h2 className={typography.h2}>Finance Pipeline</h2>
@@ -349,50 +363,24 @@ const BillingOverviewPage = () => {
                         </section>
                     )}
 
-                    <section className={layout.section}>
-                        <div className={layout.rowStart}>
-                            <div className="w-7 h-7 rounded-lg bg-[var(--qb-primary)]/10 text-[var(--qb-primary)] flex items-center justify-center">
-                                <Activity size={14} />
-                            </div>
-                            <h2 className={typography.h2}>Available Plans</h2>
-                        </div>
-                        <PlanGrid
-                            plans={plans}
-                            currentPlanId={currentPlanId}
-                            actionLoading={actionLoading}
-                            onUpgrade={handleUpgrade}
-                            inrSymbol={INR_SYMBOL}
-                        />
-                    </section>
+
                 </div>
 
-                {/* Sidebar */}
-                <aside className="xl:col-span-4 relative">
-                    <div className="xl:sticky xl:top-32 space-y-6">
-                        <div className="space-y-3">
-                            <div className={layout.rowStart}>
-                                <Sparkles size={14} className="text-[var(--qb-primary)]" />
-                                <p className={typography.eyebrow}>System Insights</p>
-                            </div>
-                            <BillingSidebar
-                                limitJoin={limitJoin}
-                                hostAccount={hostAccount}
-                                ishost={user?.role === 'host'}
-                            />
-                        </div>
 
-                        {user?.role === 'host' && (
-                            <div className="space-y-3">
-                                <div className={layout.rowStart}>
-                                    <Activity size={14} className="text-emerald-500" />
-                                    <p className={typography.eyebrow}>Ledger History</p>
-                                </div>
-                                <RecentPaymentsCard payoutSummary={payoutSummary} inrSymbol={INR_SYMBOL} />
-                            </div>
-                        )}
-                    </div>
-                </aside>
+
             </div>
+
+            {user?.role === 'host' && (
+                <section className={cx(layout.section, "mt-12")}>
+                    <div className={layout.rowStart}>
+                        <div className="w-7 h-7 rounded-lg bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
+                            <Receipt size={14} />
+                        </div>
+                        <h2 className={typography.h2}>Transaction Ledger</h2>
+                    </div>
+                    <TransactionLedger transactions={ledgerData} inrSymbol={INR_SYMBOL} />
+                </section>
+            )}
         </Motion.div>
     );
 };

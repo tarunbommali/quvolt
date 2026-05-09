@@ -28,7 +28,7 @@ const QuizSchema = new mongoose.Schema({
     title: { type: String, required: true, trim: true, minlength: 1, maxlength: 150 },
     hostId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     roomCode: { type: String, unique: true, sparse: true, uppercase: true, trim: true },
-    type: { type: String, enum: ['quiz', 'subject'], default: 'quiz' },
+    type: { type: String, enum: ['quiz', 'subject', 'template'], default: 'quiz' },
     quizCategory: {
         type: String,
         enum: QUIZ_TYPE_OPTIONS,
@@ -46,7 +46,13 @@ const QuizSchema = new mongoose.Schema({
     shuffleQuestions: { type: Boolean, default: false },
     interQuestionDelay: { type: Number, default: 5, min: 0, max: 30 }, // seconds between questions
     mode: { type: String, enum: ['auto', 'teaching', 'tutor'], default: 'auto' },
-    questions: [QuestionSchema],
+    questions: {
+        type: [QuestionSchema],
+        validate: [
+            (val) => val.length <= 300,
+            "Too many questions. Maximum allowed is 300."
+        ]
+    },
     // Scheduling
     scheduledAt: { type: Date, default: null },
     lastSessionCode: { type: String, default: null, uppercase: true, trim: true },
@@ -95,5 +101,9 @@ QuizSchema.pre('validate', function normalizePricing() {
         this.sharedWith = [];
     }
 });
+
+QuizSchema.index({ createdAt: -1 });
+QuizSchema.index({ hostId: 1, createdAt: -1 });
+QuizSchema.index({ parentId: 1, createdAt: -1 });
 
 module.exports = mongoose.model('Quiz', QuizSchema);

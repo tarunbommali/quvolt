@@ -12,6 +12,10 @@ const userSchema = new mongoose.Schema({
     enum: ['participant', 'host', 'admin'],
     default: 'participant'
   },
+  roles: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Role'
+  }],
   plan: {
     type: String,
     enum: ['FREE', 'PRO', 'PREMIUM'],

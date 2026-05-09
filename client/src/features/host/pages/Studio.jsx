@@ -7,24 +7,31 @@ import TemplateList from '../components/TemplateList';
 import CreateTemplatePanel from '../components/CreateTemplatePanel';
 import StudioDashboardToolbar from '../components/StudioDashboardToolbar';
 import LoadingScreen from '../../../components/common/LoadingScreen';
+import SubHeader from '../../../components/layout/SubHeader';
+import Pagination from '../../../components/common/ui/Pagination';
 
 import { useAuthStore } from '../../../stores/useAuthStore';
 import UpgradeBanner from '../../../components/common/ui/UpgradeBanner';
 import useStudioDashboardController from '../hooks/useStudioDashboardController';
-import { Layout, Plus, Layers } from 'lucide-react';
-import { components, layout, typography, buttonStyles, cards, cx } from '../../../styles/index';
+import { Plus } from 'lucide-react';
+import { layout, buttonStyles, cx } from '../../../styles/index';
 
 const Studio = () => {
     const user = useAuthStore((s) => s.user);
     const dashboard = useStudioDashboardController();
     const navigate = useNavigate();
     const {
+        templates,
         isLoading,
+        pagination,
+        page,
+        setPage,
+        limit,
+        setLimit,
         toast,
         clearToast,
         confirmDialog,
         setConfirmDialog,
-        visibleQuizzes,
         showCreate,
         currentSubject,
         cloning,
@@ -32,11 +39,14 @@ const Studio = () => {
         editingTitle,
         setEditingQuizId,
         setEditingTitle,
-        handleRenameQuiz,
-        createQuiz,
+        handleRenameTemplate,
+        createTemplate,
         cloneTemplate,
-        handleDeleteQuiz,
-        prefetchQuizNavigation,
+        handleDeleteTemplate,
+        prefetchTemplateNavigation,
+        onOpenSubject,
+        onGoLive,
+        onEditTemplate,
         handleToggleCreate,
         effectiveViewMode,
         handleViewModeChange,
@@ -47,7 +57,7 @@ const Studio = () => {
         searchQuery,
         setSearchQuery,
         subscriptionEntitlements,
-        quizTemplateCount,
+        templateCount,
         quizType,
         setQuizType,
         accessType,
@@ -62,15 +72,17 @@ const Studio = () => {
         quizPrice,
         setQuizPrice,
         handlePaidToggle,
-        onOpenSubject,
-        onEditQuiz,
-        onGoLive,
+        breadcrumbs,
     } = dashboard;
 
-    if (isLoading) return <LoadingScreen />;
+    React.useEffect(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, [page]);
+
+    if (dashboard.isLoading && !templates.length) return <LoadingScreen />;
 
     return (
-        <div className="app-page animate-in fade-in duration-300">
+        <div className="animate-in fade-in duration-300">
             <AnimatePresence>
                 {toast && <Toast message={toast.message} type={toast.type} onClose={clearToast} />}
                 {confirmDialog && (
@@ -84,33 +96,27 @@ const Studio = () => {
                 )}
             </AnimatePresence>
 
-            <div className={layout.page}>
+            <div className={cx(layout.page, 'min-h-[100vh] flex flex-col')}>
 
                 {/* ── Page Header ─────────────────────────────────────────── */}
-                <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2">
-                    <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-lg bg-[var(--qb-primary)]/10 text-[var(--qb-primary)] flex items-center justify-center">
-                                <Layout size={15} />
-                            </div>
-                            <p className={typography.eyebrow}>Creator Studio</p>
-                        </div>
-                        <h1 className={typography.h1}>Template Library</h1>
-                        <p className={typography.body}>
-                            Build, manage, and launch interactive quiz templates.
-                        </p>
-                    </div>
-
-                    <div className="flex items-center gap-3 shrink-0">
-                        {/* Template count badge */}
-                        <div className={cx(cards.subtle, 'flex items-center gap-2 px-3 py-2')}>
-                            <Layers size={14} className="theme-text-muted" />
-                            <span className={typography.smallMd}>
-                                {visibleQuizzes.length} template{visibleQuizzes.length !== 1 ? 's' : ''}
-                            </span>
-                        </div>
-
-                        {/* Primary CTA */}
+                <SubHeader
+                    title={currentSubject ? currentSubject.title : 'Template Library'}
+                    subtitle={currentSubject
+                        ? `Managing ${templates.length} items in this folder.`
+                        : 'Build, manage, and launch interactive quiz templates.'}
+                    breadcrumbs={breadcrumbs.length > 0 ? [
+                        { label: 'Studio', href: '/studio' },
+                        ...breadcrumbs.slice(0, -1).map(c => ({
+                            label: c.label,
+                            href: `/studio/folder/${c.id}`,
+                            state: {
+                                subject: { _id: c.id, title: c.label },
+                                breadcrumbs: breadcrumbs.slice(0, breadcrumbs.findIndex(x => x.id === c.id) + 1)
+                            }
+                        })),
+                        { label: breadcrumbs[breadcrumbs.length - 1].label }
+                    ] : [{ label: 'Studio' }]}
+                    actions={(
                         <Motion.button
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
@@ -118,10 +124,10 @@ const Studio = () => {
                             className={cx(buttonStyles.base, buttonStyles.primary, buttonStyles.sizeMd)}
                         >
                             <Plus size={16} />
-                            New Template
+                            New {currentSubject ? 'Item' : 'Template'}
                         </Motion.button>
-                    </div>
-                </header>
+                    )}
+                />
 
                 {/* ── Upgrade Banner ───────────────────────────────────────── */}
                 {user?.subscription?.plan === 'FREE' && (
@@ -129,23 +135,19 @@ const Studio = () => {
                 )}
 
                 {/* ── Control / Toolbar Bar ────────────────────────────────── */}
-                <section className={components.studio.controlBar}>
-                    <div className={components.studio.controlInner}>
-                        <StudioDashboardToolbar
-                            showCreate={showCreate}
-                            onToggleCreate={handleToggleCreate}
-                            viewMode={effectiveViewMode}
-                            onViewModeChange={handleViewModeChange}
-                            isMobileView={dashboard.isMobileView}
-                            sortMode={sortMode}
-                            onSortModeChange={setSortMode}
-                            filterMode={filterMode}
-                            onFilterModeChange={setFilterMode}
-                            searchQuery={searchQuery}
-                            onSearchQueryChange={setSearchQuery}
-                        />
-                    </div>
-                </section>
+                <StudioDashboardToolbar
+                    showCreate={showCreate}
+                    onToggleCreate={handleToggleCreate}
+                    viewMode={effectiveViewMode}
+                    onViewModeChange={handleViewModeChange}
+                    isMobileView={dashboard.isMobileView}
+                    sortMode={sortMode}
+                    onSortModeChange={setSortMode}
+                    filterMode={filterMode}
+                    onFilterModeChange={setFilterMode}
+                    searchQuery={searchQuery}
+                    onSearchQueryChange={setSearchQuery}
+                />
 
                 {/* ── Create Panel ─────────────────────────────────────────── */}
                 <AnimatePresence mode="wait">
@@ -163,43 +165,53 @@ const Studio = () => {
                             onQuizModeChange={setQuizMode}
                             newQuizTitle={newQuizTitle}
                             onTitleChange={setNewQuizTitle}
-                            onCreate={createQuiz}
+                            onCreate={createTemplate}
                             isPaid={isPaid}
                             onPaidToggle={handlePaidToggle}
                             quizPrice={quizPrice}
                             onPriceChange={setQuizPrice}
                             subscriptionEntitlements={subscriptionEntitlements}
-                            quizTemplateCount={quizTemplateCount}
+                            templateCount={templateCount}
                         />
                     )}
                 </AnimatePresence>
 
                 {/* ── Template Grid ─────────────────────────────────────────── */}
-                <section className={layout.section}>
+                <section className={cx(layout.section, 'flex-grow flex flex-col')}>
                     <TemplateList
-                        quizzes={visibleQuizzes}
+                        templates={templates}
+                        isLoading={isLoading}
                         cloning={cloning}
                         editingQuizId={editingQuizId}
                         editingTitle={editingTitle}
-                        onStartEdit={(quiz) => {
-                            setEditingQuizId(quiz._id);
-                            setEditingTitle(quiz.title);
+                        onStartEdit={(t) => {
+                            setEditingQuizId(t._id);
+                            setEditingTitle(t.title);
                         }}
                         onEditingTitleChange={setEditingTitle}
-                        onRename={handleRenameQuiz}
+                        onRename={handleRenameTemplate}
                         onCancelEdit={() => setEditingQuizId(null)}
-                        onDelete={handleDeleteQuiz}
+                        onDelete={handleDeleteTemplate}
                         onClone={cloneTemplate}
                         onOpenSubject={onOpenSubject}
-                        onEditQuiz={onEditQuiz}
+                        onEditQuiz={onEditTemplate}
                         onGoLive={onGoLive}
-                        onPrefetch={prefetchQuizNavigation}
-                        onSessionSettings={(quiz) => navigate(`/quiz/templates/${quiz._id}/settings`)}
-                        onViewHistory={(quiz) => navigate(`/quiz/templates/${quiz._id}/sessions`)}
+                        onPrefetch={prefetchTemplateNavigation}
+                        onSessionSettings={(t) => navigate(`/quiz/templates/${t._id}/settings`)}
+                        onViewHistory={(t) => navigate(`/quiz/templates/${t._id}/sessions`)}
                         viewMode={effectiveViewMode}
                     />
-                </section>
 
+                    {pagination && (
+                        <div className="mt-auto pt-8">
+                            <Pagination 
+                                pagination={pagination}
+                                onPageChange={setPage}
+                                onLimitChange={setLimit}
+                            />
+                        </div>
+                    )}
+                </section>
             </div>
         </div>
     );

@@ -216,6 +216,33 @@ const ParticipantSessionPage = () => {
 		};
 	}, [upperCode]);
 
+	const activeQuiz = useQuizStore((s) => s.activeQuiz);
+
+	// ── Tab Switch Detection ──────────────────────────────────────────────────
+	useEffect(() => {
+		const template = activeQuiz?.templateId || activeQuiz?.template;
+		const tabDetectionEnabled = template?.advanced?.tabSwitchDetection || activeQuiz?.advanced?.tabSwitchDetection;
+
+		if (!tabDetectionEnabled) return;
+
+		const handleVisibilityChange = () => {
+			if (document.visibilityState === 'hidden') {
+				const socket = getSocket();
+				if (socket) {
+					socket.emit('leave_quiz', {
+						roomCode: upperCode,
+						reason: 'tab switch detection'
+					});
+				}
+				showToast('You have been removed from the session for switching tabs.', 'error');
+				navigate('/join', { state: { error: 'Removed due to tab switch detection' }, replace: true });
+			}
+		};
+
+		document.addEventListener('visibilitychange', handleVisibilityChange);
+		return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+	}, [activeQuiz, upperCode, navigate, showToast]);
+
 	// ── Submit answer ────────────────────────────────────────────────────────
 	const handleAnswer = useCallback((option) => {
 		if (selectedOption || myResult) return;

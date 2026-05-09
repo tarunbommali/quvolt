@@ -24,6 +24,9 @@ const resolveHostSubscriptionEntitlements = async (hostId) => {
     return {
         plan,
         maxQuizTemplates: planConfig.maxQuizzes,
+        maxQuestionsPerQuiz: planConfig.maxQuestionsPerQuiz,
+        maxOptionsPerQuestion: planConfig.maxOptionsPerQuestion,
+        maxAIRequestsPerDay: planConfig.maxAIRequestsPerDay,
         maxConcurrentSessions: planConfig.maxConcurrentSessions,
         maxParticipantsPerSession: planConfig.maxParticipantsPerSession,
         participantLimitMonthly: subscription?.participantLimit || planConfig.participants,

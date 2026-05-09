@@ -7,6 +7,7 @@ const logger = require('../utils/logger');
 const quizService = require('../services/quiz/quiz.service');
 const { SESSION_STATUS, assertTransition, canTransition, normalizeSessionStatus } = require('../utils/sessionStateMachine');
 const { resolveHostSubscriptionEntitlements } = require('../utils/subscriptionEntitlements');
+const templateService = require('../services/quiz/template.service');
 const { 
     sendSuccess, 
     sendError, 
@@ -66,7 +67,8 @@ const startQuizSession = async (req, res) => {
             }, 'Existing session reused');
         }
 
-        const snapshot = buildTemplateSnapshot(quiz);
+        const hostConfig = await templateService.getDefaultTemplate(req.user._id);
+        const snapshot = buildTemplateSnapshot(quiz, hostConfig);
 
         let session;
         let attempts = 0;
@@ -85,6 +87,7 @@ const startQuizSession = async (req, res) => {
                     startedAt: new Date(),
                     participantLimit: entitlements?.maxParticipantsPerSession || 200,
                     commissionPercent: entitlements?.commissionPercent || 25,
+                    disableDetailedAnalytics: Array.isArray(snapshot) && snapshot.length > 100,
                 };
 
                 if (accessType !== undefined) sessionData.accessType = accessType;
@@ -378,14 +381,16 @@ const scheduleQuiz = async (req, res) => {
             while (!scheduledSession && attempts < 5) {
                 attempts += 1;
                 try {
+                    const hostConfig = await templateService.getDefaultTemplate(req.user._id);
                     const sessionData = {
                         templateId: quiz._id,
                         quizId: quiz._id,
-                        templateSnapshot: buildTemplateSnapshot(quiz),
+                        templateSnapshot: buildTemplateSnapshot(quiz, hostConfig),
                         sessionCode: generateCode(),
                         status: SESSION_STATUS.SCHEDULED,
                         mode: normalizeSessionMode(quiz.mode),
                         startedAt: scheduled,
+                        disableDetailedAnalytics: quiz.questions && quiz.questions.length > 100,
                     };
                     if (accessType !== undefined) sessionData.accessType = accessType;
                     if (allowedEmails !== undefined) sessionData.allowedEmails = allowedEmails;

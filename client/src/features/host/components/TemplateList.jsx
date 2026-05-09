@@ -1,11 +1,25 @@
 import React from 'react';
 import { motion as Motion, AnimatePresence } from 'framer-motion';
 import TemplateCard from './TemplateCard';
-import { Layout, Plus, Sparkles } from 'lucide-react';
-import { textStyles, panelStyles, components, layout, typography, cx } from '../../../styles/index';
+import { layout, cx } from '../../../styles/index';
+import { EmptyTemplateList } from './EmptyTemplateList';
+
+const TemplateCardSkeleton = ({ viewMode }) => (
+    <div className={cx(
+        "animate-pulse rounded-3xl border theme-border theme-surface p-6 shadow-sm",
+        viewMode === 'list' ? "flex items-center gap-6" : "h-64"
+    )}>
+        <div className="h-16 w-16 rounded-2xl bg-gray-200 dark:bg-white/5" />
+        <div className="flex-1 space-y-3">
+            <div className="h-5 w-1/3 rounded bg-gray-200 dark:bg-white/5" />
+            <div className="h-4 w-1/4 rounded bg-gray-200 dark:bg-white/5" />
+        </div>
+    </div>
+);
 
 const TemplateList = ({
-    quizzes,
+    templates,
+    isLoading,
     cloning,
     editingQuizId,
     onDelete,
@@ -18,44 +32,32 @@ const TemplateList = ({
     onViewHistory,
     viewMode
 }) => {
-    if (!quizzes || quizzes.length === 0) {
+    if (isLoading && (!templates || templates.length === 0)) {
         return (
-            <Motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={cx(
-                    panelStyles.emptyStateCard,
-                    "!py-24 !rounded-[3rem] !border-2 !border-dashed bg-gradient-to-br from-gray-50/50 to-transparent dark:from-white/5"
-                )}
-            >
-                <div className="relative w-24 h-24 mx-auto mb-8">
-                    <div className="absolute -inset-4 bg-indigo-500/10 blur-2xl rounded-full animate-pulse" />
-                    <div className="relative w-full h-full rounded-[2rem] bg-white dark:bg-white/10 flex items-center justify-center shadow-sm text-indigo-500">
-                        <Layout size={44} />
-                    </div>
-                </div>
-                <h3 className={cx(typography.pageTitle, "!text-3xl !font-black tracking-tighter uppercase mb-4")}>
-                    Intelligence Repository Empty
-                </h3>
-                <p className={cx(typography.body, "max-w-sm mx-auto text-base font-bold opacity-60 leading-relaxed")}>
-                    Your creative journey starts here. Create your first high-engagement logic unit to begin synchronizing audience data.
-                </p>
-                <div className="mt-10 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] theme-text-muted opacity-40">
-                    <Sparkles size={14} /> Global Edge Deployment Ready
-                </div>
-            </Motion.div>
+            <div className={viewMode === 'list' ? "flex flex-col gap-6" : cx(layout.grid, "!gap-10 md:grid-cols-2 lg:grid-cols-3")}>
+                {[...Array(6)].map((_, i) => <TemplateCardSkeleton key={i} viewMode={viewMode} />)}
+            </div>
+        );
+    }
+
+    if (!templates || templates.length === 0) {
+        return (
+            <EmptyTemplateList />
         );
     }
 
     return (
-        <div className={viewMode === 'list'
-            ? "flex flex-col gap-6"
-            : cx(layout.grid, "!gap-10 md:grid-cols-2 lg:grid-cols-3")
-        }>
+        <div className={cx(
+            "relative",
+            viewMode === 'list' ? "flex flex-col gap-2" : cx(layout.grid, "!gap-2 md:grid-cols-3 lg:grid-cols-4")
+        )}>
+            {isLoading && templates.length > 0 && (
+                <div className="absolute inset-0 z-10 bg-white/20 backdrop-blur-[1px] dark:bg-black/20" />
+            )}
             <AnimatePresence mode="popLayout">
-                {quizzes.map((quiz, index) => (
+                {templates.map((t, index) => (
                     <Motion.div
-                        key={quiz._id}
+                        key={t._id}
                         layout
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -63,17 +65,17 @@ const TemplateList = ({
                         transition={{ duration: 0.4, delay: index * 0.04, ease: "circOut" }}
                     >
                         <TemplateCard
-                            template={quiz}
+                            template={t}
                             view={viewMode}
-                            cloning={cloning && editingQuizId === quiz._id}
-                            onEdit={() => onEditQuiz(quiz)}
-                            onDelete={() => onDelete(quiz._id)}
-                            onClone={() => onClone(quiz)}
-                            onOpenSubject={() => onOpenSubject?.(quiz)}
-                            onGoLive={() => onGoLive(quiz)}
-                            onPrefetch={() => onPrefetch(quiz)}
-                            onSessionSettings={() => onSessionSettings?.(quiz)}
-                            onViewHistory={() => onViewHistory?.(quiz)}
+                            cloning={cloning && editingQuizId === t._id}
+                            onEdit={() => onEditQuiz(t)}
+                            onDelete={() => onDelete(t._id)}
+                            onClone={() => onClone(t)}
+                            onOpenSubject={() => onOpenSubject?.(t)}
+                            onGoLive={() => onGoLive(t)}
+                            onPrefetch={() => onPrefetch(t)}
+                            onSessionSettings={() => onSessionSettings?.(t)}
+                            onViewHistory={() => onViewHistory?.(t)}
                         />
                     </Motion.div>
                 ))}

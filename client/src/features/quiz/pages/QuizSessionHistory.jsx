@@ -28,56 +28,57 @@ const withTimeout = (promise, ms = REQUEST_TIMEOUT_MS) =>
         }),
     ]);
 
+import usePaginatedFetch from '../../../hooks/usePaginatedFetch';
+import Pagination from '../../../components/common/ui/Pagination';
+
 const QuizSessionHistory = () => {
-    const [history, setHistory] = useState([]);
-    const [error, setError] = useState(null);
+    const navigate = useNavigate();
+    const user = useAuthStore((state) => state.user);
+    const authLoading = useAuthStore((state) => state.loading);
+    
     const [searchQuery, setSearchQuery] = useState('');
     const [scheduledJoins, setScheduledJoins] = useState([]);
     const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
     const [subjectLeaderboard, setSubjectLeaderboard] = useState([]);
     const [leaderboardMeta, setLeaderboardMeta] = useState({ title: '', sub: '', accent: 'primary' });
 
-    const user = useAuthStore((state) => state.user);
-    const authLoading = useAuthStore((state) => state.loading);
-    const navigate = useNavigate();
+    const {
+        data: history,
+        loading,
+        error,
+        pagination,
+        page,
+        setPage,
+        limit,
+        setLimit,
+        setSearch,
+        refetch
+    } = usePaginatedFetch('/api/analytics/user/history', {
+        page: 1,
+        limit: 10,
+        sortBy: 'createdAt',
+        order: 'desc'
+    });
 
-    const fetchHistory = useCallback(async () => {
-        if (authLoading || !user?.role) return undefined;
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setSearch(searchQuery);
+        }, 300);
+        return () => clearTimeout(handler);
+    }, [searchQuery, setSearch]);
 
-        let active = true;
-        try {
-            setError(null);
-
-            const data = await withTimeout(useQuizStore.getState().getHistoryForRole(user.role));
-            if (!active) return undefined;
-            setHistory(data);
-
-            if (user.role === 'host') {
-                setScheduledJoins([]);
-            } else {
-                const joined = await withTimeout(getMyScheduledJoins());
-                if (!active) return undefined;
-                setScheduledJoins(joined);
-            }
-        } catch {
-            if (active) setError('Failed to load history. Please try again.');
+    useEffect(() => {
+        if (user?.role === 'participant') {
+            getMyScheduledJoins().then(setScheduledJoins).catch(() => {});
         }
-
-        return () => {
-            active = false;
-        };
-    }, [authLoading, user?.role]);
+    }, [user?.role]);
 
     const openLeaderboard = async (e, record) => {
         e.stopPropagation();
         try {
             const qId = record.quizId || record.quiz?._id || record._id;
-            if (!qId) {
-                setError('Cannot fetch standings for this record.');
-                return;
-            }
-
-            const data = await withTimeout(useQuizStore.getState().getQuizLeaderboardCached(qId));
+            if (!qId) return;
+            const data = await useQuizStore.getState().getQuizLeaderboardCached(qId);
             setSubjectLeaderboard(data);
             setLeaderboardMeta({
                 title: record.quizTitle || record.title || 'Quiz Standings',
@@ -85,67 +86,16 @@ const QuizSessionHistory = () => {
                 accent: 'primary',
             });
             setIsLeaderboardOpen(true);
-        } catch (err) {
-            setError(
-                isTransientApiError(err)
-                    ? 'Temporary network issue. Standings request failed after retries.'
-                    : 'Failed to fetch standings. Please try again.',
-            );
-        }
+        } catch (err) {}
     };
 
     const prefetchHistoryNavigation = useCallback((record) => {
         prefetchHistoryDetailRoute().catch(() => { });
-        useQuizStore.getState().prefetchHistoryForRole(user.role).catch(() => { });
         const qId = record?.quizId || record?.quiz?._id || record?._id;
-        if (qId) {
-            useQuizStore.getState().prefetchQuizLeaderboard(qId).catch(() => { });
-        }
-    }, [user?.role]);
+        if (qId) useQuizStore.getState().prefetchQuizLeaderboard(qId).catch(() => { });
+    }, []);
 
-    useEffect(() => {
-        if (authLoading || !user?.role) return undefined;
-
-        const cleanup = fetchHistory();
-        return () => {
-            if (cleanup && typeof cleanup.then === 'function') {
-                cleanup.then((fn) => typeof fn === 'function' && fn());
-            } else if (typeof cleanup === 'function') {
-                cleanup();
-            }
-        };
-    }, [authLoading, user?.role, fetchHistory]);
-
-    useEffect(() => {
-        if (authLoading || !user?.role) return undefined;
-
-        const refresh = () => {
-            fetchHistory();
-        };
-
-        const onVisibilityChange = () => {
-            if (document.visibilityState === 'visible') {
-                refresh();
-            }
-        };
-
-        window.addEventListener('focus', refresh);
-        document.addEventListener('visibilitychange', onVisibilityChange);
-        const intervalId = window.setInterval(refresh, 30000);
-
-        return () => {
-            window.removeEventListener('focus', refresh);
-            document.removeEventListener('visibilitychange', onVisibilityChange);
-            window.clearInterval(intervalId);
-        };
-    }, [authLoading, fetchHistory, user?.role]);
-
-    const searchFilteredHistory = history.filter((record) =>
-        (record.title || record.quizTitle || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (record.roomCode || '').toLowerCase().includes(searchQuery.toLowerCase())
-    );
-
-    const filteredHistory = searchFilteredHistory;
+    if (authLoading || (loading && history.length === 0)) return null;
 
     if (error) {
         return <HistoryErrorState error={error} onRetry={fetchHistory} />;
@@ -156,7 +106,7 @@ const QuizSessionHistory = () => {
             <SubHeader
                 title="History"
                 subtitle={user.role === 'host' ? 'Archive of your conducted sessions' : 'Recap of your quiz performances'}
-                breadcrumbs={[{ label: 'Dashboard', href: user.role === 'host' ? '/studio' : '/join' }, { label: 'History' }]}
+                breadcrumbs={[{ label: user.role === 'host' ? 'Studio' : 'Join', href: user.role === 'host' ? '/studio' : '/join' }, { label: 'History' }]}
                 actions={(
                     <SearchBar
                         value={searchQuery}
@@ -177,15 +127,26 @@ const QuizSessionHistory = () => {
 
             {history.length === 0 ? (
                 <HistoryEmptyState />
-            ) : filteredHistory.length === 0 ? (
-                <HistoryNoResultsState />
             ) : (
-                <HistoryGrid
-                    records={filteredHistory}
-                    userRole={user.role}
-                    onNavigate={(record) => navigate(`/quiz/sessions/${record._id || record.roomCode || record.quizId}`, { state: { record } })}
-                    onOpenLeaderboard={openLeaderboard}
-                    onPrefetch={prefetchHistoryNavigation}
+                <div className="relative">
+                    {loading && history.length > 0 && (
+                        <div className="absolute inset-0 z-10 bg-white/20 backdrop-blur-[1px] dark:bg-black/20" />
+                    )}
+                    <HistoryGrid
+                        records={history}
+                        userRole={user.role}
+                        onNavigate={(record) => navigate(`/quiz/sessions/${record._id || record.roomCode || record.quizId}`, { state: { record } })}
+                        onOpenLeaderboard={openLeaderboard}
+                        onPrefetch={prefetchHistoryNavigation}
+                    />
+                </div>
+            )}
+
+            {pagination && (
+                <Pagination 
+                    pagination={pagination}
+                    onPageChange={setPage}
+                    onLimitChange={setLimit}
                 />
             )}
 

@@ -9,6 +9,7 @@ import { components } from './styles/components';
 import GlobalCommandPalette from './components/common/GlobalCommandPalette';
 import LoadingScreen from './components/common/LoadingScreen';
 import AppRoutes from './routes/AppRoutes';
+import ScrollToTop from './components/common/ui/ScrollToTop';
 
 
 
@@ -28,6 +29,7 @@ function App() {
               <AppRoutes />
             </Suspense>
           </main>
+          <ScrollToTop />
         </div>
       </Router>
     </ErrorBoundary>

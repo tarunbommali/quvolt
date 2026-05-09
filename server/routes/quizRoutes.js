@@ -28,7 +28,7 @@ const createQuizValidators = [
     requireRole(['host', 'admin']),
     checkPermission('create_quiz'), // Requirement 8.1: Enforce create_quiz permission
     body('title').trim().notEmpty().withMessage('Title is required'),
-    body('type').isIn(['quiz', 'subject']).withMessage('Invalid quiz type'),
+    body('type').isIn(['quiz', 'subject', 'template']).withMessage('Invalid quiz type'),
     body('mode').optional().isIn(['auto', 'teaching', 'tutor']).withMessage('Invalid quiz mode'),
     body('accessType').optional().isIn(['public', 'private', 'shared']).withMessage('Invalid access type'),
     body('allowedEmails').optional().isArray().withMessage('allowedEmails must be an array'),
@@ -87,7 +87,22 @@ router.post('/templates/:templateId/session', [
 
 // Quiz CRUD
 router.put('/:id', requireRole(['host', 'admin']), quizController.updateQuiz);
-router.put('/:id/full-state', requireRole(['host', 'admin']), requireQuizOwnership, questionController.updateQuizFullState);
+const quizModifyLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 20,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { message: 'Too many quiz modifications. Please try again later.' },
+});
+
+const bulkUpdateGuard = (req, res, next) => {
+    if (req.body?.slides?.length > 300) {
+        return res.status(413).json({ message: 'Payload too large. Maximum allowed slides per request is 300.' });
+    }
+    next();
+};
+
+router.put('/:id/full-state', quizModifyLimiter, bulkUpdateGuard, requireRole(['host', 'admin']), requireQuizOwnership, questionController.updateQuizFullState);
 router.post('/:id/start', [
     requireRole(['host', 'admin']),
     requireQuizOwnership,
@@ -118,7 +133,7 @@ router.post('/:id/schedule', [
     validate
 ], sessionController.scheduleQuiz);
 router.get('/:id/sessions', requireRole(['host', 'admin']), requireQuizOwnership, quizController.getQuizSessions);
-router.delete('/:id', requireRole(['host', 'admin']), requireQuizOwnership, quizController.deleteQuiz);
+router.delete('/:id', quizModifyLimiter, requireRole(['host', 'admin']), requireQuizOwnership, quizController.deleteQuiz);
 
 // Access grant management endpoints (Requirements 8.6, 8.7)
 router.post('/:id/access/grant', [
@@ -132,13 +147,14 @@ router.delete('/:id/access/revoke/:userId', requireRole(['host', 'admin']), requ
 router.get('/:id/access', requireRole(['host', 'admin']), requireQuizOwnership, accessController.getQuizAccessList);
 
 router.post('/:id/questions', [
+    quizModifyLimiter,
     requireRole(['host', 'admin']),
     body('text').trim().notEmpty().withMessage('Question text is required'),
     body('options').isArray({ min: 4, max: 4 }).withMessage('Exactly 4 options are required'),
     body('correctOption').isInt({ min: 0, max: 3 }).withMessage('Correct option must be between 0 and 3'),
     validate
 ], questionController.addQuestion);
-router.put('/:quizId/questions/:questionId', requireRole(['host', 'admin']), questionController.updateQuestion);
+router.put('/:quizId/questions/:questionId', quizModifyLimiter, requireRole(['host', 'admin']), questionController.updateQuestion);
 router.delete('/:quizId/questions/:questionId', requireRole(['host', 'admin']), questionController.deleteQuestion);
 
 router.get('/:id/leaderboard', requireRole(['host', 'admin', 'participant']), checkQuizAccess, analyticsController.getQuizLeaderboard);

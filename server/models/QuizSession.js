@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const QuizSessionSchema = new mongoose.Schema({
     templateId: { type: mongoose.Schema.Types.ObjectId, ref: 'Quiz', immutable: true },
     quizId: { type: mongoose.Schema.Types.ObjectId, ref: 'Quiz', required: true, immutable: true },
+    hostId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     templateSnapshot: {
         type: {
             title: { type: String, default: '' },
@@ -41,6 +42,9 @@ const QuizSessionSchema = new mongoose.Schema({
     startedAt: { type: Date, default: Date.now },
     endedAt: { type: Date, default: null },
     participantCount: { type: Number, default: 0 },
+    participantLimit: { type: Number, default: 200 },
+    commissionPercent: { type: Number, default: 25 },
+    disableDetailedAnalytics: { type: Boolean, default: false },
     peakParticipants: { type: Number, default: 0 }, // For SaaS billing
     totalSubmissions: { type: Number, default: 0 }, // For usage quotas
     sessionDuration: { type: Number, default: 0 }, // In seconds

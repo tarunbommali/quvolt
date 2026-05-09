@@ -160,6 +160,7 @@ const ROLES = [
       'manage_session',
       'process_payment',
       'view_revenue',
+      'manage_payouts',
     ],
   },
   {

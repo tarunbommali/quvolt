@@ -26,19 +26,55 @@ const normalizeSessionMode = (mode) => {
     return 'auto';
 };
 
-const buildTemplateSnapshot = (quiz) => ({
+const buildTemplateSnapshot = (quiz, config = {}) => ({
     title: quiz?.title || '',
-    mode: normalizeSessionMode(quiz?.mode),
+    mode: config.mode || normalizeSessionMode(quiz?.mode),
     accessType: quiz?.accessType || 'public',
-    shuffleQuestions: Boolean(quiz?.shuffleQuestions),
+    shuffleQuestions: config.flow?.shuffleQuestions ?? Boolean(quiz?.shuffleQuestions),
+    
+    // --- Engine Configuration (from QuizTemplate) ---
+    timer: {
+        questionTime: config.timer?.questionTime ?? 15,
+        autoNext: config.timer?.autoNext ?? true,
+        interQuestionDelay: config.timer?.interQuestionDelay ?? 3,
+    },
+    scoring: {
+        basePoints: config.scoring?.basePoints ?? 100,
+        speedBonus: config.scoring?.speedBonus ?? true,
+        speedBonusMax: config.scoring?.speedBonusMax ?? 50,
+        negativeMarking: {
+            enabled: config.scoring?.negativeMarking?.enabled ?? false,
+            penalty: config.scoring?.negativeMarking?.penalty ?? 25,
+        },
+    },
+    leaderboard: {
+        enabled: config.leaderboard?.enabled ?? true,
+        showLive: config.leaderboard?.showLive ?? true,
+        showAfterEachQuestion: config.leaderboard?.showAfterEachQuestion ?? true,
+    },
+    flow: {
+        shuffleQuestions: config.flow?.shuffleQuestions ?? false,
+        shuffleOptions: config.flow?.shuffleOptions ?? false,
+    },
+    access: {
+        allowLateJoin: config.access?.allowLateJoin ?? true,
+        maxParticipants: config.access?.maxParticipants ?? 200,
+    },
+    advanced: {
+        antiCheat: config.advanced?.antiCheat ?? false,
+        tabSwitchDetection: config.advanced?.tabSwitchDetection ?? false,
+        requireCamera: config.advanced?.requireCamera ?? false,
+    },
+
+    // --- Content (from Quiz Blueprint) ---
     questions: (quiz?.questions || []).map((question) => ({
         _id: question?._id,
         text: question?.text || '',
         options: Array.isArray(question?.options) ? [...question.options] : [],
         correctOption: Number.isInteger(question?.correctOption) ? question.correctOption : 0,
         hashedCorrectAnswer: question?.hashedCorrectAnswer || '',
-        timeLimit: Number(question?.timeLimit) || 15,
-        shuffleOptions: Boolean(question?.shuffleOptions),
+        timeLimit: Number(question?.timeLimit) || (config.timer?.questionTime ?? 15),
+        shuffleOptions: Boolean(question?.shuffleOptions) || (config.flow?.shuffleOptions ?? false),
         questionType: question?.questionType || 'multiple-choice',
         mediaUrl: question?.mediaUrl || null,
     })),
@@ -66,6 +102,47 @@ const getManagedQuizOrError = async (req, id) => {
     return { quiz };
 };
 
+const applyPagination = async (model, query, options = {}) => {
+    const page = parseInt(options.page) || 1;
+    const limit = Math.min(parseInt(options.limit) || 10, 50);
+    const sortBy = options.sortBy || 'createdAt';
+    const order = options.order === 'asc' ? 1 : -1;
+    const search = options.search;
+
+    const finalQuery = { ...query };
+
+    if (search && Array.isArray(options.searchFields)) {
+        finalQuery.$or = options.searchFields.map((field) => ({
+            [field]: { $regex: search, $options: 'i' },
+        }));
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+        model.find(finalQuery)
+            .sort({ [sortBy]: order })
+            .skip(skip)
+            .limit(limit)
+            .lean(),
+        model.countDocuments(finalQuery),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+        data,
+        pagination: {
+            total,
+            page,
+            limit,
+            totalPages,
+            hasNext: page < totalPages,
+            hasPrev: page > 1,
+        },
+    };
+};
+
 module.exports = {
     ALLOWED_QUIZ_CATEGORIES,
     buildQuizAccessQuery,
@@ -77,4 +154,5 @@ module.exports = {
     buildTemplateSnapshot,
     findSessionByIdentifier,
     getManagedQuizOrError,
+    applyPagination,
 };

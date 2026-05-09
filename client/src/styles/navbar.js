@@ -1,5 +1,5 @@
 export const navbar = {
-    container: 'relative sticky top-0 z-[var(--z-nav)] h-14 border-b theme-border theme-surface',
+    container: 'fixed top-0 left-0 right-0 z-[var(--z-nav)] h-14 border-b theme-border bg-[color-mix(in_srgb,var(--qb-surface-1)_80%,transparent)] backdrop-blur-xl',
     inner: 'mx-auto flex h-14 w-full max-w-7xl items-center justify-between px-6',
     brandLink: 'flex items-center gap-3 select-none outline-none focus:outline-none',
     brandTitle: 'text-4xl font-semibold tracking-tight theme-text-primary',

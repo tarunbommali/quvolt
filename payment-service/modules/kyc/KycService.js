@@ -37,7 +37,13 @@ class KycService extends BaseService {
         type: 'route',
         reference_id: String(hostUserId),
         legal_business_name: name || 'Quvolt Host',
+        customer_facing_business_name: (name || 'Quvolt Host').slice(0, 40),
+        contact_name: name || 'Quvolt Host',
         business_type: 'individual',
+        profile: {
+          category: 'educational_services',
+          subcategory: 'other_educational_services',
+        }
       });
 
       return HostAccount.findOneAndUpdate(
@@ -111,8 +117,9 @@ class KycService extends BaseService {
     });
   }
 
-  _createError(message, code, status) {
-    const error = new Error(message);
+  _createError(message, code, status, originalError = null) {
+    const errorMsg = originalError?.description || originalError?.message || message;
+    const error = new Error(errorMsg);
     error.code = code;
     error.status = status;
     return error;

@@ -87,7 +87,7 @@ class PaymentRBACService {
     if (role === 'admin') return true;
 
     if (role === 'host') {
-      return ['process_payment', 'view_revenue', 'manage_payouts'].includes(permissionName);
+      return ['process_payment', 'view_revenue', 'manage_payouts', 'manage_session'].includes(permissionName);
     }
 
     return false;

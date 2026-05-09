@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion as Motion, AnimatePresence } from 'framer-motion';
-import { X, Layout, Layers, Globe, Lock, ShieldCheck, Zap, Sparkles, ChevronRight } from 'lucide-react';
+import { X, Layout, Layers, Globe, Lock, ShieldCheck, Zap, Sparkles, ChevronRight, User } from 'lucide-react';
 import { textStyles, panelStyles, formStyles, components, cards, typography, buttonStyles, forms, cx } from '../../../styles/index';
 
 const CreateTemplatePanel = ({
@@ -13,6 +13,8 @@ const CreateTemplatePanel = ({
     subscriptionEntitlements,
     quizType = 'quiz',
     onQuizTypeChange,
+    quizMode = 'auto',
+    onQuizModeChange,
 }) => {
     return (
         <AnimatePresence>
@@ -60,7 +62,11 @@ const CreateTemplatePanel = ({
                                         type="text"
                                         placeholder={quizType === 'quiz' ? "e.g. Q4 Enterprise Compliance Assessment" : "e.g. Engineering Onboarding Templates"}
                                         value={newQuizTitle}
-                                        onChange={(e) => onTitleChange(e.target.value)}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            const capitalized = val.charAt(0).toUpperCase() + val.slice(1);
+                                            onTitleChange(capitalized);
+                                        }}
                                         className={cx(forms.inputField, "pr-12 bg-gray-50/50 dark:bg-white/5 border-2 hover:border-indigo-500/30 transition-colors")}
                                     />
                                     <div className="absolute right-4 top-1/2 -translate-y-1/2 text-indigo-500 opacity-0 group-focus-within:opacity-100 transition-opacity">
@@ -70,86 +76,137 @@ const CreateTemplatePanel = ({
                                 <p className={cx(typography.metaLabel, "px-2")}>This title will be visible to all participants during session synchronization.</p>
                             </div>
 
-                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-10">
+                                {/* ── Structure Section ─────────────────────────── */}
                                 <div className="space-y-4">
                                     <label className={cx(typography.eyebrow, "px-1")}>
                                         Node Structure
                                     </label>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 gap-3">
                                         <button
                                             type="button"
-                                            onClick={() => onQuizTypeChange?.('quiz')}
+                                            onClick={() => onQuizTypeChange?.('template')}
                                             className={cx(
-                                                "group relative flex flex-col items-start p-6 rounded-[2rem] border-2 transition-all duration-300 text-left",
-                                                quizType === 'quiz' 
-                                                ? "border-indigo-500 bg-indigo-500/5 shadow-lg shadow-indigo-500/10 scale-[1.02]" 
+                                                "group relative flex items-center gap-4 p-4 rounded-2xl border-2 transition-all duration-300 text-left",
+                                                quizType === 'template' 
+                                                ? "border-indigo-500 bg-indigo-500/5 shadow-md scale-[1.02]" 
                                                 : "theme-border hover:border-indigo-500/20 bg-gray-50/50 dark:bg-white/5"
                                             )}
                                         >
                                             <div className={cx(
-                                                "w-10 h-10 rounded-xl flex items-center justify-center mb-4 transition-all duration-300 shadow-inner",
-                                                quizType === 'quiz' ? "bg-indigo-500 text-white" : "bg-white dark:bg-white/10 theme-text-muted"
+                                                "w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 shadow-inner shrink-0",
+                                                quizType === 'template' ? "bg-indigo-500 text-white" : "bg-white dark:bg-white/10 theme-text-muted"
                                             )}>
-                                                <Layout size={20} />
+                                                <Layout size={18} />
                                             </div>
-                                            <span className={cx(typography.cardTitle, "mb-1")}>Single Blitz</span>
-                                            <span className={typography.metaLabel}>Create a standalone template.</span>
-                                            {quizType === 'quiz' && (
-                                                <Motion.div layoutId="type-check" className="absolute top-5 right-5 w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-sm shadow-indigo-500/40" />
-                                            )}
+                                            <div>
+                                                <p className={cx(typography.cardTitle, "text-sm mb-0.5")}>Single Blitz</p>
+                                                <p className="text-[10px] opacity-60 font-medium uppercase tracking-wider">Standalone Node</p>
+                                            </div>
                                         </button>
 
                                         <button
                                             type="button"
                                             onClick={() => onQuizTypeChange?.('subject')}
                                             className={cx(
-                                                "group relative flex flex-col items-start p-6 rounded-[2rem] border-2 transition-all duration-300 text-left",
+                                                "group relative flex items-center gap-4 p-4 rounded-2xl border-2 transition-all duration-300 text-left",
                                                 quizType === 'subject' 
-                                                ? "border-indigo-500 bg-indigo-500/5 shadow-lg shadow-indigo-500/10 scale-[1.02]" 
+                                                ? "border-indigo-500 bg-indigo-500/5 shadow-md scale-[1.02]" 
                                                 : "theme-border hover:border-indigo-500/20 bg-gray-50/50 dark:bg-white/5"
                                             )}
                                         >
                                             <div className={cx(
-                                                "w-10 h-10 rounded-xl flex items-center justify-center mb-4 transition-all duration-300 shadow-inner",
+                                                "w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 shadow-inner shrink-0",
                                                 quizType === 'subject' ? "bg-indigo-500 text-white" : "bg-white dark:bg-white/10 theme-text-muted"
                                             )}>
-                                                <Layers size={20} />
+                                                <Layers size={18} />
                                             </div>
-                                            <span className={cx(typography.cardTitle, "mb-1")}>Multi Blitz</span>
-                                            <span className={typography.metaLabel}>Create a folder for grouping templates.</span>
-                                            {quizType === 'subject' && (
-                                                <Motion.div layoutId="type-check" className="absolute top-5 right-5 w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-sm shadow-indigo-500/40" />
-                                            )}
+                                            <div>
+                                                <p className={cx(typography.cardTitle, "text-sm mb-0.5")}>Multi Blitz</p>
+                                                <p className="text-[10px] opacity-60 font-medium uppercase tracking-wider">Folder Node</p>
+                                            </div>
                                         </button>
                                     </div>
                                 </div>
 
+                                {/* ── Engine Mode Section ───────────────────────── */}
                                 <div className="space-y-4">
                                     <label className={cx(typography.eyebrow, "px-1")}>
-                                        Privacy Infrastructure
+                                        Session Engine
                                     </label>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 gap-3">
                                         <button
                                             type="button"
-                                            onClick={() => onAccessTypeChange('public')}
+                                            onClick={() => onQuizModeChange?.('auto')}
                                             className={cx(
-                                                "group relative flex flex-col items-start p-6 rounded-[2rem] border-2 transition-all duration-300 text-left",
-                                                accessType === 'public' 
-                                                ? "border-indigo-500 bg-indigo-500/5 shadow-lg shadow-indigo-500/10 scale-[1.02]" 
+                                                "group relative flex items-center gap-4 p-4 rounded-2xl border-2 transition-all duration-300 text-left",
+                                                quizMode === 'auto' 
+                                                ? "border-indigo-500 bg-indigo-500/5 shadow-md scale-[1.02]" 
                                                 : "theme-border hover:border-indigo-500/20 bg-gray-50/50 dark:bg-white/5"
                                             )}
                                         >
                                             <div className={cx(
-                                                "w-10 h-10 rounded-xl flex items-center justify-center mb-4 transition-all duration-300 shadow-inner",
+                                                "w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 shadow-inner shrink-0",
+                                                quizMode === 'auto' ? "bg-indigo-500 text-white" : "bg-white dark:bg-white/10 theme-text-muted"
+                                            )}>
+                                                <Zap size={18} />
+                                            </div>
+                                            <div>
+                                                <p className={cx(typography.cardTitle, "text-sm mb-0.5")}>Auto-Sync</p>
+                                                <p className="text-[10px] opacity-60 font-medium uppercase tracking-wider">Automated Logic</p>
+                                            </div>
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => onQuizModeChange?.('tutor')}
+                                            className={cx(
+                                                "group relative flex items-center gap-4 p-4 rounded-2xl border-2 transition-all duration-300 text-left",
+                                                quizMode === 'tutor' 
+                                                ? "border-indigo-500 bg-indigo-500/5 shadow-md scale-[1.02]" 
+                                                : "theme-border hover:border-indigo-500/20 bg-gray-50/50 dark:bg-white/5"
+                                            )}
+                                        >
+                                            <div className={cx(
+                                                "w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 shadow-inner shrink-0",
+                                                quizMode === 'tutor' ? "bg-indigo-500 text-white" : "bg-white dark:bg-white/10 theme-text-muted"
+                                            )}>
+                                                <User size={18} />
+                                            </div>
+                                            <div>
+                                                <p className={cx(typography.cardTitle, "text-sm mb-0.5")}>Tutor-Led</p>
+                                                <p className="text-[10px] opacity-60 font-medium uppercase tracking-wider">Host Control</p>
+                                            </div>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* ── Privacy Section ───────────────────────────── */}
+                                <div className="space-y-4">
+                                    <label className={cx(typography.eyebrow, "px-1")}>
+                                        Privacy Infrastructure
+                                    </label>
+                                    <div className="grid grid-cols-1 gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => onAccessTypeChange('public')}
+                                            className={cx(
+                                                "group relative flex items-center gap-4 p-4 rounded-2xl border-2 transition-all duration-300 text-left",
+                                                accessType === 'public' 
+                                                ? "border-indigo-500 bg-indigo-500/5 shadow-md scale-[1.02]" 
+                                                : "theme-border hover:border-indigo-500/20 bg-gray-50/50 dark:bg-white/5"
+                                            )}
+                                        >
+                                            <div className={cx(
+                                                "w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 shadow-inner shrink-0",
                                                 accessType === 'public' ? "bg-indigo-500 text-white" : "bg-white dark:bg-white/10 theme-text-muted"
                                             )}>
-                                                <Globe size={20} />
+                                                <Globe size={18} />
                                             </div>
-                                            <span className={cx(typography.cardTitle, "mb-1")}>Public Node</span>
-                                            <span className={typography.metaLabel}>Discoverable on the global marketplace.</span>
-                                            {accessType === 'public' && (
-                                                <Motion.div layoutId="access-check" className="absolute top-5 right-5 w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-sm shadow-indigo-500/40" />
-                                            )}
+                                            <div>
+                                                <p className={cx(typography.cardTitle, "text-sm mb-0.5")}>Public Node</p>
+                                                <p className="text-[10px] opacity-60 font-medium uppercase tracking-wider">Global Discovery</p>
+                                            </div>
                                         </button>
 
                                         <div className="relative group/lock">
@@ -158,30 +215,24 @@ const CreateTemplatePanel = ({
                                                 disabled={!subscriptionEntitlements.canUsePrivateHosting}
                                                 onClick={() => onAccessTypeChange('private')}
                                                 className={cx(
-                                                    "w-full text-left group relative flex flex-col items-start p-6 rounded-[2rem] border-2 transition-all duration-300",
+                                                    "w-full group relative flex items-center gap-4 p-4 rounded-2xl border-2 transition-all duration-300 text-left",
                                                     accessType === 'private' 
-                                                    ? "border-indigo-500 bg-indigo-500/5 shadow-lg shadow-indigo-500/10 scale-[1.02]" 
+                                                    ? "border-indigo-500 bg-indigo-500/5 shadow-md scale-[1.02]" 
                                                     : "theme-border hover:border-indigo-500/20 bg-gray-50/50 dark:bg-white/5",
                                                     !subscriptionEntitlements.canUsePrivateHosting ? "opacity-40 grayscale cursor-not-allowed" : ""
                                                 )}
                                             >
                                                 <div className={cx(
-                                                    "w-10 h-10 rounded-xl flex items-center justify-center mb-4 transition-all duration-300 shadow-inner",
+                                                    "w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 shadow-inner shrink-0",
                                                     accessType === 'private' ? "bg-indigo-500 text-white" : "bg-white dark:bg-white/10 theme-text-muted"
                                                 )}>
-                                                    {subscriptionEntitlements.canUsePrivateHosting ? <Lock size={20} /> : <ShieldCheck size={20} />}
+                                                    <Lock size={18} />
                                                 </div>
-                                                <span className={cx(typography.cardTitle, "mb-1")}>Private Node</span>
-                                                <span className={typography.metaLabel}>Exclusive encrypted access via link.</span>
-                                                {accessType === 'private' && (
-                                                    <Motion.div layoutId="access-check" className="absolute top-5 right-5 w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-sm shadow-indigo-500/40" />
-                                                )}
+                                                <div>
+                                                    <p className={cx(typography.cardTitle, "text-sm mb-0.5")}>Private Node</p>
+                                                    <p className="text-[10px] opacity-60 font-medium uppercase tracking-wider">Encrypted Link</p>
+                                                </div>
                                             </button>
-                                            {!subscriptionEntitlements.canUsePrivateHosting && (
-                                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/lock:opacity-100 transition-opacity bg-white/90 dark:bg-gray-900/90 rounded-[2rem] pointer-events-none p-6 text-center">
-                                                    <span className={typography.eyebrow}>Upgrade to Creator Plan to Unlock Private Hosting</span>
-                                                </div>
-                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -193,9 +244,9 @@ const CreateTemplatePanel = ({
                                         <ShieldCheck size={24} />
                                     </div>
                                     <p className={typography.body}>
-                                        {accessType === 'private' 
-                                            ? 'Private hosting enforces strict identity verification and encrypted telemetry logs for your session.' 
-                                            : 'Public templates leverage Quvolt’s global edge distribution to reach thousands of learners instantly.'}
+                                        {quizMode === 'tutor' 
+                                            ? 'Tutor mode grants you full manual control over the question sequence and participation flow.' 
+                                            : 'Auto mode enables automated question advancement and real-time self-paced synchronization.'}
                                     </p>
                                 </div>
                                 <button

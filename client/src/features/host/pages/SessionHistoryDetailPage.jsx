@@ -98,7 +98,7 @@ const SessionHistoryDetailPage = () => {
     };
 
     return (
-        <Motion.div 
+        <Motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="min-h-screen pb-20 px-4 md:px-8 max-w-[1400px] mx-auto space-y-12"
@@ -173,11 +173,11 @@ const SessionHistoryDetailPage = () => {
                                         {(!selectedQuiz.answers || selectedQuiz.answers.length === 0) ? (
                                             <tr><td colSpan={4} className="py-20 text-center text-slate-400 font-bold">No records found</td></tr>
                                         ) : selectedQuiz.answers.map((ans, idx) => (
-                                            <Motion.tr 
+                                            <Motion.tr
                                                 initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 transition={{ delay: idx * 0.05 }}
-                                                key={idx} 
+                                                key={idx}
                                                 className="group"
                                             >
                                                 <td className="py-4 pl-4 rounded-l-2xl bg-gray-50 dark:bg-white/5 border-y border-l theme-border group-hover:border-indigo-500/30 transition-colors">
@@ -212,11 +212,11 @@ const SessionHistoryDetailPage = () => {
                                     {leaderboard.length === 0 ? (
                                         <div className="py-12 text-center text-slate-400 font-bold">Lobby data not yet synchronized</div>
                                     ) : leaderboard.map((entry, idx) => (
-                                        <Motion.div 
+                                        <Motion.div
                                             initial={{ opacity: 0, x: -20 }}
                                             animate={{ opacity: 1, x: 0 }}
                                             transition={{ delay: idx * 0.05 }}
-                                            key={idx} 
+                                            key={idx}
                                             className="flex items-center gap-4 p-4 rounded-2xl bg-gray-50 dark:bg-white/5 border theme-border group hover:border-indigo-500/30 transition-all"
                                         >
                                             <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm ${idx === 0 ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' : idx === 1 ? 'bg-slate-300 text-slate-700' : idx === 2 ? 'bg-orange-400 text-white' : 'bg-gray-100 dark:bg-white/10 text-slate-400'}`}>

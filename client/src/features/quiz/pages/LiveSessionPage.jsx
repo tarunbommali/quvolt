@@ -127,6 +127,11 @@ const LiveSessionPage = () => {
         // new_question, answer_stats, timer events are handled globally
         // by useQuizRealtimeStore via socketEventBus — no override needed here
         onStatusUpdate: applyRoomState,
+        onUserLeft: (data) => {
+            if (data.reason && data.reason !== 'left') {
+                showToast(`${data.name} was removed: ${data.reason}`, 'info');
+            }
+        }
     });
 
     // ── Client-side timer sync (fallback between server ticks) ──────────────

@@ -6,6 +6,8 @@ const requireRole = require('../middleware/requireRole');
 const aiService = require('../services/ai/ai.service');
 const validation = require('../services/ai/utils/ai.validation');
 const { resolveHostSubscriptionEntitlements } = require('../utils/subscriptionEntitlements');
+const { getRedisClient } = require('../config/redis');
+const logger = require('../utils/logger');
 
 const AI_MAX_COUNT = validation.AI_MAX_COUNT_CREATOR;
 
@@ -46,6 +48,31 @@ router.post(
                     return res.status(403).json({
                         message: 'AI quiz generation is available on Creator and Teams plans. Upgrade your subscription to continue.',
                     });
+                }
+
+                try {
+                    const redis = getRedisClient();
+                    if (redis?.isOpen) {
+                        const today = new Date().toISOString().split('T')[0];
+                        const usageKey = `ai_quota:${req.user._id}:${today}`;
+                        const currentUsage = await redis.get(usageKey);
+                        
+                        if (currentUsage && parseInt(currentUsage, 10) >= entitlements.maxAIRequestsPerDay) {
+                            logger.warn("AI_QUOTA_HIT", {
+                                userId: req.user._id,
+                                plan: entitlements.plan,
+                                limit: entitlements.maxAIRequestsPerDay
+                            });
+                            return res.status(429).json({ message: `AI quota exceeded. Your plan allows ${entitlements.maxAIRequestsPerDay} generations per day.` });
+                        }
+                        
+                        // Increment quota usage
+                        await redis.incr(usageKey);
+                        await redis.expire(usageKey, 60 * 60 * 24); // expire in 24 hours
+                    }
+                } catch (redisErr) {
+                    logger.warn('Redis error during AI quota check', { error: redisErr.message });
+                    // Fail open if Redis is down, we don't want to break the feature completely.
                 }
             }
 

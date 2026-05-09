@@ -65,7 +65,7 @@ socketManager.initialize(io);
 // ── Security Middleware ─────────────────────────────────────────────────────
 app.use(helmet());
 app.use(cookieParser());
-app.use(express.json({ limit: '500kb' }));
+app.use(express.json({ limit: '1mb' }));
 app.use(requestContext);
 app.use(cors({
     origin: config.clientUrl,
