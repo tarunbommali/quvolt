@@ -246,7 +246,7 @@ export const useSocketStore = create((set, get) => ({
      * Join a quiz room.
      * Idempotent — skips the emit if already in the same room.
      */
-    joinRoom: (roomCode, sessionId) => {
+    joinRoom: (roomCode, sessionId, preferredLanguage) => {
         const code = (roomCode || '').toUpperCase();
         if (!code) return;
 
@@ -263,7 +263,7 @@ export const useSocketStore = create((set, get) => ({
         const socket = getSocket();
         if (socket?.connected) {
             console.log('[SocketStore] Emitting join_quiz for room:', code);
-            socket.emit(SOCKET_EVENTS.JOIN_QUIZ, { roomCode: code, sessionId });
+            socket.emit(SOCKET_EVENTS.JOIN_QUIZ, { roomCode: code, sessionId, preferredLanguage });
         } else {
             console.warn('[SocketStore] Socket not connected — join will be retried on connect');
         }

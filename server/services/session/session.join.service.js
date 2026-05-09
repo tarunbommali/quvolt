@@ -6,7 +6,7 @@ const QuizSession = require('../../models/QuizSession');
 const Subscription = require('../../models/Subscription');
 const { SESSION_STATUS } = require('../../utils/sessionStateMachine');
 const { getPlanConfig } = require('../../config/plans');
-const { findQuizAndActiveSession, ensureParticipantHasPaidAccess } = require('../quiz/quiz.utils.service');
+const { findQuizAndActiveSession } = require('../quiz/quiz.utils.service');
 const { acquireJoinLock } = require('./session.service');
 const { addSequenceNumber } = require('./session.realtime.service');
 
@@ -55,7 +55,7 @@ const buildRoomState = (session, roomCode) => {
     };
 };
 
-const joinRoom = async ({ io, socket, roomCode, sessionId }) => {
+const joinRoom = async ({ io, socket, roomCode, sessionId, preferredLanguage }) => {
     const user = socket.data.user;
     if (!user) return { error: 'Authentication required' };
 
@@ -75,18 +75,7 @@ const joinRoom = async ({ io, socket, roomCode, sessionId }) => {
     const token = socket.data.token;
     const socketRoom = String(liveSession?.sessionCode || effectiveRoomCode || '').toUpperCase();
 
-    // 1. Initial basic checks (Payment)
-    if (quiz?.isPaid && !['host', 'admin'].includes(user.role)) {
-        let hasPaidAccess = false;
-        try {
-            hasPaidAccess = await ensureParticipantHasPaidAccess(token, quiz._id);
-        } catch (paymentError) {
-            logger.warn('Join room payment check failed', { error: paymentError.message });
-        }
-        if (!hasPaidAccess) return { error: 'Payment required to join this quiz.' };
-    }
 
-    // 2. Fetch real-time session from Redis
     let session = await sessionStore.getSession(socketRoom);
     
     // 3. Robust Access Control Check (RBAC + SaaS Limits)
@@ -177,6 +166,7 @@ const joinRoom = async ({ io, socket, roomCode, sessionId }) => {
         role: user.role,
         avatar: user.avatar || null,
         joinedAt: new Date().toISOString(),
+        preferredLanguage: preferredLanguage || null, // [I18N]
     };
 
     session.lastActivity = Date.now();

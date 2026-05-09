@@ -24,7 +24,7 @@ export const EmptyAnalyticsState = ({
             {showCTA && (
                 <button
                     type="button"
-                    onClick={() => navigate('/studio')}
+                    onClick={() => navigate('/workspace')}
                     className={cx(buttonStyles.base, buttonStyles.primary, buttonStyles.sizeLg, "gap-2 mt-4")}
                 >
                     <Sparkles size={16} /> Establish First Session

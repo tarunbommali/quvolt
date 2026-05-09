@@ -21,7 +21,7 @@ const HomeCtaBanner = ({ user }) => {
 
                         <div className="mt-12 flex flex-col sm:flex-row justify-center items-center gap-5">
                             <Link
-                                to={user ? '/studio' : '/register'}
+                                to={user ? '/workspace' : '/register'}
                                 className="bg-white text-indigo-700 px-12 py-5 rounded-2xl font-semibold uppercase tracking-[0.2em] text-[13px] hover:scale-105 transition-transform shadow-2xl w-full sm:w-auto"
                             >
                                 Get Started Free

@@ -63,7 +63,7 @@ const SubscriptionSuccessPage = () => {
 
                     <div className="flex flex-col sm:flex-row gap-3 pt-2">
                         <Link
-                            to="/studio"
+                            to="/workspace"
                             className={cx(buttonStyles.base, buttonStyles.primary, buttonStyles.sizeLg, 'flex-1 gap-2')}
                         >
                             Start Creating <ArrowRight size={16} />

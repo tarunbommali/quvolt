@@ -142,7 +142,6 @@ class SubscriptionService extends BaseService {
       endDate: new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000),
       expiryDate: new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000),
       participantLimit: getPlanConfig('FREE').participants,
-      commission: getPlanConfig('FREE').commission,
     });
 
     this.logInfo('Subscription downgraded to FREE', { hostId });
@@ -167,8 +166,6 @@ class SubscriptionService extends BaseService {
       monthlyAmount: planConfig.monthlyAmount,
       autoRenew: true,
       participantLimit: planConfig.participants,
-      commission: planConfig.commission,
-      commissionPercent: planConfig.commissionPercent,
       razorpayPlanId: planConfig.razorpayPlanId,
     });
 

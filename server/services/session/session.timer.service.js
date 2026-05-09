@@ -39,6 +39,18 @@ const scheduleNextAction = (roomCode, action, delayMs) => {
             if (action === 'advance') {
                 publishTimerEnd(roomCode);
                 
+                if (session.currentQuestionIndex + 1 >= session.questions.length) {
+                    logger.info(`Auto-ending session ${roomCode} after last question`);
+                    const QuizSession = require('../../models/QuizSession');
+                    const SessionManager = require('../../modules').SessionManager;
+                    const dbSession = await QuizSession.findOne({ sessionCode: roomCode, status: 'live' });
+                    if (dbSession) {
+                        const manager = new SessionManager(dbSession);
+                        await manager.end();
+                    }
+                    return;
+                }
+
                 session.currentQuestionIndex += 1;
                 await sessionStore.setSession(roomCode, session);
                 logger.info(`Advanced to question ${session.currentQuestionIndex}`, { roomCode });

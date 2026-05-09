@@ -10,6 +10,7 @@ const sessionController = require('../controllers/session.controller');
 const sessionControllerOop = require('../controllers/session.controller.oop');
 const analyticsController = require('../controllers/analytics.controller');
 const accessController = require('../controllers/access.controller');
+const translateController = require('../controllers/translate.controller');
 
 const quizService = require('../services/quiz/quiz.service');
 const requireRole = require('../middleware/requireRole');
@@ -86,6 +87,7 @@ router.post('/templates/:templateId/session', [
 ], sessionController.startQuizSession);
 
 // Quiz CRUD
+router.get('/:id', requireRole(['host', 'admin', 'participant']), checkQuizAccess, quizController.getQuizById);
 router.put('/:id', requireRole(['host', 'admin']), quizController.updateQuiz);
 const quizModifyLimiter = rateLimit({
     windowMs: 60 * 1000,
@@ -103,6 +105,7 @@ const bulkUpdateGuard = (req, res, next) => {
 };
 
 router.put('/:id/full-state', quizModifyLimiter, bulkUpdateGuard, requireRole(['host', 'admin']), requireQuizOwnership, questionController.updateQuizFullState);
+router.post('/:quizId/translate', requireRole(['host', 'admin']), requireQuizOwnership, translateController.translateSlides);
 router.post('/:id/start', [
     requireRole(['host', 'admin']),
     requireQuizOwnership,

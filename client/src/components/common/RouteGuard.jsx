@@ -48,7 +48,7 @@ const RouteGuard = ({ children }) => {
                 if (!mounted) return;
 
                 if (!resolvedQuiz) {
-                    navigate('/studio', { replace: true });
+                    navigate('/workspace', { replace: true });
                     return;
                 }
 
@@ -64,7 +64,7 @@ const RouteGuard = ({ children }) => {
                 setReady(true);
             } catch {
                 if (!mounted) return;
-                navigate('/studio', { replace: true });
+                navigate('/workspace', { replace: true });
             }
         };
 

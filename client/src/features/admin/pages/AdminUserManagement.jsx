@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getMyProfile } from '../../../services/apiClient'; // Replace with real user management API
+import apiClient from '../../../services/apiClient';
 
 const AdminUserManagement = () => {
 	const [users, setUsers] = useState([]);
@@ -8,8 +8,8 @@ const AdminUserManagement = () => {
 
 	useEffect(() => {
 		// TODO: Replace with real user management API
-		getMyProfile()
-			.then(user => setUsers([user]))
+		apiClient.get('/auth/me')
+			.then(res => setUsers([res.data]))
 			.catch(() => setError('Failed to load users'))
 			.finally(() => setLoading(false));
 	}, []);

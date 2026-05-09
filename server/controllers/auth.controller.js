@@ -31,14 +31,19 @@ const mapUserPayload = (user) => ({
         city: user?.participantProfile?.city || '',
         bio: user?.participantProfile?.bio || '',
     },
-    hostProfile: {
-        institutionName: user?.hostProfile?.institutionName || '',
-        institutionType: user?.hostProfile?.institutionType || '',
-        institutionWebsite: user?.hostProfile?.institutionWebsite || '',
-        institutionAddress: user?.hostProfile?.institutionAddress || '',
-        contactEmail: user?.hostProfile?.contactEmail || '',
-        contactPhone: user?.hostProfile?.contactPhone || '',
+    profile: user.profile || {
+        displayName: user.name,
+        role: 'tutor',
+        experienceLevel: 'intermediate',
+        subjects: [],
+        audience: [],
+        bio: '',
+        language: 'English',
+        social: { youtube: '', linkedin: '' }
     },
+    creator: user.creator || null,
+    organization: user.organization || null,
+    team: user.team || null,
 });
 
 const registerUser = async (req, res) => {
@@ -200,22 +205,75 @@ const updateMyProfile = async (req, res) => {
             };
         }
 
-        if ((user.role === 'host' || user.role === 'admin') && hostProfile && typeof hostProfile === 'object') {
-            user.hostProfile = {
-                ...(user.hostProfile || {}),
-                ...(typeof hostProfile.institutionName === 'string' ? { institutionName: hostProfile.institutionName.trim() } : {}),
-                ...(typeof hostProfile.institutionType === 'string' ? { institutionType: hostProfile.institutionType.trim() } : {}),
-                ...(typeof hostProfile.institutionWebsite === 'string' ? { institutionWebsite: hostProfile.institutionWebsite.trim() } : {}),
-                ...(typeof hostProfile.institutionAddress === 'string' ? { institutionAddress: hostProfile.institutionAddress.trim() } : {}),
-                ...(typeof hostProfile.contactEmail === 'string' ? { contactEmail: hostProfile.contactEmail.trim() } : {}),
-                ...(typeof hostProfile.contactPhone === 'string' ? { contactPhone: hostProfile.contactPhone.trim() } : {}),
-            };
+        if (user.role === 'host' || user.role === 'admin') {
+            const { profile, creator, organization } = req.body;
+            
+            if (profile && typeof profile === 'object') {
+                const currentProfile = user.profile?.toObject ? user.profile.toObject() : (user.profile || {});
+                user.profile = {
+                    ...currentProfile,
+                    ...profile,
+                    social: {
+                        ...(currentProfile.social || {}),
+                        ...(profile.social || {})
+                    }
+                };
+            }
+
+            const plan = user.subscription?.plan || 'FREE';
+            
+            if (plan === 'CREATOR' && creator && typeof creator === 'object') {
+                const currentCreator = user.creator?.toObject ? user.creator.toObject() : (user.creator || {});
+                user.creator = {
+                    ...currentCreator,
+                    ...creator,
+                    pricing: {
+                        ...(currentCreator.pricing || {}),
+                        ...(creator.pricing || {})
+                    },
+                    payout: {
+                        ...(currentCreator.payout || {}),
+                        ...(creator.payout || {})
+                    },
+                    branding: {
+                        ...(currentCreator.branding || {}),
+                        ...(creator.branding || {})
+                    }
+                };
+            }
+
+            if (plan === 'TEAMS' && organization && typeof organization === 'object') {
+                const currentOrg = user.organization?.toObject ? user.organization.toObject() : (user.organization || {});
+                user.organization = {
+                    ...currentOrg,
+                    ...organization,
+                    academic: {
+                        ...(currentOrg.academic || {}),
+                        ...(organization.academic || {})
+                    },
+                    contact: {
+                        ...(currentOrg.contact || {}),
+                        ...(organization.contact || {})
+                    },
+                    location: {
+                        ...(currentOrg.location || {}),
+                        ...(organization.location || {})
+                    },
+                    branding: {
+                        ...(currentOrg.branding || {}),
+                        ...(organization.branding || {})
+                    }
+                };
+            }
         }
 
         await user.save();
         return sendSuccess(res, mapUserPayload(user), 'Profile updated successfully');
     } catch (error) {
         logger.error('[AuthController] updateMyProfile', { message: error.message, stack: error.stack });
+        if (error.name === 'ValidationError') {
+            return sendError(res, 400, Object.values(error.errors).map(val => val.message).join(', '));
+        }
         return sendError(res, 500, 'Server Error');
     }
 };

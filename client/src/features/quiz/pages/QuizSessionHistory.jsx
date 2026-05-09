@@ -10,7 +10,7 @@ import HistoryNoResultsState from '../../host/components/HistoryNoResultsState';
 import HistoryLeaderboardModal from '../../host/components/HistoryLeaderboardModal';
 import HistoryGrid from '../../host/components/HistoryGrid';
 import ScheduledSessionsSection from '../../host/components/ScheduledSessionsSection';
-import SubHeader from '../../../components/layout/SubHeader';
+import BreadCrumbs from '../../../components/layout/BreadCrumbs';
 import { prefetchHistoryDetailRoute } from '../../../utils/routePrefetch';
 import { useAuthStore } from '../../../stores/useAuthStore';
 import { useQuizStore } from '../../../stores/useQuizStore';
@@ -103,10 +103,8 @@ const QuizSessionHistory = () => {
 
     return (
         <div className="app-page space-y-8 animate-in fade-in duration-500">
-            <SubHeader
-                title="History"
-                subtitle={user.role === 'host' ? 'Archive of your conducted sessions' : 'Recap of your quiz performances'}
-                breadcrumbs={[{ label: user.role === 'host' ? 'Studio' : 'Join', href: user.role === 'host' ? '/studio' : '/join' }, { label: 'History' }]}
+            <BreadCrumbs
+                breadcrumbs={[{ label: user.role === 'host' ? 'Workspace' : 'Join', href: user.role === 'host' ? '/workspace' : '/join' }, { label: 'History' }]}
                 actions={(
                     <SearchBar
                         value={searchQuery}

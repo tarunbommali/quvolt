@@ -26,13 +26,77 @@ const UserSchema = new mongoose.Schema({
     city: { type: String, default: '', trim: true, maxlength: 80 },
     bio: { type: String, default: '', trim: true, maxlength: 280 },
   },
-  hostProfile: {
-    institutionName: { type: String, default: '', trim: true, maxlength: 120 },
-    institutionType: { type: String, default: '', trim: true, maxlength: 80 },
-    institutionWebsite: { type: String, default: '', trim: true, maxlength: 200 },
-    institutionAddress: { type: String, default: '', trim: true, maxlength: 200 },
-    contactEmail: { type: String, default: '', trim: true, maxlength: 120 },
-    contactPhone: { type: String, default: '', trim: true, maxlength: 30 },
+  // Unified Base Host Profile (applies to ALL plans)
+  profile: {
+    displayName: { type: String, trim: true, maxlength: 80 },
+    role: { type: String, enum: ['tutor', 'teacher', 'creator', 'student', 'other'], default: 'tutor' },
+    experienceLevel: { type: String, enum: ['beginner', 'intermediate', 'expert'], default: 'intermediate' },
+    subjects: [{ type: String, trim: true }],
+    audience: [{ type: String, trim: true }],
+    bio: { type: String, trim: true, maxlength: 500 },
+    language: { type: String, default: 'English' },
+    timezone: { type: String, default: 'Asia/Kolkata' },
+    emailPreferences: { type: Boolean, default: true },
+    social: {
+      youtube: { type: String, trim: true },
+      linkedin: { type: String, trim: true }
+    }
+  },
+
+  // Plan Extension: CREATOR
+  creator: {
+    brandName: { type: String, trim: true },
+    tagline: { type: String, trim: true },
+    website: { type: String, trim: true },
+    pricing: {
+      defaultQuizPrice: { type: Number, default: 0 },
+      currency: { type: String, default: 'INR' }
+    },
+    payout: {
+      upiId: { type: String, trim: true },
+      bankAccount: { type: String, trim: true }
+    },
+    branding: {
+      logoUrl: { type: String, trim: true },
+      description: { type: String, trim: true }
+    },
+    certifications: { type: String, trim: true },
+    hiringDomain: { type: String, trim: true },
+    verified: { type: Boolean, default: false }
+  },
+
+  // Plan Extension: TEAMS (Organization)
+  organization: {
+    name: { type: String, trim: true },
+    type: { type: String, enum: ['university', 'institute', 'company', 'other'], default: 'company' },
+    domain: { type: String, trim: true },
+    website: { type: String, trim: true },
+    industry: { type: String, trim: true },
+    academic: {
+      department: { type: String, trim: true },
+      affiliation: { type: String, trim: true }
+    },
+    contact: {
+      phone: { type: String, trim: true },
+      email: { type: String, trim: true }
+    },
+    location: {
+      country: { type: String, trim: true },
+      state: { type: String, trim: true }
+    },
+    branding: {
+      logoUrl: { type: String, trim: true },
+      description: { type: String, trim: true }
+    },
+    taxId: { type: String, trim: true },
+    departments: { type: String, trim: true },
+    verified: { type: Boolean, default: false }
+  },
+
+  // Team controls for TEAMS plan
+  team: {
+    members: { type: Number, default: 1 },
+    rolesEnabled: { type: Boolean, default: true }
   },
   refreshToken: { type: String, default: null },
   subscription: {

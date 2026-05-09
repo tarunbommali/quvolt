@@ -5,7 +5,7 @@ import useAnalyticsStore from '../../../stores/useAnalyticsStore';
 import { useAuthStore } from '../../../stores/useAuthStore';
 import { getSocket } from '../../../sockets/socketClient';
 
-import SubHeader from '../../../components/layout/SubHeader';
+import BreadCrumbs from '../../../components/layout/BreadCrumbs';
 import { ArrowLeft, ExternalLink, Lock, Activity, Users, Target, Clock, Zap } from 'lucide-react';
 
 import AnalyticsSectionWrapper from '../../analytics/components/AnalyticsSectionWrapper';
@@ -133,9 +133,7 @@ const SessionAnalyticsPage = () => {
             className="min-h-screen pb-24"
         >
             <div className={layout.page}>
-                <SubHeader 
-                    title="Session Analytics"
-                    subtitle="Performance, engagement, and participant outcomes."
+                <BreadCrumbs 
                     breadcrumbs={[
                         { label: 'Analytics', href: '/analytics' },
                         { label: activeMeta.sessionCode || 'Session' }

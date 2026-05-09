@@ -70,7 +70,7 @@ const createDefaultTemplate = async (hostId) => {
                 speedBonusMax: 50,
                 negativeMarking: { enabled: false, penalty: 0 },
             },
-            leaderboard: { enabled: true, showLive: true, showAfterEachQuestion: true },
+            leaderboard: { enabled: true, showLive: true, showAfterEachQuestion: true, groupBy: 'default' },
             flow: { shuffleQuestions: false, shuffleOptions: false, allowSkip: false },
             access: { allowLateJoin: true, maxParticipants: 200 },
             advanced: { antiCheat: false, tabSwitchDetection: false, requireCamera: false },

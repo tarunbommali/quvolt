@@ -36,6 +36,7 @@ const QuizTemplateSchema = new Schema({
         enabled:               { type: Boolean, default: true },
         showLive:              { type: Boolean, default: true }, // host console live rank
         showAfterEachQuestion: { type: Boolean, default: true }, // participant sees rank after Q
+        groupBy:               { type: String, enum: ['default', 'unit'], default: 'default' }, // Mastery Matrix
     },
 
     // ── Question Flow ─────────────────────────────────────────────────────────

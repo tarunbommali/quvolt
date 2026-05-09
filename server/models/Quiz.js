@@ -17,6 +17,16 @@ const QuestionSchema = new mongoose.Schema({
     questionType: { type: String, enum: ['multiple-choice', 'true-false'], default: 'multiple-choice' },
     shuffleOptions: { type: Boolean, default: false },
     explanation: { type: String, default: '', trim: true, maxlength: 1000 },
+    // [I18N] Translation storage
+    translations: {
+        type: Map,
+        of: new mongoose.Schema({
+            text: { type: String, required: true },
+            options: { type: [{ type: String, required: true }] },
+            explanation: { type: String, default: '' }
+        }, { _id: false }),
+        default: {}
+    }
 }, { _id: true });
 
 QuestionSchema.path('correctOption').validate(function validateCorrectOption(index) {
@@ -41,11 +51,16 @@ const QuizSchema = new mongoose.Schema({
     allowedEmails: [{ type: String, trim: true, lowercase: true }],
     // Shared access control - users who have been granted specific access
     sharedWith: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-    isPaid: { type: Boolean, default: false },
-    price: { type: Number, default: 0, min: 0 },
+
     shuffleQuestions: { type: Boolean, default: false },
     interQuestionDelay: { type: Number, default: 5, min: 0, max: 30 }, // seconds between questions
     mode: { type: String, enum: ['auto', 'teaching', 'tutor'], default: 'auto' },
+    
+    // [I18N] Language Settings
+    defaultLanguage: { type: String, default: 'en' },
+    availableLanguages: { type: [{ type: String }], default: ['en'] },
+    requireLanguageSelection: { type: Boolean, default: true },
+    
     questions: {
         type: [QuestionSchema],
         validate: [
@@ -67,6 +82,18 @@ const QuizSchema = new mongoose.Schema({
             joinedAt: { type: Date, default: Date.now },
         }
     ],
+
+    // Hierarchical Navigation (NEW)
+    level: { type: Number, default: 0 },         // 0 = root, 1 = child, ...
+    label: { type: String, trim: true },         // optional semantic label (e.g., "Semester", "Unit")
+    path:  [{ type: mongoose.Schema.Types.ObjectId, ref: 'Quiz' }], // hierarchy path [rootId, ..., selfId]
+
+    leaderboard: {
+        enabled:               { type: Boolean, default: true },
+        showLive:              { type: Boolean, default: true },
+        showAfterEachQuestion: { type: Boolean, default: true },
+        groupBy:               { type: String, enum: ['default', 'unit'], default: 'default' },
+    },
 }, { timestamps: true });
 
 
@@ -74,11 +101,7 @@ QuizSchema.index({ hostId: 1, createdAt: -1 });
 QuizSchema.index({ parentId: 1, createdAt: -1 });
 QuizSchema.index({ status: 1, updatedAt: -1 });
 
-QuizSchema.pre('validate', function normalizePricing() {
-    if (!this.isPaid) {
-        this.price = 0;
-    }
-
+QuizSchema.pre('validate', function normalizeQuiz() {
     if (this.type === 'subject') {
         this.quizCategory = null;
     }
@@ -105,5 +128,7 @@ QuizSchema.pre('validate', function normalizePricing() {
 QuizSchema.index({ createdAt: -1 });
 QuizSchema.index({ hostId: 1, createdAt: -1 });
 QuizSchema.index({ parentId: 1, createdAt: -1 });
+QuizSchema.index({ path: 1 });
+QuizSchema.index({ level: 1 });
 
 module.exports = mongoose.model('Quiz', QuizSchema);

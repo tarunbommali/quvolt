@@ -1,9 +1,6 @@
 const Quiz = require('../../models/Quiz');
 const QuizSession = require('../../models/QuizSession');
-const axios = require('axios');
 const { SESSION_STATUS } = require('../../utils/sessionStateMachine');
-
-const PAYMENT_SERVICE_URL = process.env.PAYMENT_SERVICE_URL || 'http://localhost:5001';
 
 const buildQuizAccessQuery = (user, id, extra = {}) => (
     user.role === 'admin'
@@ -81,23 +78,9 @@ const resolveQuizActionContext = async ({ user, quizId, sessionCode, sessionId }
     };
 };
 
-const ensureParticipantHasPaidAccess = async (token, quizId) => {
-    if (!token || !quizId) return false;
-    try {
-        const response = await axios.get(`${PAYMENT_SERVICE_URL}/payment/status/${quizId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-            timeout: 5000,
-        });
-        return Boolean(response.data?.data?.paid);
-    } catch (err) {
-        return false;
-    }
-};
-
 module.exports = {
     buildQuizAccessQuery,
     buildhostScopeQuery,
     findQuizAndActiveSession,
     resolveQuizActionContext,
-    ensureParticipantHasPaidAccess
 };

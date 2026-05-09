@@ -27,6 +27,18 @@ const advanceQuizQuestion = async ({ io, quizId, sessionCode, user }) => {
     
     if (!session || session.isPaused) return { error: 'Session not found or paused', statusCode: 409 };
 
+    if (session.currentQuestionIndex + 1 >= session.questions.length) {
+        // Last question! End the session automatically.
+        const QuizSession = require('../../models/QuizSession');
+        const SessionManager = require('../../modules').SessionManager;
+        const dbSession = await QuizSession.findOne({ sessionCode: roomCode, status: 'live' });
+        if (dbSession) {
+            const manager = new SessionManager(dbSession);
+            await manager.end();
+        }
+        return { roomCode, message: 'Quiz ended automatically after last question' };
+    }
+
     session.currentQuestionIndex += 1;
     await sessionStore.setSession(roomCode, session);
 

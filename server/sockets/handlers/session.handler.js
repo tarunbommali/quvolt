@@ -65,7 +65,7 @@ const registerSessionHandler = (io, socket) => {
     /**
      * Core join logic (shared by join_quiz, join_room, participant:join)
      */
-    const handleJoin = async ({ sessionCode, roomCode, sessionId, quizId } = {}) => {
+    const handleJoin = async ({ sessionCode, roomCode, sessionId, quizId, preferredLanguage } = {}) => {
         const traceId = crypto.randomUUID();
         try {
             // ── Join Storm Protection ──────────────────────────────────────────
@@ -83,7 +83,7 @@ const registerSessionHandler = (io, socket) => {
             const finalCode = (sessionCode || roomCode || '').toUpperCase();
             if (!finalCode && !sessionId) return socket.emit('join_error', { message: 'roomCode is required' });
 
-            const result = await quizService.joinRoom({ io, socket, roomCode: finalCode, sessionId });
+            const result = await quizService.joinRoom({ io, socket, roomCode: finalCode, sessionId, preferredLanguage });
             if (result.error) return socket.emit('join_error', { message: result.error });
 
             socket.join(result.roomCode);

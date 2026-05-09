@@ -17,7 +17,7 @@
  *  - Answer submission goes through the spec "submit_answer" event
  */
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 
 import { useSocketStore } from '../../../stores/useSocketStore';
@@ -42,6 +42,8 @@ import { Shell, Stat, Label } from '../components/QuizLayouts';
 const ParticipantSessionPage = () => {
 	const { code } = useParams();
 	const navigate = useNavigate();
+	const location = useLocation();
+	const preferredLanguage = location.state?.preferredLanguage || null;
 
 	const upperCode = code?.toUpperCase();
 
@@ -89,9 +91,9 @@ const ParticipantSessionPage = () => {
 		// joinRoom is idempotent — safe to call even if already joined
 		if (!hasJoinedRef.current) {
 			hasJoinedRef.current = true;
-			joinRoom(upperCode);
+			joinRoom(upperCode, null, preferredLanguage);
 		}
-	}, [upperCode, connectSocket, joinRoom]);
+	}, [upperCode, connectSocket, joinRoom, preferredLanguage]);
 
 	// ── Step 2: Fetch quiz metadata (for title display) ─────────────────────
 	useEffect(() => {
@@ -304,6 +306,7 @@ const ParticipantSessionPage = () => {
 						myResult={myResult}
 						selectedOption={selectedOption}
 						handleAnswer={handleAnswer}
+						preferredLanguage={preferredLanguage}
 					/>
 				</div>
 

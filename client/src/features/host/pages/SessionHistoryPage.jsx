@@ -10,7 +10,7 @@ import HistoryNoResultsState from '../components/HistoryNoResultsState';
 import HistoryLeaderboardModal from '../components/HistoryLeaderboardModal';
 import HistoryGrid from '../components/HistoryGrid';
 import ScheduledSessionsSection from '../components/ScheduledSessionsSection';
-import SubHeader from '../../../components/layout/SubHeader';
+import BreadCrumbs from '../../../components/layout/BreadCrumbs';
 import LoadingScreen from '../../../components/common/LoadingScreen';
 import { prefetchHistoryDetailRoute } from '../../../utils/routePrefetch';
 import { useAuthStore } from '../../../stores/useAuthStore';
@@ -113,10 +113,8 @@ const SessionHistoryPage = () => {
             animate={{ opacity: 1 }}
             className={cx(layout.page, "min-h-screen pb-24")}
         >
-            <SubHeader
-                title="Activity Journal"
-                subtitle={user.role === 'host' ? 'A record of your conducted sessions and performance metrics.' : 'Your learning history and achievement vault.'}
-                breadcrumbs={[{ label: 'Studio', href: user.role === 'host' ? '/studio' : '/join' }, { label: 'Activity' }]}
+            <BreadCrumbs
+                breadcrumbs={[{ label: 'Workspace', href: user.role === 'host' ? '/workspace' : '/join' }, { label: 'Activity' }]}
                 actions={(
                     <div className={cx(forms.searchWrap, 'w-full md:w-80')}>
                         <div className={cx(forms.searchIcon)}>

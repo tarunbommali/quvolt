@@ -6,7 +6,7 @@ import { scheduleQuiz, startQuizSession as apiStartQuizSession } from '../servic
 import Toast from '../../../components/common/Toast';
 import useToast from '../../../hooks/useToast';
 import LoadingScreen from '../../../components/common/LoadingScreen';
-import SubHeader from '../../../components/layout/SubHeader';
+import BreadCrumbs from '../../../components/layout/BreadCrumbs';
 import { useQuizStore } from '../../../stores/useQuizStore';
 import { resolveSessionRoute } from '../../../utils/sessionRouteResolver';
 import { buttonStyles } from '../../../styles/index';
@@ -79,7 +79,7 @@ const LaunchQuiz = () => {
             } catch {
                 if (!active) return;
                 showToast('Failed to load launch page');
-                navigate('/studio');
+                navigate('/workspace');
             }
         };
 
@@ -178,11 +178,9 @@ const LaunchQuiz = () => {
                 {toast && <Toast message={toast.message} type={toast.type} onClose={clearToast} />}
             </AnimatePresence>
 
-            <SubHeader
-                title="Launch Session"
-                subtitle="Choose how you want to run this quiz"
+            <BreadCrumbs
                 breadcrumbs={[
-                    { label: 'Studio', href: '/studio' },
+                    { label: 'Workspace', href: '/workspace' },
                     { label: activeQuiz.title },
                     { label: 'Launch Session' },
                 ]}

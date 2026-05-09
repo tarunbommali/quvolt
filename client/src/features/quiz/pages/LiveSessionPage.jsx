@@ -44,6 +44,7 @@ const LiveSessionPage = () => {
     const isPaused       = useQuizRealtimeStore((s) => s.isPaused);
     const expiry         = useQuizRealtimeStore((s) => s.expiry);
 
+    const realtimeStatus = useQuizRealtimeStore((s) => s.status);
     const sessionCode = useQuizStore((state) => state.sessionCode);
     const setActiveQuiz = useQuizStore((state) => state.setActiveQuiz);
     const setView = useQuizStore((state) => state.setView);
@@ -61,6 +62,12 @@ const LiveSessionPage = () => {
             resetRealtimeState();
         };
     }, [resetRealtimeState, setView]);
+
+    useEffect(() => {
+        if (realtimeStatus === 'finished' && view !== 'results') {
+            setView('results');
+        }
+    }, [realtimeStatus, view, setView]);
 
     useEffect(() => {
         if (location.state?.quiz) {
@@ -107,7 +114,7 @@ const LiveSessionPage = () => {
             } catch {
                 if (active) {
                     showToast('Failed to load quiz');
-                    navigate('/studio');
+                    navigate('/workspace');
                 }
             }
         };
@@ -154,7 +161,7 @@ const LiveSessionPage = () => {
         } catch {
             // best-effort â€” still navigate away
         } finally {
-            navigate('/studio');
+            navigate('/workspace');
         }
     };
 

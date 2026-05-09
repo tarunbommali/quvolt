@@ -1,5 +1,5 @@
 import { useLocation } from 'react-router-dom';
-import SubHeader from '../../../components/layout/SubHeader';
+import BreadCrumbs from '../../../components/layout/BreadCrumbs';
 import Footer from '../../../components/common/Footer';
 import { layout, typography, cx } from '../../../styles/index';
 
@@ -19,7 +19,7 @@ const routeLabel = {
 /**
  * LegalLayout — High-level layout for public-facing legal documents.
  * Integrates with the application's design system (app-shell, typography).
- * Includes breadcrumb navigation and standardized SubHeader.
+ * Includes breadcrumb navigation.
  *
  * @param {Object} props
  * @param {string} props.title - The title of the legal document.
@@ -34,9 +34,7 @@ export default function LegalLayout({ title, lastUpdated, children }) {
         <div className="app-shell flex flex-col min-h-screen w-full">
             <main className={layout.page + " flex-1 z-10 !py-8 md:!py-12"}>
                 <div className="space-y-8">
-                    <SubHeader
-                        title={title}
-                        subtitle={`Record Synchronization: ${lastUpdated}`}
+                    <BreadCrumbs
                         breadcrumbs={[
                             { label: 'Legal' },
                             { label: currentLabel }

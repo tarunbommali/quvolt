@@ -6,7 +6,7 @@ import { startLiveSession, abortSession, getSessionState } from '../services/hos
 import Toast from '../../../components/common/Toast';
 import useToast from '../../../hooks/useToast';
 import LoadingScreen from '../../../components/common/LoadingScreen';
-import SubHeader from '../../../components/layout/SubHeader';
+import BreadCrumbs from '../../../components/layout/BreadCrumbs';
 import { LivePulseBadge } from '../../../components/common/ui';
 import { useQuizStore } from '../../../stores/useQuizStore';
 import { useSocketStore } from '../../../stores/useSocketStore';
@@ -98,7 +98,7 @@ const InviteRoom = () => {
             } catch (error) {
                 if (!active) return;
                 showToast(`Error: ${error?.message}`);
-                navigate('/studio');
+                navigate('/workspace');
             }
         };
         initInviteRoom();
@@ -193,7 +193,7 @@ const InviteRoom = () => {
                 setStatus('aborted');
             }
         } catch { /* best effort */ }
-        finally { navigate('/studio'); }
+        finally { navigate('/workspace'); }
     };
 
     if (loading || !activeQuiz) return <LoadingScreen />;
@@ -208,10 +208,8 @@ const InviteRoom = () => {
                 {toast && <Toast message={toast.message} type={toast.type} onClose={clearToast} />}
             </AnimatePresence>
 
-            <SubHeader
-                title="Lobby Room"
-                subtitle={`Preparing session for "${activeQuiz.title}"`}
-                breadcrumbs={[{ label: 'Studio', href: '/studio' }, { label: 'Invite' }]}
+            <BreadCrumbs
+                breadcrumbs={[{ label: 'Workspace', href: '/workspace' }, { label: 'Invite' }]}
                 actions={(
                     <button 
                         onClick={handleAbort} 

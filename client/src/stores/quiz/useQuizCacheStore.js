@@ -61,6 +61,26 @@ export const useQuizCacheStore = create()(devtools((set, get) => ({
         set(Object.fromEntries(TRANSIENT_KEYS.map((key) => [key, {}])));
     },
 
+    getQuizById: async (id, options = {}) => {
+        const { force = false } = options;
+        const userKey = useAuthStore.getState().user?._id || 'anonymous';
+        const cacheKey = `${userKey}:id:${id}`;
+        
+        const cached = readCache(get().quizzesCache, cacheKey, CACHE_TTL_MS.quizzes, force);
+        if (cached) return cached;
+        if (inflightQuizzes[cacheKey]) return inflightQuizzes[cacheKey];
+
+        const request = getQuizById(id)
+            .then((data) => {
+                set((current) => ({ quizzesCache: setCache(current.quizzesCache, cacheKey, data) }));
+                return data;
+            })
+            .finally(() => { delete inflightQuizzes[cacheKey]; });
+
+        inflightQuizzes[cacheKey] = request;
+        return request;
+    },
+
     getQuizzesForParent: async (parentId = 'none', options = {}) => {
         const { force = false } = options;
         const userKey = useAuthStore.getState().user?._id || 'anonymous';

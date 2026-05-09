@@ -42,6 +42,7 @@ const aiRoutes = require('./routes/ai.routes');
 const rbacRoutes = require('./routes/rbac.routes');
 const templateRoutes = require('./routes/template.routes');
 const adminRoutes = require('./routes/admin/adminRoutes');
+const blitzRoutes = require('./routes/blitz.routes');
 
 // Initialize Express
 const app = express();
@@ -228,6 +229,7 @@ const bootstrap = async () => {
     app.use('/api/rbac', apiLimiter, rbacRoutes);
     app.use('/api/templates', apiLimiter, templateRoutes);
     app.use('/api/admin', apiLimiter, adminRoutes);
+    app.use('/api/blitz', apiLimiter, blitzRoutes);
 
     // Health check
     app.get('/api/health', (req, res) => {

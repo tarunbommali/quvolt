@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
-import { Loader2, Sparkles, X, RefreshCw, Save, Check } from 'lucide-react';
-import { modalStyles } from '../../../styles/layoutStyles';
+import { Loader2, Sparkles, RefreshCw, Save, Check } from 'lucide-react';
+import Modal, { ModalShell, ModalHeader, ModalBody, ModalFooter, ModalButton } from '../../../components/common/ui/Modal';
+import { panelStyles, buttonStyles, components, cx } from '../../../styles/index';
 
-import { cardStyles } from '../../../styles/cardStyles';
-import { controlStyles, formStyles, textStyles, panelStyles, buttonStyles, components, cx } from '../../../styles/index';
+// ─── Difficulty distribution helpers (unchanged) ────────────────────────────
 
 const DISTRIBUTION_STEP = 5;
 const DISTRIBUTION_OPTIONS = Array.from({ length: 21 }, (_, index) => index * DISTRIBUTION_STEP);
@@ -33,7 +33,6 @@ const rebalanceDistribution = (distribution, key, value) => {
 
     for (const field of getDistributionOrder(key)) {
         if (delta === 0) break;
-
         if (delta > 0) {
             const reduction = Math.min(next[field], delta);
             next[field] -= reduction;
@@ -48,6 +47,17 @@ const rebalanceDistribution = (distribution, key, value) => {
     return next;
 };
 
+// ─── Component ──────────────────────────────────────────────────────────────
+
+/**
+ * AIGeneratorModal
+ *
+ * Generates MCQs by topic using an AI endpoint and lets the host save them
+ * directly into the active quiz.
+ *
+ * All state and handler logic is unchanged from the original.
+ * Only the JSX structure uses Modal / ModalShell / ModalHeader / ModalBody / ModalFooter.
+ */
 const AIGeneratorModal = ({
     open,
     quizId,
@@ -55,6 +65,7 @@ const AIGeneratorModal = ({
     onGenerate,
     onSave,
 }) => {
+    // ── State (identical to original) ──────────────────────────────────────
     const [topic, setTopic] = useState('');
     const [count, setCount] = useState(5);
     const [distribution, setDistribution] = useState({ easy: 100, medium: 0, hard: 0 });
@@ -77,6 +88,7 @@ const AIGeneratorModal = ({
         && isDistributionValid
     ), [topic, count, isDistributionValid]);
 
+    // ── Prompt builder (identical to original) ─────────────────────────────
     const promptText = useMemo(() => {
         const topicValue = topic.trim() || '[enter topics]';
         const easyValue = Number(distribution.easy) || 100;
@@ -96,54 +108,26 @@ const AIGeneratorModal = ({
 
             while (totalAssigned < totalQuestionsValue) {
                 const target = difficultyCounts.find((item) => item.key === difficultyOrder[totalAssigned % difficultyOrder.length]);
-                if (target) {
-                    target.count += 1;
-                    totalAssigned += 1;
-                } else {
-                    break;
-                }
+                if (target) { target.count += 1; totalAssigned += 1; } else { break; }
             }
 
             const difficultySequence = difficultyCounts.flatMap((item) => Array.from({ length: item.count }, () => item.key));
 
             return Array.from({ length: totalQuestionsValue }, (_, index) => {
                 const difficulty = difficultySequence[index] || 'easy';
-                const questionNumber = index + 1;
-                const optionsByDifficulty = {
-                    easy: [
-                        `${topicValue} basic concept`,
-                        `${topicValue} unrelated term`,
-                        `${topicValue} incorrect statement`,
-                        `${topicValue} random distractor`,
-                    ],
-                    medium: [
-                        `${topicValue} with practical example`,
-                        `${topicValue} partially correct interpretation`,
-                        `${topicValue} common misconception`,
-                        `${topicValue} edge-case distractor`,
-                    ],
-                    hard: [
-                        `${topicValue} scenario with constraints`,
-                        `${topicValue} advanced but incorrect tradeoff`,
-                        `${topicValue} subtle edge-case failure`,
-                        `${topicValue} high-level distractor`,
-                    ],
+                const qNum = index + 1;
+                const optsByDiff = {
+                    easy: [`${topicValue} basic concept`, `${topicValue} unrelated term`, `${topicValue} incorrect statement`, `${topicValue} random distractor`],
+                    medium: [`${topicValue} with practical example`, `${topicValue} partially correct interpretation`, `${topicValue} common misconception`, `${topicValue} edge-case distractor`],
+                    hard: [`${topicValue} scenario with constraints`, `${topicValue} advanced but incorrect tradeoff`, `${topicValue} subtle edge-case failure`, `${topicValue} high-level distractor`],
                 };
-
-                const sampleOptions = optionsByDifficulty[difficulty] || optionsByDifficulty.easy;
+                const opts = optsByDiff[difficulty] || optsByDiff.easy;
                 const correctOption = Math.floor(Math.random() * 4);
                 return {
-                    text: `Question ${questionNumber} about ${topicValue}`,
-                    question: `Question ${questionNumber} about ${topicValue}`,
-                    options: sampleOptions,
-                    correctOption,
-                    correctAnswer: sampleOptions[correctOption],
-                    timeLimit: 15,
-                    shuffleOptions: false,
-                    questionType: 'multiple-choice',
-                    mediaUrl: null,
-                    difficulty,
-                    explanation: `Sample explanation for question ${questionNumber} about ${topicValue}.`,
+                    text: `Question ${qNum} about ${topicValue}`, question: `Question ${qNum} about ${topicValue}`,
+                    options: opts, correctOption, correctAnswer: opts[correctOption],
+                    timeLimit: 15, shuffleOptions: false, questionType: 'multiple-choice',
+                    mediaUrl: null, difficulty, explanation: `Sample explanation for question ${qNum} about ${topicValue}.`,
                 };
             });
         };
@@ -151,47 +135,20 @@ const AIGeneratorModal = ({
         return JSON.stringify({
             instruction: 'Create a quiz question set in JSON format with high-quality multiple-choice questions.',
             rules: {
-                correctOptionDistribution: "Distribute correctOption randomly across indexes 0-3. Avoid repeating the same index consecutively.",
-                correctAnswerValidity: "The correctAnswer must always be factually correct and must match the correctOption.",
-                distractorQuality: "All incorrect options must be plausible but clearly incorrect. Avoid generic placeholders like 'random distractor'.",
-                noPattern: true,
-                balancedDifficulty: true
+                correctOptionDistribution: 'Distribute correctOption randomly across indexes 0-3. Avoid repeating the same index consecutively.',
+                correctAnswerValidity: 'The correctAnswer must always be factually correct and must match the correctOption.',
+                distractorQuality: 'All incorrect options must be plausible but clearly incorrect. Avoid generic placeholders like \'random distractor\'.',
+                noPattern: true, balancedDifficulty: true,
             },
-            input: {
-                topics: topicValue,
-                easy: easyValue,
-                medium: mediumValue,
-                hard: hardValue,
-                totalQuestions: totalQuestionsValue,
-            },
-            defaults: {
-                questionType: 'multiple-choice',
-                timeLimit: 15,
-                shuffleOptions: false,
-                mediaUrl: null,
-                difficulty: 'easy',
-                explanation: '',
-            },
+            input: { topics: topicValue, easy: easyValue, medium: mediumValue, hard: hardValue, totalQuestions: totalQuestionsValue },
+            defaults: { questionType: 'multiple-choice', timeLimit: 15, shuffleOptions: false, mediaUrl: null, difficulty: 'easy', explanation: '' },
             sampleOutput: buildSampleOutput(),
-            outputFields: [
-                'text',
-                'question',
-                'options',
-                'correctOption',
-                'correctAnswer',
-                'timeLimit',
-                'shuffleOptions',
-                'questionType',
-                'mediaUrl',
-                'difficulty',
-                'explanation',
-            ],
+            outputFields: ['text', 'question', 'options', 'correctOption', 'correctAnswer', 'timeLimit', 'shuffleOptions', 'questionType', 'mediaUrl', 'difficulty', 'explanation'],
             responseFormat: 'Return valid JSON only. Do not wrap the response in markdown.',
         }, null, 2);
     }, [topic, distribution.easy, distribution.medium, distribution.hard, count]);
 
-    if (!open) return null;
-
+    // ── Handlers (identical to original) ───────────────────────────────────
     const handleDistributionChange = (key, value) => {
         setDistribution((prev) => rebalanceDistribution(prev, key, value));
     };
@@ -201,9 +158,7 @@ const AIGeneratorModal = ({
             await navigator.clipboard.writeText(JSON.stringify(generated, null, 2));
             setCopiedJson(true);
             setTimeout(() => setCopiedJson(false), 2000);
-        } catch {
-            setError('Failed to copy JSON');
-        }
+        } catch { setError('Failed to copy JSON'); }
     };
 
     const handleCopyPrompt = async () => {
@@ -211,9 +166,7 @@ const AIGeneratorModal = ({
             await navigator.clipboard.writeText(promptText);
             setCopiedPrompt(true);
             setTimeout(() => setCopiedPrompt(false), 2000);
-        } catch {
-            setError('Failed to copy prompt');
-        }
+        } catch { setError('Failed to copy prompt'); }
     };
 
     const handleGenerate = async () => {
@@ -224,20 +177,14 @@ const AIGeneratorModal = ({
             const result = await onGenerate({
                 topic: topic.trim(),
                 count: Number(count),
-                distribution: {
-                    easy: Number(distribution.easy),
-                    medium: Number(distribution.medium),
-                    hard: Number(distribution.hard),
-                },
+                distribution: { easy: Number(distribution.easy), medium: Number(distribution.medium), hard: Number(distribution.hard) },
             });
             setGenerated(result?.questions || []);
             setMeta(result?.meta || null);
             setActiveTab('preview');
         } catch (err) {
             setError(err?.response?.data?.message || err?.message || 'Failed to generate questions');
-        } finally {
-            setLoading(false);
-        }
+        } finally { setLoading(false); }
     };
 
     const handleSave = async () => {
@@ -249,110 +196,122 @@ const AIGeneratorModal = ({
             onClose();
         } catch (err) {
             setError(err?.response?.data?.message || err?.message || 'Failed to save generated questions');
-        } finally {
-            setSaving(false);
-        }
+        } finally { setSaving(false); }
     };
 
+    // ── Render ──────────────────────────────────────────────────────────────
     return (
-        <div className={modalStyles.overlayTop}>
-            <div className={modalStyles.panelXl}>
-                <div className={modalStyles.headerRow}>
-                    <div>
-                        <h3 className={textStyles.titleLg}>AI Quiz Generator</h3>
-                        <p className={cx(components.analytics.metricCaption, textStyles.subtitle)}>Generate MCQs by topic and insert directly into this quiz.</p>
-                    </div>
-                    <button type="button" onClick={onClose} className={controlStyles.iconButtonLg} aria-label="Close AI generator dialog">
-                        <X size={18} />
-                    </button>
-                </div>
+        <Modal open={open} onClose={onClose}>
+            <ModalShell>
+                <ModalHeader
+                    title="AI Quiz Generator"
+                    subtitle="Generate MCQs by topic and insert directly into this quiz."
+                    onClose={onClose}
+                    closeLabel="Close AI generator dialog"
+                />
 
-                <div className={modalStyles.formGrid}>
-                    <div className={modalStyles.formGridWide}>
-                        <label className={formStyles.label}>Topics</label>
-                        <input
-                            value={topic}
-                            onChange={(e) => setTopic(e.target.value)}
-                            className={formStyles.input}
-                            placeholder="Enter topics, e.g. JavaScript closures, arrays, scope"
-                        />
-                    </div>
-                    <div>
-                        <label className={formStyles.label}>Easy (%)</label>
-                        <select value={distribution.easy} onChange={(e) => handleDistributionChange('easy', e.target.value)} className={formStyles.select}>
-                            {DISTRIBUTION_OPTIONS.map((option) => (
-                                <option key={`easy-${option}`} value={option}>
-                                    {option}%
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                    <div>
-                        <label className={formStyles.label}>Medium (%)</label>
-                        <select value={distribution.medium} onChange={(e) => handleDistributionChange('medium', e.target.value)} className={formStyles.select}>
-                            {DISTRIBUTION_OPTIONS.map((option) => (
-                                <option key={`medium-${option}`} value={option}>
-                                    {option}%
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                    <div>
-                        <label className={formStyles.label}>Hard (%)</label>
-                        <select value={distribution.hard} onChange={(e) => handleDistributionChange('hard', e.target.value)} className={formStyles.select}>
-                            {DISTRIBUTION_OPTIONS.map((option) => (
-                                <option key={`hard-${option}`} value={option}>
-                                    {option}%
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                    <div>
-                        <label className={formStyles.label}>Count</label>
-                        <input type="number" min={1} max={20} value={count} onChange={(e) => setCount(Number(e.target.value || 1))} className={formStyles.input} />
-                    </div>
-                </div>
+                <ModalBody>
+                    {/* ── Input row ──────────────────────────────────────── */}
+                    <div className="space-y-3">
+                        {/* Topic */}
+                        <div>
+                            <label className="block text-[12px] font-semibold text-slate-600 dark:text-slate-300 mb-1.5">
+                                Topics
+                            </label>
+                            <input
+                                value={topic}
+                                onChange={(e) => setTopic(e.target.value)}
+                                className="w-full rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-slate-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition-colors"
+                                placeholder="Enter topics, e.g. JavaScript closures, arrays, scope"
+                                autoFocus
+                            />
+                        </div>
 
-                <div className={modalStyles.contentSectionScroll}>
+                        {/* Difficulty + Count row */}
+                        <div className="grid grid-cols-4 gap-2">
+                            {[
+                                { key: 'easy', label: 'Easy (%)' },
+                                { key: 'medium', label: 'Medium (%)' },
+                                { key: 'hard', label: 'Hard (%)' },
+                            ].map(({ key, label }) => (
+                                <div key={key}>
+                                    <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                                        {label}
+                                    </label>
+                                    <select
+                                        value={distribution[key]}
+                                        onChange={(e) => handleDistributionChange(key, e.target.value)}
+                                        className="w-full rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-2 text-sm text-slate-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-colors"
+                                    >
+                                        {DISTRIBUTION_OPTIONS.map((opt) => (
+                                            <option key={opt} value={opt}>{opt}%</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            ))}
+                            <div>
+                                <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                                    Count
+                                </label>
+                                <input
+                                    type="number"
+                                    min={1}
+                                    max={20}
+                                    value={count}
+                                    onChange={(e) => setCount(Number(e.target.value || 1))}
+                                    className="w-full rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-2 text-sm text-slate-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-colors"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ── Distribution validity ──────────────────────────── */}
+                    <div className={isDistributionValid ? panelStyles.successBox : panelStyles.errorBox}>
+                        Distribution Total: {distributionTotal}%{' '}
+                        {isDistributionValid ? '(valid)' : '(must be 100%)'}
+                    </div>
+
+                    {/* ── Prompt preview box ─────────────────────────────── */}
                     <div className={panelStyles.mutedBox}>
                         <div className={components.host.aiPromptHeader}>
                             <div>
-                                <p className={textStyles.metaLabel}>Copy-ready prompt</p>
-                                <p className={cx(components.analytics.metricCaption, textStyles.subtitle)}>Use this prompt in any AI tool. The placeholders update from the fields above.</p>
+                                <p className="text-[12px] font-semibold text-slate-600 dark:text-slate-300">
+                                    Copy-ready prompt
+                                </p>
+                                <p className="text-[11px] text-slate-400 mt-0.5">
+                                    Placeholders update from the fields above.
+                                </p>
                             </div>
-                            <button onClick={handleCopyPrompt} className={cx(buttonStyles.secondary, components.host.aiPromptCopyBtn, "transition-all duration-200", copiedPrompt && "bg-emerald-50 text-emerald-600 border-emerald-200 scale-95")}>
-                                {copiedPrompt ? (
-                                    <>
-                                        <Check size={14} className="mr-1 inline" /> Copied!
-                                    </>
-                                ) : (
-                                    'Copy Prompt'
+                            <button
+                                onClick={handleCopyPrompt}
+                                className={cx(
+                                    'h-8 rounded-full px-3 text-[12px] font-semibold border transition-all duration-150',
+                                    copiedPrompt
+                                        ? 'bg-emerald-50 text-emerald-600 border-emerald-200 scale-95'
+                                        : 'border-gray-200 text-slate-600 hover:bg-gray-100',
                                 )}
+                            >
+                                {copiedPrompt ? <><Check size={12} className="inline mr-1" />Copied!</> : 'Copy Prompt'}
                             </button>
                         </div>
-                        <pre className={components.host.aiPromptCode}>{promptText}</pre>
+                        <pre className={cx(components.host.aiPromptCode, 'max-h-[120px] overflow-y-auto text-[11px]')}>
+                            {promptText}
+                        </pre>
                     </div>
 
-                    <div className={isDistributionValid ? panelStyles.successBox : panelStyles.errorBox}>
-                        Distribution Total: {distributionTotal}% {isDistributionValid ? '(valid)' : '(must be 100%)'}
-                    </div>
-
+                    {/* ── Status / results ───────────────────────────────── */}
                     {meta && (
                         <div className={panelStyles.infoBox}>
-                            Generated mix {'->'} Easy: {meta.easy} | Medium: {meta.medium} | Hard: {meta.hard}
+                            Generated mix {'→'} Easy: {meta.easy} | Medium: {meta.medium} | Hard: {meta.hard}
                         </div>
                     )}
 
-                    {error && (
-                        <div className={panelStyles.errorBox}>
-                            {error}
-                        </div>
-                    )}
+                    {error && <div className={panelStyles.errorBox}>{error}</div>}
 
                     {loading && (
-                        <div className={modalStyles.stackSm}>
+                        <div className="space-y-2">
                             <div className={panelStyles.loadingBox}>
-                                <Loader2 size={16} className={components.host.spin} /> Generating questions...
+                                <Loader2 size={14} className={components.host.spin} /> Generating questions…
                             </div>
                             {[1, 2, 3].map((n) => (
                                 <div key={n} className={components.host.aiSkeleton} />
@@ -360,10 +319,23 @@ const AIGeneratorModal = ({
                         </div>
                     )}
 
+                    {/* Tab switcher */}
                     {!loading && generated.length > 0 && (
-                        <div className={controlStyles.tabWrap}>
-                            <button onClick={() => setActiveTab('preview')} className={cx(controlStyles.tabBtn, activeTab === 'preview' ? buttonStyles.primary : controlStyles.segmentedIdle)}>Preview</button>
-                            <button onClick={() => setActiveTab('json')} className={cx(controlStyles.tabBtn, activeTab === 'json' ? buttonStyles.primary : controlStyles.segmentedIdle)}>JSON</button>
+                        <div className="flex gap-2">
+                            {['preview', 'json'].map((tab) => (
+                                <button
+                                    key={tab}
+                                    onClick={() => setActiveTab(tab)}
+                                    className={cx(
+                                        'h-8 rounded-full px-4 text-[12px] font-bold uppercase tracking-wider transition-colors',
+                                        activeTab === tab
+                                            ? 'bg-indigo-600 text-white'
+                                            : 'border border-gray-200 text-slate-500 hover:bg-gray-100',
+                                    )}
+                                >
+                                    {tab}
+                                </button>
+                            ))}
                         </div>
                     )}
 
@@ -373,11 +345,16 @@ const AIGeneratorModal = ({
                         </div>
                     )}
 
+                    {/* Preview tab */}
                     {!loading && activeTab === 'preview' && generated.map((question, index) => (
-                        <div key={`${question.text}-${index}`} className={cx(cardStyles.base, components.host.aiQuestionCardPad)}>
+                        <div key={`${question.text}-${index}`} className={cx('rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 space-y-3')}>
                             <div className={components.host.aiQuestionHeader}>
-                                <p className={textStyles.bodyStrong}>{index + 1}. {question.text}</p>
-                                <span className={components.host.aiQuestionDifficulty}>{question.difficulty || 'mixed'}</span>
+                                <p className="text-[13px] font-semibold text-slate-800 dark:text-slate-100">
+                                    {index + 1}. {question.text}
+                                </p>
+                                <span className={components.host.aiQuestionDifficulty}>
+                                    {question.difficulty || 'mixed'}
+                                </span>
                             </div>
                             <div className={components.host.aiOptionGrid}>
                                 {question.options.map((option) => {
@@ -396,61 +373,62 @@ const AIGeneratorModal = ({
                                 })}
                             </div>
                             {question.explanation && (
-                                <p className={cx(components.host.aiExplainMargin, textStyles.captionStrong)}>
-                                    <span className={components.host.aiExplainLabel}>Explanation:</span> {question.explanation}
+                                <p className="text-[12px] text-slate-500">
+                                    <span className={components.host.aiExplainLabel}>Explanation:</span>{' '}
+                                    {question.explanation}
                                 </p>
                             )}
                         </div>
                     ))}
 
+                    {/* JSON tab */}
                     {!loading && activeTab === 'json' && generated.length > 0 && (
-                        <div className={modalStyles.stackMd}>
-                            <button onClick={handleCopyJSON} className={cx(buttonStyles.secondary, components.host.aiPromptCopyBtn, "transition-all duration-200", copiedJson && "bg-emerald-50 text-emerald-600 border-emerald-200 scale-95")}>
-                                {copiedJson ? (
-                                    <>
-                                        <Check size={14} className="mr-1 inline" /> Copied JSON!
-                                    </>
-                                ) : (
-                                    'Copy JSON'
+                        <div className="space-y-2">
+                            <button
+                                onClick={handleCopyJSON}
+                                className={cx(
+                                    'h-8 rounded-full px-3 text-[12px] font-semibold border transition-all duration-150',
+                                    copiedJson
+                                        ? 'bg-emerald-50 text-emerald-600 border-emerald-200 scale-95'
+                                        : 'border-gray-200 text-slate-600 hover:bg-gray-100',
                                 )}
+                            >
+                                {copiedJson ? <><Check size={12} className="inline mr-1" />Copied JSON!</> : 'Copy JSON'}
                             </button>
                             <pre className={panelStyles.codePanel}>{JSON.stringify(generated, null, 2)}</pre>
                         </div>
                     )}
-                </div>
+                </ModalBody>
 
-                <div className={modalStyles.footerRight}>
-                    <button
-                        type="button"
-                        onClick={handleGenerate}
-                        disabled={!canGenerate || loading}
-                        className={cx(buttonStyles.primary, components.host.aiGenerateBtn)}
-                    >
-                        {loading ? <Loader2 size={14} className={components.host.spin} /> : <Sparkles size={14} />}
-                        Generate
-                    </button>
-                    <button
-                        type="button"
+                <ModalFooter>
+                    <ModalButton
+                        variant="secondary"
                         onClick={handleGenerate}
                         disabled={!generated.length || loading}
-                        className={cx(buttonStyles.secondary, components.host.aiActionBtn, components.host.aiPromptCopyBtn)}
                     >
-                        <RefreshCw size={14} /> Regenerate
-                    </button>
-                    <button
-                        type="button"
+                        <RefreshCw size={13} /> Regenerate
+                    </ModalButton>
+                    <ModalButton
+                        variant="primary"
+                        onClick={handleGenerate}
+                        disabled={!canGenerate || loading}
+                    >
+                        {loading ? <Loader2 size={13} className={components.host.spin} /> : <Sparkles size={13} />}
+                        Generate
+                    </ModalButton>
+                    <ModalButton
+                        variant="primary"
                         onClick={handleSave}
                         disabled={!generated.length || saving}
-                        className={cx(buttonStyles.success, components.host.aiGenerateBtn)}
+                        className="bg-emerald-600 hover:bg-emerald-700"
                     >
-                        {saving ? <Loader2 size={14} className={components.host.spin} /> : <Save size={14} />}
+                        {saving ? <Loader2 size={13} className={components.host.spin} /> : <Save size={13} />}
                         Save To Quiz
-                    </button>
-                </div>
-            </div>
-        </div>
+                    </ModalButton>
+                </ModalFooter>
+            </ModalShell>
+        </Modal>
     );
 };
 
 export default AIGeneratorModal;
-

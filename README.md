@@ -100,7 +100,18 @@ Quvolt features an enterprise-grade analytics pipeline designed for 10k+ concurr
 - **Incremental O(1) Updates**: Answers trigger atomic `$inc` updates bypassing heavy MongoDB aggregation loops.
 - **Question Quality Score (QQS)**: An algorithmic score out of 100 weighing accuracy (50%), drop-off engagement (30%), and speed (20%).
 - **Priority Fix Order**: Automatically ranks and sorts the worst-performing questions for hosts.
-- **Participant Drilldown**: Merges real-time global averages with per-user timelines for detailed Mistake Analysis (e.g., distinguishing between Concept Gaps and Careless Errors).
+- **Participant Drilldown**: Merges real-time global averages with per-user timelines for detailed Mistake Analysis.
+
+---
+
+## 🛡️ SaaS Limits & Abuse Protection
+
+Quvolt employs strict, production-grade API guards mapped to the `FREE`, `CREATOR`, and `TEAMS` plans:
+- **Deep Sanitization**: Strips unknown payload fields, strictly caps lengths (e.g. 300 char limits), and validates all bounds.
+- **Diff-Aware Bulk Guard**: Prevents massive JSON dumps bypassing simple array length checks by measuring the diff (e.g., throwing `400` if updating >100 questions at once).
+- **AI Quota Tracking**: Redis-backed atomic counters restrict the daily LLM generations available to a host based on their tier.
+- **Analytics Killswitch**: Extremely large enterprise quizzes auto-disable granular analytics tracking at scale to prevent Redis/DB spikes.
+- **Rate-Limiting Matrix**: Route-level express rate-limiters distinctly separate aggressive creation endpoints from lightweight GET loads.
 
 ---
 

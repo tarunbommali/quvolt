@@ -65,6 +65,7 @@ const formatQuestion = (question, index, total, expiry) => {
         _id: question._id?.toString?.() || question._id,
         text: question.text || 'Untitled Question',
         options: options.length > 0 ? options : ['Option A', 'Option B'], // Fallback for data corruption
+        translations: question.translations || {}, // [I18N] Include translation mappings
         timeLimit: question.timeLimit || 30,
         mediaUrl: question.mediaUrl || null,
         questionType: question.questionType || 'multiple-choice',

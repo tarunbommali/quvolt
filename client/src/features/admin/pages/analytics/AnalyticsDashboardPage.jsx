@@ -6,7 +6,7 @@ import MetricsCards from '../../../host/components/MetricsCards';
 import ChartsSection from '../../../host/components/ChartsSection';
 import MetricsSection from '../../../host/components/MetricsSection';
 import TableSection from '../../../host/components/TableSection';
-import SubHeader from '../../../components/layout/SubHeader';
+import BreadCrumbs from '../../../components/layout/BreadCrumbs';
 import ErrorState from '../../../components/common/ErrorState';
 import { components } from '../../../styles/index';
 
@@ -51,7 +51,7 @@ const AnalyticsDashboardPage = () => {
 
     const isLoading = userAnalyticsQuery.isLoading || (ishost && hostSummaryQuery.isLoading);
     const hasError = userAnalyticsQuery.error || hostSummaryQuery.error;
-    const dashboardHref = ishost ? '/studio' : '/join';
+    const dashboardHref = ishost ? '/workspace' : '/join';
     const participantRows = useMemo(() => (
         (userData?.quizBreakdown || []).map((row) => ({
             quizId: row.quizId,
@@ -64,10 +64,8 @@ const AnalyticsDashboardPage = () => {
 
     return (
         <div className="app-page space-y-6">
-            <SubHeader
-                title="Analytics"
-                subtitle="Track accuracy, difficulty, time-score trends, and participant behavior with cached summary data."
-                breadcrumbs={[{ label: ishost ? 'Studio' : 'Join', href: dashboardHref }, { label: 'Analytics' }]}
+            <BreadCrumbs
+                breadcrumbs={[{ label: ishost ? 'Workspace' : 'Join', href: dashboardHref }, { label: 'Analytics' }]}
             />
 
             {hasError ? (

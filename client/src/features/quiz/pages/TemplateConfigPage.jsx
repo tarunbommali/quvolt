@@ -19,7 +19,7 @@ import {
     RotateCcw, AlertCircle,
 } from 'lucide-react';
 
-import SubHeader from '../../../components/layout/SubHeader';
+import BreadCrumbs from '../../../components/layout/BreadCrumbs';
 import LoadingScreen from '../../../components/common/LoadingScreen';
 
 import { useAuthStore } from '../../../stores/useAuthStore';
@@ -29,8 +29,8 @@ import { updateQuiz } from '../../host/services/host.service';
 import { buttonStyles } from '../../../styles/index';
 
 // ── Plan helpers ───────────────────────────────────────────────────────────────
-const getPlan     = (user) => (user?.subscription?.plan || 'FREE').toUpperCase();
-const isCreator   = (plan) => ['CREATOR', 'TEAMS'].includes(plan);
+const getPlan = (user) => (user?.subscription?.plan || 'FREE').toUpperCase();
+const isCreator = (plan) => ['CREATOR', 'TEAMS'].includes(plan);
 const isTeamsOnly = (plan) => plan === 'TEAMS';
 
 // ── Shared UI primitives (styled to match InviteRoom / SessionHistory) ─────────
@@ -83,6 +83,18 @@ const NumberInput = ({ value, onChange, min, max, step = 1 }) => (
     />
 );
 
+const SelectInput = ({ value, onChange, options }) => (
+    <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="text-sm font-semibold px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 theme-text-primary focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition-colors"
+    >
+        {options.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+        ))}
+    </select>
+);
+
 const Row = ({ label, hint, children }) => (
     <div className="flex items-center justify-between gap-4 py-2.5 border-b border-slate-100 dark:border-slate-700/60 last:border-0">
         <div className="min-w-0">
@@ -95,9 +107,9 @@ const Row = ({ label, hint, children }) => (
 
 const PlanBadge = ({ plan }) => {
     const styles = {
-        FREE:    'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400',
+        FREE: 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400',
         CREATOR: 'bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-900/20 dark:text-amber-400',
-        TEAMS:   'bg-indigo-50 text-indigo-600 border border-indigo-200 dark:bg-indigo-900/20 dark:text-indigo-400',
+        TEAMS: 'bg-indigo-50 text-indigo-600 border border-indigo-200 dark:bg-indigo-900/20 dark:text-indigo-400',
     };
     return (
         <span className={`inline-flex px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full ${styles[plan] || styles.FREE}`}>
@@ -109,19 +121,19 @@ const PlanBadge = ({ plan }) => {
 // ── Config form ────────────────────────────────────────────────────────────────
 
 const ConfigForm = ({ draft, setDraft, globalDefaultsMode, saving, error, onSave, onSaveAndStart, quizAccessType, onQuizAccessTypeChange }) => {
-    const user    = useAuthStore((s) => s.user);
-    const plan    = getPlan(user);
+    const user = useAuthStore((s) => s.user);
+    const plan = getPlan(user);
     const creator = isCreator(plan);
-    const teams   = isTeamsOnly(plan);
+    const teams = isTeamsOnly(plan);
 
-    const [open, setOpen]   = useState({ timer: true, scoring: true, leaderboard: false, flow: false, access: false, advanced: false });
+    const [open, setOpen] = useState({ timer: true, scoring: true, leaderboard: false, flow: false, access: false, advanced: false });
     const [saved, setSaved] = useState(false);
 
     const toggle = (section) => setOpen((o) => ({ ...o, [section]: !o[section] }));
 
     const setVal = useCallback((path, value) => {
         setDraft((prev) => {
-            const next  = { ...prev };
+            const next = { ...prev };
             const parts = path.split('.');
             let cur = next;
             for (let i = 0; i < parts.length - 1; i++) {
@@ -240,6 +252,16 @@ const ConfigForm = ({ draft, setDraft, globalDefaultsMode, saving, error, onSave
                                 <Row label="Show ranking after each question">
                                     <Toggle checked={draft.leaderboard?.showAfterEachQuestion ?? true} onChange={(v) => setVal('leaderboard.showAfterEachQuestion', v)} />
                                 </Row>
+                                <Row label="Group results by" hint="Mastery Matrix requires 'Unit' grouping">
+                                    <SelectInput
+                                        value={draft.leaderboard?.groupBy ?? 'default'}
+                                        onChange={(v) => setVal('leaderboard.groupBy', v)}
+                                        options={[
+                                            { label: 'Score (Standard)', value: 'default' },
+                                            { label: 'Unit (Mastery Matrix)', value: 'unit' }
+                                        ]}
+                                    />
+                                </Row>
                             </div>
                         </Motion.div>
                     )}
@@ -341,23 +363,23 @@ const ConfigForm = ({ draft, setDraft, globalDefaultsMode, saving, error, onSave
 // ── Page ───────────────────────────────────────────────────────────────────────
 
 const TemplateConfigPage = () => {
-    const navigate       = useNavigate();
-    const { id }         = useParams();
+    const navigate = useNavigate();
+    const { id } = useParams();
     const [searchParams] = useSearchParams();
 
     const globalDefaultsMode = searchParams.get('mode') === 'global' || !id;
 
-    const user               = useAuthStore((s) => s.user);
+    const user = useAuthStore((s) => s.user);
     const getQuizzesForParent = useQuizStore((s) => s.getQuizzesForParent);
-    const activeQuiz         = useQuizStore((s) => s.activeQuiz);
+    const activeQuiz = useQuizStore((s) => s.activeQuiz);
 
     // Local state — we manage the template ourselves here, not via the store,
     // so we can use fetchDefault which auto-creates a template if none exists.
     const [template, setTemplate] = useState(null);
-    const [draft, setDraft]       = useState(null);
-    const [loading, setLoading]   = useState(true);
-    const [saving, setSaving]     = useState(false);
-    const [error, setError]       = useState(null);
+    const [draft, setDraft] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState(null);
     const [quizTitle, setQuizTitle] = useState('');
     const [quizAccessType, setQuizAccessType] = useState('public');
 
@@ -377,7 +399,7 @@ const TemplateConfigPage = () => {
                     setQuizAccessType(match.accessType || 'public');
                 }
             })
-            .catch(() => {});
+            .catch(() => { });
     }, [id, activeQuiz, getQuizzesForParent]);
 
     // Fetch the default template (auto-creates for existing users)
@@ -418,7 +440,7 @@ const TemplateConfigPage = () => {
             const updated = await templateApi.updateTemplate(draft._id, draft);
             setTemplate(updated);
             setDraft(JSON.parse(JSON.stringify(updated)));
-            
+
             // Save Template Privacy if applicable
             if (!globalDefaultsMode && id && quizAccessType) {
                 try {
@@ -445,20 +467,20 @@ const TemplateConfigPage = () => {
         if (id) {
             navigate(`/quiz/templates/${id}/session`);
         } else {
-            navigate('/studio');
+            navigate('/workspace');
         }
     };
 
     // Breadcrumbs
     const breadcrumbs = globalDefaultsMode
-        ? [{ label: 'Studio', href: '/studio' }, { label: 'Global Session Defaults' }]
+        ? [{ label: 'Workspace', href: '/workspace' }, { label: 'Settings Configuration' }]
         : [
-            { label: 'Studio', href: '/studio' },
+            { label: 'Workspace', href: '/workspace' },
             ...(quizTitle ? [{ label: quizTitle, href: `/quiz/templates/${id}` }] : []),
             { label: 'Session Settings' },
         ];
 
-    const pageTitle    = globalDefaultsMode ? 'Global Session Defaults' : 'Session Settings';
+    const pageTitle = globalDefaultsMode ? 'Settings Configuration' : 'Session Settings';
     const pageSubtitle = globalDefaultsMode
         ? 'Default configuration applied to every new session'
         : quizTitle ? `Configuring session engine for "${quizTitle}"` : 'Configure the quiz engine before launching';
@@ -467,9 +489,7 @@ const TemplateConfigPage = () => {
 
     return (
         <div className="app-page space-y-6 animate-in fade-in duration-300">
-            <SubHeader
-                title={pageTitle}
-                subtitle={pageSubtitle}
+            <BreadCrumbs
                 breadcrumbs={breadcrumbs}
             />
 

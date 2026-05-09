@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { adminApi } from '../../../services/admin.api';
 import { Plus, Tag, RefreshCcw, Save, Trash2, Percent, IndianRupee } from 'lucide-react';
-import toast from 'react-hot-toast';
+import useToast from '../../../hooks/useToast';
 
 const AdminBillingControl = () => {
+    const { showToast } = useToast();
     const [plans, setPlans] = useState({});
     const [offers, setOffers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -23,7 +24,7 @@ const AdminBillingControl = () => {
             setPlans(plansData);
             setOffers(offersData);
         } catch (err) {
-            toast.error('Failed to load billing configuration');
+            showToast('Failed to load billing configuration', 'error');
         } finally {
             setLoading(false);
         }
@@ -32,10 +33,10 @@ const AdminBillingControl = () => {
     const handleUpdatePlan = async (planId, data) => {
         try {
             await adminApi.updatePlan(planId, data);
-            toast.success(`${planId} plan updated`);
+            showToast(`${planId} plan updated`, 'success');
             fetchData();
         } catch (err) {
-            toast.error('Update failed');
+            showToast('Update failed', 'error');
         }
     };
 
@@ -50,11 +51,11 @@ const AdminBillingControl = () => {
                 value: Number(data.value),
                 applicablePlans: data.applicablePlans ? data.applicablePlans.split(',') : []
             });
-            toast.success('Offer created');
+            showToast('Offer created', 'success');
             e.target.reset();
             fetchData();
         } catch (err) {
-            toast.error('Failed to create offer');
+            showToast('Failed to create offer', 'error');
         }
     };
 

@@ -16,7 +16,7 @@ const Footer = () => {
                     <div className="space-y-4">
                         <h4 className="text-xs font-black uppercase tracking-widest text-[var(--qb-text-1)]">Product</h4>
                         <ul className="space-y-3 text-sm">
-                            <li><Link to="/studio" className="theme-text-muted hover:text-[var(--qb-primary)] font-semibold transition-colors">Studio</Link></li>
+                            <li><Link to="/workspace" className="theme-text-muted hover:text-[var(--qb-primary)] font-semibold transition-colors">Workspace</Link></li>
                             <li><Link to="/join" className="theme-text-muted hover:text-[var(--qb-primary)] font-semibold transition-colors">Join Session</Link></li>
                             <li><Link to="/login" className="theme-text-muted hover:text-[var(--qb-primary)] font-semibold transition-colors">Sign In</Link></li>
                         </ul>

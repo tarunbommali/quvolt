@@ -51,12 +51,23 @@ const createQuiz = async (req, res) => {
         let quiz;
         let attempts = 0;
 
+        // NEW: Calculate Level and Path
+        let level = 0;
+        let path = [];
+        if (parentId) {
+            const parent = await Quiz.findById(parentId).select('level path').lean();
+            if (parent) {
+                level = (parent.level || 0) + 1;
+                path = [...(parent.path || [])];
+            }
+        }
+
         while (!quiz && attempts < 5) {
             attempts += 1;
             const roomCode = generateCode();
 
             try {
-                quiz = await Quiz.create({
+                const newQuizData = {
                     title: title.trim(),
                     hostId: req.user._id,
                     roomCode,
@@ -65,6 +76,8 @@ const createQuiz = async (req, res) => {
                         ? (ALLOWED_QUIZ_CATEGORIES.includes(quizCategory) ? quizCategory : 'regular')
                         : null,
                     parentId: parentId || null,
+                    level,
+                    path, // We'll push the self ID after creation if needed, or include it now if we pre-gen ID
                     mode: mode === 'teaching' ? 'tutor' : (mode || 'auto'),
                     accessType: normalizedAccessType,
                     allowedEmails: Array.isArray(allowedEmails)
@@ -74,9 +87,14 @@ const createQuiz = async (req, res) => {
                     price: isPaid ? (price || 0) : 0,
                     shuffleQuestions: false,
                     questions: [],
-                });
+                };
+
+                quiz = new Quiz(newQuizData);
+                quiz.path.push(quiz._id); // Include self in path
+                await quiz.save();
             } catch (err) {
                 if (err?.code === 11000 && err?.keyPattern?.roomCode) {
+                    quiz = null;
                     continue;
                 }
                 throw err;
@@ -192,6 +210,18 @@ const getQuizByCode = async (req, res) => {
     }
 };
 
+const getQuizById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const quiz = await Quiz.findOne(buildQuizAccessQuery(req, id));
+        if (!quiz) return sendError(res, 'Quiz not found', 404);
+        return sendSuccess(res, quiz);
+    } catch (error) {
+        logger.error('[QuizController] getQuizById', { message: error.message, stack: error.stack });
+        return sendError(res, 'Server Error');
+    }
+};
+
 const updateQuiz = async (req, res) => {
     try {
         const { id } = req.params;
@@ -221,6 +251,9 @@ const updateQuiz = async (req, res) => {
             updateData.allowedEmails = allowedEmails
                 .map((email) => String(email || '').trim().toLowerCase())
                 .filter(Boolean);
+        }
+        if (req.body.leaderboard !== undefined) {
+            updateData.leaderboard = req.body.leaderboard;
         }
         const quiz = await Quiz.findOneAndUpdate(
             buildQuizAccessQuery(req, id),
@@ -307,4 +340,5 @@ module.exports = {
     updateQuiz,
     deleteQuiz,
     getQuizSessions,
+    getQuizById,
 };

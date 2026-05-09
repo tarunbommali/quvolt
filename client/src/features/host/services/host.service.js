@@ -16,8 +16,8 @@ export const getQuizAnalytics = (quizId) =>
     api.get(`/analytics/quiz/${quizId}`).then(r => r.data);
 
 // Also re-exporting some quiz methods used by host controllers
-export const createQuiz = (title, type, parentId, isPaid, price, options) =>
-    api.post('/quiz/templates/new', { title, type, parentId, isPaid, price, ...options }).then(r => r.data);
+export const createQuiz = (title, type, parentId, options) =>
+    api.post('/quiz/templates/new', { title, type, parentId, ...options }).then(r => r.data);
 
 export const updateQuiz = (id, payload) =>
     api.put(`/quiz/${id}`, payload).then(r => r.data);

@@ -68,7 +68,7 @@ const QuizLaunchPage = () => {
             } catch {
                 if (!active) return;
                 showToast('Failed to load launch page');
-                navigate('/studio');
+                navigate('/workspace');
             }
         };
 

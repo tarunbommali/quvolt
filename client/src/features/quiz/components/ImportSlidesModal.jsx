@@ -1,7 +1,14 @@
 import { X } from 'lucide-react';
-import { modalStyles } from '../../../styles/layoutStyles';
-import { controlStyles, formStyles, textStyles, panelStyles, buttonStyles, components, cx } from '../../../styles/index';
+import Modal, { ModalShell, ModalHeader, ModalBody, ModalFooter, ModalButton } from '../../../components/common/ui/Modal';
+import { formStyles, panelStyles, cx } from '../../../styles/index';
 
+/**
+ * ImportSlidesModal
+ *
+ * Lets the host paste a JSON array of questions to bulk-import into the quiz.
+ * All layout/spacing is inherited from ModalShell / ModalHeader / ModalBody / ModalFooter.
+ * Zero function changes — only the wrapping markup is refactored.
+ */
 const ImportSlidesModal = ({
     open,
     importJson,
@@ -10,35 +17,28 @@ const ImportSlidesModal = ({
     onJsonChange,
     onClose,
     onImport,
-}) => {
-    if (!open) return null;
+}) => (
+    <Modal open={open} onClose={onClose}>
+        <ModalShell>
+            <ModalHeader
+                title="Import Slides from JSON"
+                subtitle={
+                    <>
+                        Paste a JSON array or an object with a{' '}
+                        <span className={formStyles.helperStrong}>questions</span> or{' '}
+                        <span className={formStyles.helperStrong}>slides</span> array.
+                    </>
+                }
+                onClose={onClose}
+                closeLabel="Close JSON import dialog"
+            />
 
-    return (
-        <div className={modalStyles.overlayTop}>
-            <div className={components.host.importShell}>
-                <div className={modalStyles.headerRow}>
-                    <div>
-                        <h3 className={textStyles.titleLg}>Import slides from JSON</h3>
-                        <p className={cx(components.analytics.metricCaption, textStyles.subtitle)}>
-                            Paste a JSON array or an object with a <span className={formStyles.helperStrong}>questions</span> or <span className={formStyles.helperStrong}>slides</span> array.
-                        </p>
-                    </div>
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className={controlStyles.iconButtonLg}
-                        aria-label="Close JSON import dialog"
-                    >
-                        <X size={18} />
-                    </button>
-                </div>
-
-                <div className={modalStyles.contentSection}>
-                    <textarea
-                        className={modalStyles.textarea}
-                        value={importJson}
-                        onChange={(e) => onJsonChange(e.target.value)}
-                        placeholder={`[
+            <ModalBody>
+                <textarea
+                    className="min-h-[200px] w-full rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-100 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition-colors"
+                    value={importJson}
+                    onChange={(e) => onJsonChange(e.target.value)}
+                    placeholder={`[
   {
     "text": "What is Python primarily used for?",
     "question": "What is Python primarily used for?",
@@ -58,39 +58,35 @@ const ImportSlidesModal = ({
     "explanation": "Python is a general-purpose language used for web development, automation, and more."
   }
 ]`}
-                    />
+                />
 
-                    <div className={panelStyles.mutedBox}>
-                        Supported fields: <span className={formStyles.helperStrong}>text</span>, <span className={formStyles.helperStrong}>question</span>, <span className={formStyles.helperStrong}>options</span>, <span className={formStyles.helperStrong}>correctOption</span>, <span className={formStyles.helperStrong}>correctAnswer</span>, <span className={formStyles.helperStrong}>timeLimit</span>, <span className={formStyles.helperStrong}>shuffleOptions</span>, <span className={formStyles.helperStrong}>questionType</span>, <span className={formStyles.helperStrong}>mediaUrl</span>, <span className={formStyles.helperStrong}>difficulty</span>, and <span className={formStyles.helperStrong}>explanation</span>.
-                    </div>
-
-                    {importError && (
-                        <div className={panelStyles.errorBox}>
-                            {importError}
-                        </div>
-                    )}
+                <div className={panelStyles.mutedBox}>
+                    Supported fields:{' '}
+                    {['text', 'question', 'options', 'correctOption', 'correctAnswer',
+                        'timeLimit', 'shuffleOptions', 'questionType', 'mediaUrl',
+                        'difficulty', 'explanation'].map((f, i, arr) => (
+                        <span key={f}>
+                            <span className={formStyles.helperStrong}>{f}</span>
+                            {i < arr.length - 1 ? ', ' : '.'}
+                        </span>
+                    ))}
                 </div>
 
-                <div className={modalStyles.footerRight}>
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className={cx(buttonStyles.secondary, components.host.aiActionBtn)}
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        type="button"
-                        onClick={onImport}
-                        disabled={isImporting}
-                        className={cx(buttonStyles.primary, components.host.aiGenerateBtn)}
-                    >
-                        {isImporting ? 'Importing...' : 'Import Slides'}
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
+                {importError && (
+                    <div className={panelStyles.errorBox}>{importError}</div>
+                )}
+            </ModalBody>
+
+            <ModalFooter>
+                <ModalButton variant="ghost" onClick={onClose}>
+                    Cancel
+                </ModalButton>
+                <ModalButton variant="primary" onClick={onImport} disabled={isImporting}>
+                    {isImporting ? 'Importing…' : 'Import Slides'}
+                </ModalButton>
+            </ModalFooter>
+        </ModalShell>
+    </Modal>
+);
 
 export default ImportSlidesModal;

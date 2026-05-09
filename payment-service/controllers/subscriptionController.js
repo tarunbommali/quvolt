@@ -37,8 +37,6 @@ class SubscriptionController {
         status: subscription?.status || 'active',
         subscription: subscription || this._getDefaultFreeSub(planConfig),
         participantLimit: subscription?.participantLimit || planConfig.participants,
-        commission: subscription?.commission ?? planConfig.commission,
-        commissionPercent: subscription?.commissionPercent ?? planConfig.commissionPercent,
       }, 'Subscription fetched successfully');
     } catch (error) {
       logger.error('Get host subscription error', { hostId: req.user._id, error: error.message });
@@ -60,8 +58,6 @@ class SubscriptionController {
         plan,
         status: subscription?.status || 'inactive',
         participantLimit: subscription?.participantLimit || planConfig.participants,
-        commission: subscription?.commission ?? planConfig.commission,
-        commissionPercent: subscription?.commissionPercent ?? planConfig.commissionPercent,
         expiryDate: subscription?.expiryDate || null,
         subscription: subscription || null,
       }, 'Subscription status fetched');
@@ -166,8 +162,6 @@ class SubscriptionController {
       status: 'active',
       monthlyAmount: 0,
       participantLimit: planConfig.participants,
-      commission: planConfig.commission,
-      commissionPercent: planConfig.commissionPercent,
       features: planConfig.features,
     };
   }

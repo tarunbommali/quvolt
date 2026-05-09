@@ -9,16 +9,6 @@ export const useCreateTemplateForm = () => {
     const [accessType, setAccessType] = useState('public');
     const [allowedEmailsText, setAllowedEmailsText] = useState('');
     const [quizMode, setQuizMode] = useState('auto');
-    const [isPaid, setIsPaid] = useState(false);
-    const [quizPrice, setQuizPrice] = useState('');
-
-    const handlePaidToggle = useCallback((entitlements, showToast) => {
-        if (!entitlements.canCreatePaidQuiz) {
-            showToast('Paid template creation is available on Creator and Teams plans. Upgrade from Billing to continue.');
-            return;
-        }
-        setIsPaid((prev) => !prev);
-    }, []);
 
     const resetForm = useCallback(() => {
         setNewQuizTitle('');
@@ -26,8 +16,6 @@ export const useCreateTemplateForm = () => {
         setAccessType('public');
         setAllowedEmailsText('');
         setQuizMode('auto');
-        setIsPaid(false);
-        setQuizPrice('');
     }, []);
 
     return {
@@ -41,12 +29,7 @@ export const useCreateTemplateForm = () => {
         setAllowedEmailsText,
         quizMode,
         setQuizMode,
-        isPaid,
-        setIsPaid,
-        quizPrice,
-        setQuizPrice,
-        handlePaidToggle,
-        resetForm
+        resetForm,
     };
 };
 

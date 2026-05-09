@@ -61,7 +61,7 @@ const Navbar = () => {
     const location = useLocation();
 
     const primaryCta = isHost
-        ? { label: 'Open Studio', to: '/studio' }
+        ? { label: 'Open Workspace', to: '/workspace' }
         : isParticipant
             ? { label: 'Join Session', to: '/join' }
             : { label: 'Get Started', to: '/register' };
@@ -76,7 +76,7 @@ const Navbar = () => {
 
     const navItems = isHost
         ? [
-            { label: 'Studio', to: '/studio' },
+            { label: 'Workspace', to: '/workspace' },
             { label: 'History', to: '/history' },
             { label: "Billing", to: '/billing' }
         ]
@@ -93,7 +93,7 @@ const Navbar = () => {
     // /profile and /profile/edit are registered for all roles in AppRoutes.
     const accountItems = isHost ? [
         { label: 'Profile', to: '/profile' },
-        { label: 'Studio Settings', to: '/studio/settings' },
+        { label: 'Workspace Settings', to: '/workspace/settings' },
         ...(plan === 'FREE' ? [{ label: 'Upgrade', to: '/upgrade' }] : [{ label: 'Billing', to: '/billing' }]),
     ] : [
         { label: 'Profile', to: '/profile' },
@@ -185,7 +185,7 @@ const Navbar = () => {
 
                     <ThemeToggle className={navbar.iconButton} />
 
-                    {/* Removed Open Studio button as requested */}
+                    {/* Removed Open Workspace button as requested */}
 
                     {/* Logged out: Log in link */}
                     {!user ? (

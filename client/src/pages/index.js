@@ -6,7 +6,7 @@ export { default as QuizResultsPage } from './participant/quiz/QuizResultsPage';
 export { default as SessionHistoryDetailPage } from './host/history/SessionHistoryDetailPage';
 export { default as BillingOverviewPage } from './host/billing/BillingOverviewPage';
 export { default as UserProfilePage } from './public/profile/UserProfilePage';
-export { default as StudioDashboardPage } from './host/studio/Studio';
+export { default as WorkspaceDashboardPage } from './host/workspace/Workspace';
 export { default as QuizEditorPage } from './host/template/QuizTemplateEditor';
 export { default as QuizLaunchPage } from './host/launchQuiz/LaunchQuiz';
 export { default as QuizLobbyPage } from './host/inviteRoom/InviteRoom';

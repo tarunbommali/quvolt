@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion as Motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Target, Clock, Zap, AlertTriangle, CheckCircle2, TrendingUp, XCircle, BrainCircuit } from 'lucide-react';
-import useAuthStore from '../../auth/store/useAuthStore';
-import { api } from '../../../utils/api';
-import SubHeader from '../../../components/layout/SubHeader';
+import { useAuthStore } from '../../../stores/useAuthStore';
+import apiClient from '../../../services/apiClient';
+import BreadCrumbs from '../../../components/layout/BreadCrumbs';
 
 import { layoutStyles } from '../../../styles/layoutStyles';
 import { textStyles, panelStyles, dividerStyles, components, layout, cx } from '../../../styles/index';
@@ -30,7 +30,7 @@ const ParticipantAnalyticsPage = () => {
         const fetchParticipantData = async () => {
             try {
                 setLoading(true);
-                const res = await api.get(`/analytics/${sessionId}/participant/${userId}`, {
+                const res = await apiClient.get(`/analytics/${sessionId}/participant/${userId}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 setData(res.data.data);
@@ -83,9 +83,7 @@ const ParticipantAnalyticsPage = () => {
 
     return (
         <div className={cx(layout.page, "pb-24")}>
-            <SubHeader
-                title={user.name}
-                subtitle={`Performance Drilldown for session ${sessionId}`}
+            <BreadCrumbs
                 breadcrumbs={[
                     { label: 'HISTORY', href: '/history' },
                     { label: 'Session Details', href: `/analytics/${sessionId}` },

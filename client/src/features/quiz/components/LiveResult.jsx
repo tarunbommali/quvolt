@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Trophy, BarChart2, Users, CheckCircle2, XCircle, Loader2, ArrowRight, Layout, Activity } from 'lucide-react';
-import { motion as Motion } from 'framer-motion';
+import { motion as Motion, AnimatePresence } from 'framer-motion';
 import api from '../services/quiz.service';
 import { typography, layout, buttonStyles, cards, cx } from '../../../styles/index';
 
@@ -239,7 +239,7 @@ const LiveResult = ({ activeQuiz, leaderboard, navigate, sessionCode }) => {
             {/* Persistent CTA */}
             <div className="flex justify-center pt-10">
                 <button
-                    onClick={() => navigate('/studio')}
+                    onClick={() => navigate('/workspace')}
                     className={cx(buttonStyles.base, buttonStyles.primary, buttonStyles.sizeLg, "!rounded-2xl px-16 h-18 group")}
                 >
                     Return to Control Center

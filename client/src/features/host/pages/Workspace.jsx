@@ -4,21 +4,21 @@ import { motion as Motion, AnimatePresence } from 'framer-motion';
 import Toast from '../../../components/common/Toast';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog';
 import TemplateList from '../components/TemplateList';
-import CreateTemplatePanel from '../components/CreateTemplatePanel';
-import StudioDashboardToolbar from '../components/StudioDashboardToolbar';
+import CreateQuizModal from '../components/CreateQuizModal';
+import WorkspaceDashboardToolbar from '../components/WorkspaceDashboardToolbar';
 import LoadingScreen from '../../../components/common/LoadingScreen';
-import SubHeader from '../../../components/layout/SubHeader';
+import BreadCrumbs from '../../../components/layout/BreadCrumbs';
 import Pagination from '../../../components/common/ui/Pagination';
 
 import { useAuthStore } from '../../../stores/useAuthStore';
 import UpgradeBanner from '../../../components/common/ui/UpgradeBanner';
-import useStudioDashboardController from '../hooks/useStudioDashboardController';
+import useWorkspaceDashboardController from '../hooks/useWorkspaceDashboardController';
 import { Plus } from 'lucide-react';
 import { layout, buttonStyles, cx } from '../../../styles/index';
 
-const Studio = () => {
+const Workspace = () => {
     const user = useAuthStore((s) => s.user);
-    const dashboard = useStudioDashboardController();
+    const dashboard = useWorkspaceDashboardController();
     const navigate = useNavigate();
     const {
         templates,
@@ -48,6 +48,7 @@ const Studio = () => {
         onGoLive,
         onEditTemplate,
         handleToggleCreate,
+        handleToggleMasteryMode,
         effectiveViewMode,
         handleViewModeChange,
         sortMode,
@@ -57,6 +58,7 @@ const Studio = () => {
         searchQuery,
         setSearchQuery,
         subscriptionEntitlements,
+        itemCount,
         templateCount,
         quizType,
         setQuizType,
@@ -99,23 +101,19 @@ const Studio = () => {
             <div className={cx(layout.page, 'min-h-[100vh] flex flex-col')}>
 
                 {/* ── Page Header ─────────────────────────────────────────── */}
-                <SubHeader
-                    title={currentSubject ? currentSubject.title : 'Template Library'}
-                    subtitle={currentSubject
-                        ? `Managing ${templates.length} items in this folder.`
-                        : 'Build, manage, and launch interactive quiz templates.'}
+                <BreadCrumbs
                     breadcrumbs={breadcrumbs.length > 0 ? [
-                        { label: 'Studio', href: '/studio' },
-                        ...breadcrumbs.slice(0, -1).map(c => ({
-                            label: c.label,
-                            href: `/studio/folder/${c.id}`,
+                        { label: 'Workspace', href: '/workspace' },
+                        ...breadcrumbs.slice(0, -1).map((crumb, idx) => ({
+                            label: crumb.label,
+                            href: `/workspace/collection/${crumb.id}`,
                             state: {
-                                subject: { _id: c.id, title: c.label },
-                                breadcrumbs: breadcrumbs.slice(0, breadcrumbs.findIndex(x => x.id === c.id) + 1)
+                                subject: { _id: crumb.id, title: crumb.label },
+                                breadcrumbs: breadcrumbs.slice(0, idx + 1)
                             }
                         })),
                         { label: breadcrumbs[breadcrumbs.length - 1].label }
-                    ] : [{ label: 'Studio' }]}
+                    ] : [{ label: 'Workspace' }]}
                     actions={(
                         <Motion.button
                             whileHover={{ scale: 1.02 }}
@@ -124,7 +122,7 @@ const Studio = () => {
                             className={cx(buttonStyles.base, buttonStyles.primary, buttonStyles.sizeMd)}
                         >
                             <Plus size={16} />
-                            New {currentSubject ? 'Item' : 'Template'}
+                            New {currentSubject ? 'Item' : 'Quiz'}
                         </Motion.button>
                     )}
                 />
@@ -135,7 +133,7 @@ const Studio = () => {
                 )}
 
                 {/* ── Control / Toolbar Bar ────────────────────────────────── */}
-                <StudioDashboardToolbar
+                <WorkspaceDashboardToolbar
                     showCreate={showCreate}
                     onToggleCreate={handleToggleCreate}
                     viewMode={effectiveViewMode}
@@ -147,34 +145,27 @@ const Studio = () => {
                     onFilterModeChange={setFilterMode}
                     searchQuery={searchQuery}
                     onSearchQueryChange={setSearchQuery}
+                    folderId={dashboard.folderId}
+                    onOpenAnalytics={() => navigate(`/workspace/collection/${dashboard.folderId}/analytics`, { state: { folderTitle: currentSubject?.title } })}
+                    isMasteryMode={currentSubject?.leaderboard?.groupBy === 'unit'}
+                    onToggleMastery={handleToggleMasteryMode}
                 />
 
-                {/* ── Create Panel ─────────────────────────────────────────── */}
-                <AnimatePresence mode="wait">
-                    {showCreate && (
-                        <CreateTemplatePanel
-                            showCreate={showCreate}
-                            currentSubject={currentSubject}
-                            quizType={quizType}
-                            onQuizTypeChange={setQuizType}
-                            accessType={accessType}
-                            onAccessTypeChange={setAccessType}
-                            allowedEmailsText={allowedEmailsText}
-                            onAllowedEmailsTextChange={setAllowedEmailsText}
-                            quizMode={quizMode}
-                            onQuizModeChange={setQuizMode}
-                            newQuizTitle={newQuizTitle}
-                            onTitleChange={setNewQuizTitle}
-                            onCreate={createTemplate}
-                            isPaid={isPaid}
-                            onPaidToggle={handlePaidToggle}
-                            quizPrice={quizPrice}
-                            onPriceChange={setQuizPrice}
-                            subscriptionEntitlements={subscriptionEntitlements}
-                            templateCount={templateCount}
-                        />
-                    )}
-                </AnimatePresence>
+                {/* ── Create Quiz Modal ────────────────────────────────────── */}
+                <CreateQuizModal
+                    open={showCreate}
+                    onClose={handleToggleCreate}
+                    quizType={quizType}
+                    onQuizTypeChange={setQuizType}
+                    accessType={accessType}
+                    onAccessTypeChange={setAccessType}
+                    quizMode={quizMode}
+                    onQuizModeChange={setQuizMode}
+                    newQuizTitle={newQuizTitle}
+                    onTitleChange={setNewQuizTitle}
+                    onCreate={createTemplate}
+                    subscriptionEntitlements={subscriptionEntitlements}
+                />
 
                 {/* ── Template Grid ─────────────────────────────────────────── */}
                 <section className={cx(layout.section, 'flex-grow flex flex-col')}>
@@ -199,10 +190,12 @@ const Studio = () => {
                         onPrefetch={prefetchTemplateNavigation}
                         onSessionSettings={(t) => navigate(`/quiz/templates/${t._id}/settings`)}
                         onViewHistory={(t) => navigate(`/quiz/templates/${t._id}/sessions`)}
+                        onViewAnalytics={(t) => navigate(`/workspace/collection/${t._id}/analytics`, { state: { folderTitle: t.title } })}
                         viewMode={effectiveViewMode}
+                        parentGroupBy={currentSubject?.leaderboard?.groupBy || 'default'}
                     />
 
-                    {pagination && (
+                    {pagination && pagination.total > (limit || 10) && (
                         <div className="mt-auto pt-8">
                             <Pagination 
                                 pagination={pagination}
@@ -217,4 +210,4 @@ const Studio = () => {
     );
 };
 
-export default Studio;
+export default Workspace;

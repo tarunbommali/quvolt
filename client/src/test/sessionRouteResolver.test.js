@@ -2,8 +2,8 @@ import { resolveSessionRoute } from '../utils/sessionRouteResolver';
 
 describe('resolveSessionRoute', () => {
     it('returns /studio for null or undefined quiz', () => {
-        expect(resolveSessionRoute(null)).toBe('/studio');
-        expect(resolveSessionRoute(undefined)).toBe('/studio');
+        expect(resolveSessionRoute(null)).toBe('/workspace');
+        expect(resolveSessionRoute(undefined)).toBe('/workspace');
     });
 
     it('returns /live/:id for live status', () => {
@@ -33,7 +33,7 @@ describe('resolveSessionRoute', () => {
     });
 
     it('returns /studio for aborted status', () => {
-        expect(resolveSessionRoute({ _id: 'abc', status: 'aborted' })).toBe('/studio');
+        expect(resolveSessionRoute({ _id: 'abc', status: 'aborted' })).toBe('/workspace');
     });
 
     it('returns /launch/quiz/:id for draft or unknown statuses', () => {

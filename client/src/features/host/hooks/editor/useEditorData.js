@@ -22,12 +22,12 @@ export const useEditorData = (routeQuizId) => {
                     const quizzes = await getQuizzesForParent('none', { force: true });
                     const found = quizzes.find((quiz) => String(quiz._id) === String(routeQuizId));
                     if (!found) {
-                        navigate('/studio');
+                        navigate('/workspace');
                         return;
                     }
                     setActiveQuiz(found);
                 } catch {
-                    navigate('/studio');
+                    navigate('/workspace');
                 } finally {
                     setLoading(false);
                 }

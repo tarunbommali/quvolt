@@ -1,8 +1,8 @@
 import { motion as Motion } from 'framer-motion';
-import SubHeader from '../../../components/layout/SubHeader';
+import BreadCrumbs from '../../../components/layout/BreadCrumbs';
 import { useSubscriptionTheme } from '../../../hooks/useSubscriptionTheme';
 
-import { User, ShieldCheck, Mail, Sparkles } from 'lucide-react';
+import { User, ShieldCheck, Mail, Sparkles, CheckCircle } from 'lucide-react';
 import { cx, layout, typography, cards } from '../../../styles/index';
 
 const ProfileTemplate = ({
@@ -15,6 +15,7 @@ const ProfileTemplate = ({
     email,
     plan,
     role,
+    verified,
     children,
 }) => {
     const { theme, isPro } = useSubscriptionTheme();
@@ -23,10 +24,8 @@ const ProfileTemplate = ({
 
     return (
         <div className={cx(layout.page, 'min-h-screen pb-16')}>
-            {/* ── SubHeader with breadcrumbs ──────────────────────────── */}
-            <SubHeader
-                title={isEdit ? 'Edit Profile' : 'Profile'}
-                subtitle={isEdit ? 'Update your account details.' : 'Manage your identity and account preferences.'}
+            {/* ── BreadCrumbs ────────────────────────────────────────────── */}
+            <BreadCrumbs
                 breadcrumbs={breadcrumbs ?? [
                     { label: 'Dashboard', href: '/' },
                     ...(isEdit
@@ -63,9 +62,14 @@ const ProfileTemplate = ({
                                     </div>
                                 )}
                             </div>
-                            {isPro && (
+                            {isPro && !verified && (
                                 <div className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-amber-400 border-2 border-white dark:border-[var(--qb-surface)] flex items-center justify-center shadow">
                                     <Sparkles size={12} className="text-white" fill="currentColor" />
+                                </div>
+                            )}
+                            {verified && (
+                                <div className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-blue-500 border-2 border-white dark:border-[var(--qb-surface)] flex items-center justify-center shadow" title="Verified Creator">
+                                    <CheckCircle size={16} className="text-white" strokeWidth={3} />
                                 </div>
                             )}
                         </div>

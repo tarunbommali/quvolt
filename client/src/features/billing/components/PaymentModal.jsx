@@ -113,7 +113,7 @@ const PaymentModal = ({
                                         onClick={onClose}
                                         className={`${components.button.base} bg-emerald-500 hover:bg-emerald-600 text-white !rounded-2xl w-full h-16 font-black uppercase tracking-widest text-sm shadow-xl shadow-emerald-500/20`}
                                     >
-                                        Access Studio
+                                        Access Workspace
                                     </Motion.button>
                                 </div>
                             )}

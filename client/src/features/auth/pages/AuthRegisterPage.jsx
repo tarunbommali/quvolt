@@ -39,7 +39,7 @@ const AuthRegisterPage = () => {
       const data = await registerService(name, email, password, role);
       setAuthData(data);
 
-      const targetRoute = ROLE_ROUTES[role] || (role === 'host' ? '/studio' : '/join');
+      const targetRoute = ROLE_ROUTES[role] || (role === 'host' ? '/workspace' : '/join');
       navigate(targetRoute);
     } catch (err) {
       const msg = err?.response?.data?.message || 'Registration failed. Please try again.';

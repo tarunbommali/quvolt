@@ -7,6 +7,7 @@ import {
 } from '../services/host.service';
 import { useQuizStore } from '../../../stores/useQuizStore';
 import { isTransientApiError, getNextCloneTitle, parseAllowedEmails } from '../utils/quizHelpers';
+import { buildOptimisticQuiz } from '../models/quizInitTemplate';
 
 /**
  * Domain hook for template CRUD operations and optimistic state management.
@@ -56,7 +57,7 @@ export const useTemplateActions = ({
     }, [editingTitle, templates, currentSubject, refetch, showToast, setEditingQuizId, setEditingTitle]);
 
     const createTemplateAction = useCallback(async (formState, limits) => {
-        const { newQuizTitle, quizType, quizMode, accessType, allowedEmailsText, isPaid, quizPrice } = formState;
+        const { newQuizTitle, quizType, quizMode, accessType, allowedEmailsText } = formState;
         const { templateCount, subscriptionEntitlements } = limits;
 
         if (!newQuizTitle.trim()) {
@@ -76,30 +77,15 @@ export const useTemplateActions = ({
             return;
         }
 
-        if (quizType === 'template' && isPaid && !subscriptionEntitlements.canCreatePaidQuiz) {
-            showToast('Paid template creation is available on Creator and Teams plans. Upgrade from Billing to continue.');
-            return;
-        }
-
         const title = newQuizTitle.trim();
-        const tempId = `temp-${Date.now()}`;
-        const now = new Date().toISOString();
-        const optimisticTemplate = {
-            _id: tempId,
+        const optimisticTemplate = buildOptimisticQuiz({
             title,
-            type: quizType, // Now supported natively by backend
-            mode: (quizType === 'template' || quizType === 'quiz') ? quizMode : 'auto',
+            quizType,
+            quizMode,
             accessType,
-            allowedEmails: accessType === 'private' ? parseAllowedEmails(allowedEmailsText) : [],
-            status: 'draft',
-            createdAt: now,
-            updatedAt: now,
-            questions: [],
-            sessionCount: 0,
-            subDirectoryCount: 0,
-            isPaid,
-            price: isPaid ? Number(quizPrice) || 0 : 0,
-        };
+            allowedEmailsText,
+        });
+        const tempId = optimisticTemplate._id;
 
         const previousTemplates = templates;
         const optimisticTemplates = [optimisticTemplate, ...(templates || [])];
@@ -113,8 +99,6 @@ export const useTemplateActions = ({
                 title,
                 quizType,
                 currentSubject ? currentSubject._id : null,
-                isPaid,
-                isPaid ? Number(quizPrice) || 0 : 0,
                 {
                     mode: quizType === 'quiz' ? quizMode : 'auto',
                     accessType,
@@ -154,8 +138,6 @@ export const useTemplateActions = ({
                 nextTitle,
                 source.type,
                 currentSubject ? currentSubject._id : (source.parentId || null),
-                Boolean(source.isPaid),
-                source.isPaid ? Number(source.price || 0) : 0,
                 {
                     mode: source.mode === 'teaching' ? 'tutor' : (source.mode || 'auto'),
                     accessType: source.accessType || 'public',

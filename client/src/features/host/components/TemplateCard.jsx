@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion as Motion, AnimatePresence } from 'framer-motion';
-import { EllipsisVertical, Play, Settings2, History, Copy, Trash2, Edit3, FolderOpen } from 'lucide-react';
+import { EllipsisVertical, Play, Settings2, History, Copy, Trash2, Edit3, FolderOpen, Trophy } from 'lucide-react';
 
 import { cx, buttonStyles, typography } from '../../../styles/index';
 
@@ -29,7 +29,27 @@ const toRelativeTime = (value) => {
     return toDate(value);
 };
 
-const TemplateCard = ({ template, view = 'grid', cloning, onEdit, onDelete, onClone, onGoLive, onOpenSubject, onPrefetch, onSessionSettings, onViewHistory }) => {
+const TemplateCard = ({ 
+    template, 
+    view = 'grid', 
+    cloning, 
+    onEdit, 
+    onDelete, 
+    onClone, 
+    onGoLive, 
+    onOpenSubject, 
+    onPrefetch, 
+    onSessionSettings, 
+    onViewHistory, 
+    onViewAnalytics, 
+    isEditing,
+    editingTitle,
+    onStartEdit,
+    onRename,
+    onCancelEdit,
+    onEditingTitleChange,
+    parentGroupBy = 'default' 
+}) => {
     const [showMenu, setShowMenu] = useState(false);
     const menuRef = useRef(null);
     const isList = view === 'list';
@@ -52,7 +72,7 @@ const TemplateCard = ({ template, view = 'grid', cloning, onEdit, onDelete, onCl
     };
 
     const statusLabel = String(template.status || '').toLowerCase();
-    const isFolder = template.type === 'subject';
+    const isContainer = template.type !== 'quiz';
 
     return (
         <article
@@ -69,9 +89,37 @@ const TemplateCard = ({ template, view = 'grid', cloning, onEdit, onDelete, onCl
 
                 {/* Line 1: Title + Badge */}
                 <div className="flex items-center gap-2">
-                    <h3 className={cx(typography.cardTitle, "truncate text-[15px]")} title={template.title}>
-                        {template.title || 'Untitled Template'}
-                    </h3>
+                    {isEditing ? (
+                        <div className="flex-1 flex items-center gap-2">
+                            <input
+                                autoFocus
+                                type="text"
+                                value={editingTitle}
+                                onChange={(e) => onEditingTitleChange(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') onRename();
+                                    if (e.key === 'Escape') onCancelEdit();
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                className={cx(
+                                    "flex-1 bg-gray-50 dark:bg-white/5 border-b-2 border-indigo-500 px-1 py-0.5 outline-none font-bold text-[15px] theme-text-primary"
+                                )}
+                            />
+                            <button 
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onRename();
+                                }}
+                                className="text-[10px] font-bold text-indigo-500 uppercase tracking-tighter hover:text-indigo-600"
+                            >
+                                Save
+                            </button>
+                        </div>
+                    ) : (
+                        <h3 className={cx(typography.cardTitle, "truncate text-[15px]")} title={template.title}>
+                            {template.title || 'Untitled Quiz'}
+                        </h3>
+                    )}
 
                     <div className={cx(
                         typography.micro,
@@ -83,7 +131,7 @@ const TemplateCard = ({ template, view = 'grid', cloning, onEdit, onDelete, onCl
                         {template.accessType || 'PUBLIC'}
                     </div>
 
-                    {!isFolder && (
+                    {!isContainer && (
                         <div className={cx(
                             typography.micro,
                             "px-2 py-0.5 rounded-full whitespace-nowrap",
@@ -113,7 +161,7 @@ const TemplateCard = ({ template, view = 'grid', cloning, onEdit, onDelete, onCl
 
                 {/* Line 2: Metadata */}
                 <div className={cx(typography.metaLabel, "flex items-center gap-1.5 truncate")}>
-                    {isFolder ? (
+                    {isContainer ? (
                         <>
                             <span>{template.subDirectoryCount || 0} items</span>
                             <span>•</span>
@@ -131,12 +179,12 @@ const TemplateCard = ({ template, view = 'grid', cloning, onEdit, onDelete, onCl
                 </div>
             </div>
 
-            {/* RIGHT / BOTTOM SECTION: PLAY & MENU */}
+                {/* RIGHT / BOTTOM SECTION: PLAY & MENU */}
             <div className={cx(
                 "flex items-center gap-2 shrink-0",
                 isList ? "ml-4" : "mt-3 self-end"
             )}>
-                {isFolder ? (
+                {isContainer ? (
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
@@ -147,7 +195,7 @@ const TemplateCard = ({ template, view = 'grid', cloning, onEdit, onDelete, onCl
                             "!px-3 !py-1.5 !text-[13px] !rounded-lg flex items-center gap-1.5 font-medium shadow-sm border-slate-200 dark:border-slate-700 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200"
                         )}
                     >
-                        <FolderOpen size={14} /> Open
+                        <FolderOpen size={14} /> Open Collection
                     </button>
                 ) : (
                     <button
@@ -160,7 +208,7 @@ const TemplateCard = ({ template, view = 'grid', cloning, onEdit, onDelete, onCl
                             "!px-3 !py-1.5 !text-[13px] !rounded-lg flex items-center gap-1.5 font-medium shadow-sm"
                         )}
                     >
-                        <Play size={14} fill="currentColor" /> Play
+                        <Play size={14} fill="currentColor" /> Start Session
                     </button>
                 )}
 
@@ -187,11 +235,21 @@ const TemplateCard = ({ template, view = 'grid', cloning, onEdit, onDelete, onCl
                                     <Edit3 size={14} /> Edit
                                 </button>
 
+                                <button onClick={() => handleMenuAction(onStartEdit)} className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-[13px] font-medium theme-text-primary">
+                                    <Edit3 size={14} className="opacity-50" /> Rename
+                                </button>
+
                                 <button onClick={() => handleMenuAction(onClone)} disabled={cloning} className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-[13px] font-medium theme-text-primary disabled:opacity-50">
                                     <Copy size={14} /> {cloning ? "Duplicating..." : "Duplicate"}
                                 </button>
 
-                                {!isFolder && (
+                                {isContainer && parentGroupBy === 'unit' && (
+                                    <button onClick={() => handleMenuAction(onViewAnalytics)} className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/10 text-indigo-600 transition-colors text-[13px] font-medium">
+                                        <Trophy size={14} /> Scorecard
+                                    </button>
+                                )}
+
+                                {!isContainer && (
                                     <>
                                         <div className="h-px bg-slate-100 dark:bg-slate-800 mx-2 my-1" />
 

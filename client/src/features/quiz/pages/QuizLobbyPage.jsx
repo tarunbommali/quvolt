@@ -91,7 +91,7 @@ const QuizLobbyPage = () => {
                 if (!active) return;
                 console.error('[QuizLobbyPage] init error:', error);
                 showToast(`Invite room error: ${error?.message || 'Unknown'}`);
-                navigate('/studio');
+                navigate('/workspace');
             }
         };
 
@@ -160,7 +160,7 @@ const QuizLobbyPage = () => {
         } catch {
             // best-effort abort
         } finally {
-            navigate('/studio');
+            navigate('/workspace');
         }
     };
 

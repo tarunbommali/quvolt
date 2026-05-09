@@ -1,5 +1,5 @@
 export function resolveSessionRoute(quiz) {
-    if (!quiz) return '/studio';
+    if (!quiz) return '/workspace';
     const status = String(quiz.status || '').toLowerCase();
     switch (status) {
         case 'live':
@@ -15,7 +15,7 @@ export function resolveSessionRoute(quiz) {
         case 'completed':
             return `/quiz/templates/${quiz._id}/sessions`;
         case 'aborted':
-            return '/studio';
+            return '/workspace';
         default:
             return `/launch/quiz/${quiz._id}`;
     }

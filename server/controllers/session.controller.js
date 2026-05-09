@@ -121,42 +121,7 @@ const startQuizSession = async (req, res) => {
     }
 };
 
-const startLiveSession = async (req, res) => {
-    try {
-        const templateId = resolveTemplateIdParam(req.params);
-        const io = req.app.get('io');
 
-        const result = await quizService.startQuizSession({
-            io,
-            quizId: templateId,
-            user: req.user,
-        });
-
-        if (result.error) {
-            const statusCode = result.statusCode || (result.error === 'Quiz not found' ? 404 : 409);
-            return sendError(res, result.error, statusCode);
-        }
-
-        logger.audit('quiz.session.started_live', {
-            requestId: req.requestId,
-            userId: req.user?._id,
-            quizId: templateId,
-            sessionCode: result.roomCode,
-            sessionId: result.sessionId,
-        });
-
-        return sendSuccess(res, {
-            quizId: templateId,
-            templateId,
-            status: 'live',
-            sessionCode: result.roomCode,
-            activeSessionId: result.sessionId,
-        }, 'Session is live');
-    } catch (error) {
-        logger.error('[SessionController] startLiveSession', { message: error.message, stack: error.stack });
-        return sendError(res, error.message || 'Server Error', 500);
-    }
-};
 
 const abortSession = async (req, res) => {
     try {
@@ -194,35 +159,7 @@ const abortSession = async (req, res) => {
     }
 };
 
-const pauseSession = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { sessionCode } = req.body;
 
-        const result = await quizService.pauseQuizSession({ io: req.app.get('io'), quizId: id, sessionCode, user: req.user });
-        if (result.error) return sendError(res, result.error, result.error === 'Quiz not found' ? 404 : 400);
-
-        return sendSuccess(res, null, 'Quiz paused');
-    } catch (error) {
-        logger.error('[SessionController] pauseSession', { message: error.message, stack: error.stack });
-        return sendError(res, 'Server Error', 500);
-    }
-};
-
-const resumeSession = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { sessionCode } = req.body;
-
-        const result = await quizService.resumeQuizSession({ io: req.app.get('io'), quizId: id, sessionCode, user: req.user });
-        if (result.error) return sendError(res, result.error, result.error === 'Quiz not found' ? 404 : 400);
-
-        return sendSuccess(res, null, 'Quiz resumed');
-    } catch (error) {
-        logger.error('[SessionController] resumeSession', { message: error.message, stack: error.stack });
-        return sendError(res, 'Server Error', 500);
-    }
-};
 
 const nextQuestion = async (req, res) => {
     try {
@@ -254,21 +191,7 @@ const revealAnswer = async (req, res) => {
     }
 };
 
-const endQuizSession = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { sessionCode } = req.body;
-        const io = req.app.get('io');
 
-        const result = await quizService.endQuizSession({ io, quizId: id, sessionCode, user: req.user });
-        if (result.error) return sendError(res, result.error, result.statusCode || 409);
-
-        return sendSuccess(res, result, 'Quiz ended');
-    } catch (error) {
-        logger.error('[SessionController] endQuizSession', { message: error.message, stack: error.stack });
-        return sendError(res, 'Server Error', 500);
-    }
-};
 
 const getAnswerStats = async (req, res) => {
     try {
@@ -502,13 +425,9 @@ const getMyScheduledJoins = async (req, res) => {
 
 module.exports = {
     startQuizSession,
-    startLiveSession,
     abortSession,
-    pauseSession,
-    resumeSession,
     nextQuestion,
     revealAnswer,
-    endQuizSession,
     getAnswerStats,
     getSessionState,
     scheduleQuiz,

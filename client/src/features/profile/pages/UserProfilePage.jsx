@@ -11,11 +11,12 @@ import {
     getMyProfile,
 } from '../../auth/services/auth.service';
 
-import { PROFILE_FIELDS } from '../config/profileFields.config';
+
 import { getProfileType } from '../utils/getProfileType';
 
 import ProfileTemplate from '../components/ProfileTemplate';
 import ProfileDashboardTabs from '../components/ProfileDashboardTabs';
+import { FreeProfileForm, CreatorProfileForm, TeamsProfileForm } from '../components/forms/ProfileForms';
 import Toast from '../../../components/common/Toast';
 import useToast from '../../../hooks/useToast';
 import { typography, buttonStyles, cards, layout, cx } from '../../../styles/index';
@@ -25,6 +26,7 @@ const UserProfilePage = () => {
     const location  = useLocation();
 
     const user            = useAuthStore((s) => s.user);
+    const token           = useAuthStore((s) => s.token);
     const setAuthData     = useAuthStore((s) => s.setAuthData);
     const setProfileCached = useQuizStore((s) => s.setProfileCached);
 
@@ -35,7 +37,6 @@ const UserProfilePage = () => {
     const [saving,  setSaving]  = useState(false);
 
     const type   = getProfileType(user);
-    const fields = PROFILE_FIELDS[type];
 
     // ── Hydrate form ─────────────────────────────────────────────────────────
     useEffect(() => {
@@ -64,27 +65,11 @@ const UserProfilePage = () => {
         setForm((prev) => ({ ...prev, [key]: value }));
 
     const buildPayload = () => ({
-        name:         form.name,
+        name: form.name,
         profilePhoto: form.profilePhoto,
-        ...(type === 'FREE' || type === 'CREATOR'
-            ? {
-                participantProfile: {
-                    city:            form.city,
-                    bio:             form.bio,
-                    contentCategory: form.contentCategory,
-                    socialLinks:     form.socialLinks,
-                },
-            }
-            : {
-                hostProfile: {
-                    institutionName:    form.institutionName,
-                    institutionType:    form.institutionType,
-                    institutionWebsite: form.institutionWebsite,
-                    institutionAddress: form.institutionAddress,
-                    contactEmail:       form.contactEmail,
-                    contactPhone:       form.contactPhone,
-                },
-            }),
+        profile: form.profile,
+        ...(type === 'CREATOR' ? { creator: form.creator } : {}),
+        ...(type === 'TEAMS' ? { organization: form.organization } : {}),
     });
 
     const handleSubmit = async (e) => {
@@ -93,7 +78,7 @@ const UserProfilePage = () => {
         try {
             const payload = buildPayload();
             const data    = await updateProfile(payload);
-            setAuthData(data);
+            setAuthData({ user: data, token });
             if (setProfileCached) setProfileCached(data);
             showToast('Profile updated successfully', 'success');
             navigate('/profile');
@@ -116,6 +101,10 @@ const UserProfilePage = () => {
         </div>
     );
 
+    // Compute verified and avatar
+    const isVerified = type === 'CREATOR' ? user?.creator?.verified : type === 'TEAMS' ? user?.organization?.verified : false;
+    const avatar = (type === 'CREATOR' ? user?.creator?.branding?.logoUrl : type === 'TEAMS' ? user?.organization?.branding?.logoUrl : null) || user?.profilePhoto;
+
     // ── Page ──────────────────────────────────────────────────────────────────
     return (
         <ProfileTemplate
@@ -124,6 +113,8 @@ const UserProfilePage = () => {
             email={user?.email}
             role={user?.role}
             plan={user?.subscription?.plan || user?.plan}
+            avatarSrc={avatar}
+            verified={isVerified}
             actions={!isEditing && (
                 <button
                     onClick={() => navigate('/profile/edit')}
@@ -156,57 +147,9 @@ const UserProfilePage = () => {
                         </div>
 
                         <form onSubmit={handleSubmit} className={layout.section}>
-                            {/* Field grid */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
-                                {fields.map((f) => (
-                                    <div
-                                        key={f.key}
-                                        className={f.type === 'textarea' ? 'md:col-span-2' : ''}
-                                    >
-                                        {/* Label row */}
-                                        <div className={cx(layout.rowBetween, 'mb-1.5')}>
-                                            <label className={cx(typography.micro, 'flex items-center gap-1.5')}>
-                                                {f.label}
-                                                {f.required && (
-                                                    <span className="text-red-500">*</span>
-                                                )}
-                                            </label>
-                                            {f.highlight && (
-                                                <span className="text-xs font-medium text-[var(--qb-primary)] bg-[var(--qb-primary)]/10 px-2 py-0.5 rounded-full">
-                                                    Premium
-                                                </span>
-                                            )}
-                                        </div>
-
-                                        {/* Input / Textarea */}
-                                        {f.type === 'textarea' ? (
-                                            <textarea
-                                                value={form[f.key] || ''}
-                                                onChange={(e) => handleChange(f.key, e.target.value)}
-                                                rows={3}
-                                                required={f.required}
-                                                placeholder={`Enter ${f.label.toLowerCase()}…`}
-                                                className={cx(
-                                                    'w-full theme-surface border theme-border rounded-xl p-3 text-sm theme-text-primary focus:border-[var(--qb-primary)] outline-none transition-all resize-none placeholder:opacity-30',
-                                                    f.highlight && 'border-[var(--qb-primary)]/30'
-                                                )}
-                                            />
-                                        ) : (
-                                            <input
-                                                value={form[f.key] || ''}
-                                                onChange={(e) => handleChange(f.key, e.target.value)}
-                                                type={f.key === 'contactEmail' ? 'email' : 'text'}
-                                                required={f.required}
-                                                placeholder={`Enter ${f.label.toLowerCase()}…`}
-                                                className={cx(
-                                                    'w-full h-10 theme-surface border theme-border rounded-xl px-4 text-sm theme-text-primary focus:border-[var(--qb-primary)] outline-none transition-all placeholder:opacity-30',
-                                                    f.highlight && 'border-[var(--qb-primary)]/30'
-                                                )}
-                                            />
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
+                                {type === 'FREE' && <FreeProfileForm form={form} handleChange={handleChange} />}
+                                {type === 'CREATOR' && <CreatorProfileForm form={form} handleChange={handleChange} />}
+                                {type === 'TEAMS' && <TeamsProfileForm form={form} handleChange={handleChange} />}
 
                             {/* Form actions */}
                             <div className={cx(layout.rowEnd, 'pt-4 border-t theme-border gap-2')}>

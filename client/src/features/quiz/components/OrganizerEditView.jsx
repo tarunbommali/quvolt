@@ -295,6 +295,7 @@ const hostEditView = ({ editor }) => {
                             onQuestionTypeChange={handleQuestionTypeChange}
                             onCorrectOptionChange={handleCorrectOptionChange}
                             onDeleteCurrentSlide={() => handleDeleteQuestion(activeQuestion?.clientId)}
+                            onUpdateQuiz={(updates) => editor.setActiveQuiz(prev => ({ ...prev, ...updates }))}
                         />
                     )}
                 </div>
@@ -313,7 +314,7 @@ const hostEditView = ({ editor }) => {
                         title={activeQuiz.title}
                         isSaving={isSaving}
                         onOpenCommandPalette={() => setCommandPaletteOpen(true)}
-                        onBack={() => navigate('/studio')}
+                        onBack={() => navigate('/workspace')}
                         onOpenImport={() => setImportDialogOpen(true)}
                         onOpenAI={handleOpenAIDialog}
                         onOpenResults={() => navigate(`/quiz/templates/${activeQuiz._id}/sessions`, { state: { quiz: activeQuiz } })}
@@ -357,6 +358,7 @@ const hostEditView = ({ editor }) => {
                         onDeleteCurrentSlide={() => {
                             if (activeQuestion?.clientId) handleDeleteQuestion(activeQuestion.clientId);
                         }}
+                        onUpdateQuiz={(updates) => editor.setActiveQuiz(prev => ({ ...prev, ...updates }))}
                     />
                 )}
             />

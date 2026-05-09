@@ -37,19 +37,15 @@ export const useFolderSync = (folderId, showToast) => {
             }
 
             try {
-                let rootItems = await useQuizStore.getState().getQuizzesForParent('none');
-                let matched = rootItems.find((item) => item.type === 'subject' && String(item._id) === String(folderId));
-
-                if (!matched) {
-                    rootItems = await useQuizStore.getState().getQuizzesForParent('none', { force: true });
-                    matched = rootItems.find((item) => item.type === 'subject' && String(item._id) === String(folderId));
-                }
+                // Fetch the current item directly to get its path and metadata
+                const response = await useQuizStore.getState().getQuizById(folderId);
+                const matched = response;
 
                 if (!active) return;
 
                 if (!matched) {
                     showToast?.('Folder not found');
-                    navigate('/studio', { replace: true });
+                    navigate('/workspace', { replace: true });
                     return;
                 }
 
@@ -57,7 +53,7 @@ export const useFolderSync = (folderId, showToast) => {
             } catch {
                 if (!active) return;
                 showToast?.('Failed to load folder');
-                navigate('/studio', { replace: true });
+                navigate('/workspace', { replace: true });
             } finally {
                 if (active) setIsLoadingSubject(false);
             }

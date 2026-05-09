@@ -40,7 +40,7 @@ const CreateTemplatePanel = ({
                                         <Sparkles size={28} />
                                     </div>
                                     <div>
-                                        <h2 className={typography.h2}>Establish New Node</h2>
+                                        <h2 className={typography.h2}>Create New Content</h2>
                                         <p className={cx(typography.body, "theme-text-muted mt-1")}>Configure your session logic and deployment parameters.</p>
                                     </div>
                                 </div>
@@ -53,7 +53,7 @@ const CreateTemplatePanel = ({
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between px-1">
                                     <label className={typography.eyebrow}>
-                                        Template Identifier
+                                        Quiz Title
                                     </label>
                                     <span className={cx(typography.micro, "text-indigo-500/60")}>Required Field</span>
                                 </div>
@@ -80,7 +80,7 @@ const CreateTemplatePanel = ({
                                 {/* ── Structure Section ─────────────────────────── */}
                                 <div className="space-y-4">
                                     <label className={cx(typography.eyebrow, "px-1")}>
-                                        Node Structure
+                                        Content Type
                                     </label>
                                     <div className="grid grid-cols-1 gap-3">
                                         <button
@@ -100,8 +100,8 @@ const CreateTemplatePanel = ({
                                                 <Layout size={18} />
                                             </div>
                                             <div>
-                                                <p className={cx(typography.cardTitle, "text-sm mb-0.5")}>Single Blitz</p>
-                                                <p className="text-[10px] opacity-60 font-medium uppercase tracking-wider">Standalone Node</p>
+                                                <p className={cx(typography.cardTitle, "text-sm mb-0.5")}>Single Quiz</p>
+                                                <p className="text-[10px] opacity-60 font-medium uppercase tracking-wider">Individual Quiz</p>
                                             </div>
                                         </button>
 
@@ -122,8 +122,8 @@ const CreateTemplatePanel = ({
                                                 <Layers size={18} />
                                             </div>
                                             <div>
-                                                <p className={cx(typography.cardTitle, "text-sm mb-0.5")}>Multi Blitz</p>
-                                                <p className="text-[10px] opacity-60 font-medium uppercase tracking-wider">Folder Node</p>
+                                                <p className={cx(typography.cardTitle, "text-sm mb-0.5")}>Collection</p>
+                                                <p className="text-[10px] opacity-60 font-medium uppercase tracking-wider">Grouped Content</p>
                                             </div>
                                         </button>
                                     </div>
@@ -258,7 +258,7 @@ const CreateTemplatePanel = ({
                                     )}
                                 >
                                     <Zap size={18} fill="currentColor" />
-                                    <span>Deploy Template Node</span>
+                                    <span>Initialize Content</span>
                                 </button>
                             </div>
                         </div>

@@ -1,5 +1,7 @@
 import { Shuffle, Trash2, Zap } from 'lucide-react';
 import { buttonStyles, textStyles, components, cx } from '../../../styles/index';
+import FeatureGate from '../../../components/common/FeatureGate';
+import LanguageSettingsPanel from '../../../components/i18n/LanguageSettingsPanel';
 
 const ConfigPanel = ({
     mobile = false,
@@ -13,6 +15,7 @@ const ConfigPanel = ({
     onQuestionTypeChange,
     onCorrectOptionChange,
     onDeleteCurrentSlide,
+    onUpdateQuiz,
 }) => (
     <aside className={mobile ? 'space-y-4 rounded-2xl border theme-border theme-surface p-4 shadow-sm' : components.host.configAside}>
         <div className={components.host.configHeader}>
@@ -123,6 +126,10 @@ const ConfigPanel = ({
                     )} />
                 </span>
             </button>
+            
+            <FeatureGate feature="multiLanguage">
+                <LanguageSettingsPanel quiz={activeQuiz} updateQuiz={onUpdateQuiz} isSaving={false} />
+            </FeatureGate>
         </section>
 
         <div className={components.host.configFooter}>

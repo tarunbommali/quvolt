@@ -40,7 +40,7 @@ const ParticipantHistoryPage = lazy(() => import('../features/quiz/pages/QuizSes
 
 // Host
 const HostLayout = lazy(() => import('../layouts/HostLayout'));
-const Studio = lazy(() => import('../features/host/pages/Studio'));
+const Workspace = lazy(() => import('../features/host/pages/Workspace'));
 const LaunchQuiz = lazy(() => import('../features/quiz/pages/LaunchQuiz'));
 const QuizTemplateEditor = lazy(() => import('../features/quiz/pages/QuizTemplateEditor'));
 const HostLivePage = lazy(() => import('../features/quiz/pages/LiveSessionPage'));
@@ -51,6 +51,7 @@ const QuizSessionHistory = lazy(() => import('../features/host/pages/DetailedQui
 const InviteRoom = lazy(() => import('../features/host/pages/InviteRoom'));
 const SessionHistoryDetailPage = lazy(() => import('../features/host/pages/SessionHistoryDetailPage'));
 const TemplateConfigPage = lazy(() => import('../features/quiz/pages/TemplateConfigPage'));
+const FolderLeaderboardPage = lazy(() => import('../features/host/pages/FolderLeaderboardPage'));
 
 // Admin
 const AdminLayout = lazy(() => import('../layouts/AdminLayout'));
@@ -121,10 +122,13 @@ export default function AppRoutes() {
           <HostLayout />
         </RoleGuard>
       }>
-        <Route path="/o" element={<Navigate to="/studio" replace />} />
-        <Route path="/o/dashboard" element={<Studio />} />
-        <Route path="/studio" element={<Studio />} />
-        <Route path="/studio/folder/:folderId" element={<Studio />} />
+        <Route path="/o" element={<Navigate to="/workspace" replace />} />
+        <Route path="/o/dashboard" element={<Workspace />} />
+        <Route path="/workspace" element={<Workspace />} />
+        <Route path="/workspace/collection/:folderId" element={<Workspace />} />
+        <Route path="/workspace/collection/:folderId/analytics" element={<FolderLeaderboardPage />} />
+        <Route path="/workspace" element={<Navigate to="/workspace" replace />} />
+        <Route path="/studio/*" element={<Navigate to="/workspace" replace />} />
         <Route path="/quiz/templates/:quizId" element={<QuizTemplateEditor />} />
         <Route path="/launch/quiz/:id" element={<LaunchQuiz />} />
         <Route path="/quiz/templates/:id/launch" element={<LaunchQuiz />} />
@@ -135,10 +139,10 @@ export default function AppRoutes() {
         <Route path="/history/:sessionId" element={<SessionDetailPage />} />
         <Route path="/history/:sessionId/participant/:userId" element={<ParticipantAnalyticsPage />} />
         <Route path="/quiz/templates/:id/sessions" element={<QuizSessionHistory />} />
-        H        <Route path="/billing" element={<BillingOverviewPage />} />
+        <Route path="/billing" element={<BillingOverviewPage />} />
         <Route path="/subscription-success" element={<SubscriptionSuccessPage />} />
         {/* Template Config routes */}
-        <Route path="/studio/settings" element={<TemplateConfigPage />} />
+        <Route path="/workspace/settings" element={<TemplateConfigPage />} />
         <Route path="/quiz/templates/:id/settings" element={<TemplateConfigPage />} />
       </Route>
 

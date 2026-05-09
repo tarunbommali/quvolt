@@ -29,8 +29,14 @@ const TemplateList = ({
     onGoLive,
     onPrefetch,
     onSessionSettings,
-    onViewHistory,
-    viewMode
+    onViewAnalytics,
+    onStartEdit,
+    onRename,
+    onCancelEdit,
+    onEditingTitleChange,
+    editingTitle,
+    viewMode,
+    parentGroupBy = 'default'
 }) => {
     if (isLoading && (!templates || templates.length === 0)) {
         return (
@@ -76,6 +82,14 @@ const TemplateList = ({
                             onPrefetch={() => onPrefetch(t)}
                             onSessionSettings={() => onSessionSettings?.(t)}
                             onViewHistory={() => onViewHistory?.(t)}
+                            onViewAnalytics={() => onViewAnalytics?.(t)}
+                            isEditing={editingQuizId === t._id}
+                            editingTitle={editingTitle}
+                            onStartEdit={() => onStartEdit(t)}
+                            onRename={() => onRename(t._id)}
+                            onCancelEdit={onCancelEdit}
+                            onEditingTitleChange={onEditingTitleChange}
+                            parentGroupBy={parentGroupBy}
                         />
                     </Motion.div>
                 ))}

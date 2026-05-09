@@ -11,17 +11,17 @@ import useFolderSync from './useFolderSync';
 
 // UI Hooks
 import useCreateTemplateForm from './useCreateTemplateForm';
-import useStudioUI from './useStudioUI';
+import useWorkspaceUI from './useWorkspaceUI';
 
 // Utils
 import { getSubscriptionEntitlements } from '../../../utils/subscriptionEntitlements';
 import { prefetchhostEditRoute, prefetchhostLiveRoute } from '../../../utils/routePrefetch';
 
 /**
- * Main Orchestrator Hook for the Studio Dashboard.
+ * Main Orchestrator Hook for the Workspace Dashboard.
  * Composes domain and UI hooks into a single unified interface.
  */
-const useStudioDashboardController = () => {
+const useWorkspaceDashboardController = () => {
     const { folderId } = useParams();
     const navigate = useNavigate();
     const { toast, showToast, clearToast } = useToast();
@@ -35,15 +35,15 @@ const useStudioDashboardController = () => {
     const folder = useFolderSync(folderId, showToast);
 
     // 3. UI State Layer
-    const ui = useStudioUI();
+    const ui = useWorkspaceUI();
 
     // 4. Form State Layer
     const form = useCreateTemplateForm();
 
     // 5. Entitlements
     const subscriptionEntitlements = useMemo(() => getSubscriptionEntitlements(user), [user]);
-    const templateCount = useMemo(
-        () => (list.templates || []).filter((t) => t.type === 'template' || t.type === 'quiz').length,
+    const itemCount = useMemo(
+        () => (list.templates || []).length,
         [list.templates],
     );
 
@@ -67,10 +67,10 @@ const useStudioDashboardController = () => {
     const prefetchTemplateNavigation = useCallback((template) => {
         const parentId = folder.currentSubject ? folder.currentSubject._id : 'none';
         useQuizStore.getState().prefetchQuizForParent(parentId).catch(() => { });
-        if (template?.type === 'subject' && template?._id) {
+        if (template?.type !== 'quiz' && template?._id) {
             useQuizStore.getState().prefetchQuizForParent(template._id).catch(() => { });
         }
-        if (template?.type === 'template') {
+        if (template?.type === 'quiz' || template?.type === 'template') {
             prefetchhostEditRoute().catch(() => { });
             prefetchhostLiveRoute().catch(() => { });
         }
@@ -82,14 +82,14 @@ const useStudioDashboardController = () => {
         
         const newBreadcrumbs = [...folder.breadcrumbs, { label: subject.title, id: subject._id }];
         
-        navigate(`/studio/folder/${subject._id}`, {
+        navigate(`/workspace/collection/${subject._id}`, {
             state: { subject, breadcrumbs: newBreadcrumbs }
         });
     }, [prefetchTemplateNavigation, folder.breadcrumbs, navigate]);
 
     const onGoLive = useCallback((template) => {
         if (!template?._id) return;
-        if (template?.type === 'subject') {
+        if (template?.type !== 'quiz') {
             onOpenSubject(template);
             return;
         }
@@ -109,7 +109,8 @@ const useStudioDashboardController = () => {
         
         // Entitlements
         subscriptionEntitlements,
-        templateCount,
+        itemCount,
+        templateCount: itemCount,
         liveSessionCount: useMemo(
             () => (list.templates || []).filter((t) => ['live', 'waiting'].includes(String(t?.status || '').toLowerCase())).length,
             [list.templates],
@@ -122,14 +123,32 @@ const useStudioDashboardController = () => {
 
         // Actions
         handleRenameTemplate: actions.renameTemplate,
-        createTemplate: () => actions.createTemplate(form, { templateCount, subscriptionEntitlements }),
+        createTemplate: () => actions.createTemplate(form, { templateCount: itemCount, subscriptionEntitlements }),
         cloneTemplate: actions.cloneTemplate,
         handleDeleteTemplate: (id) => ui.showConfirm(
-            'All data for this project will be permanently wiped. This cannot be undone.', 
+            'All data for this content will be permanently wiped. This cannot be undone.', 
             () => actions.deleteTemplate(id)
         ),
-        handlePaidToggle: () => form.handlePaidToggle(subscriptionEntitlements, showToast),
         
+        handleToggleMasteryMode: async () => {
+            if (!folderId || !folder.currentSubject) return;
+            const isCurrentlyEnabled = folder.currentSubject.leaderboard?.groupBy === 'unit';
+            try {
+                const response = await axios.put(`/api/quiz/${folderId}`, {
+                    leaderboard: {
+                        ...folder.currentSubject.leaderboard,
+                        groupBy: isCurrentlyEnabled ? 'default' : 'unit'
+                    }
+                });
+                if (response.data.success) {
+                    folder.setCurrentSubject(response.data.data);
+                    showToast(`Modular Mode ${isCurrentlyEnabled ? 'disabled' : 'enabled'}`, 'success');
+                }
+            } catch (err) {
+                showToast('Failed to update collection settings', 'error');
+            }
+        },
+
         // Navigation Actions
         onOpenSubject,
         onGoLive,
@@ -142,4 +161,4 @@ const useStudioDashboardController = () => {
     };
 };
 
-export default useStudioDashboardController;
+export default useWorkspaceDashboardController;

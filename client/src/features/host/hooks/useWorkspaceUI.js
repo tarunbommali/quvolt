@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 /**
  * UI hook for managing dashboard visibility, view modes, and dialogs.
  */
-export const useStudioUI = () => {
+export const useWorkspaceUI = () => {
     const [showCreate, setShowCreate] = useState(false);
     const [viewMode, setViewMode] = useState('list');
     const [isMobileView, setIsMobileView] = useState(false);
@@ -70,4 +70,4 @@ export const useStudioUI = () => {
     };
 };
 
-export default useStudioUI;
+export default useWorkspaceUI;

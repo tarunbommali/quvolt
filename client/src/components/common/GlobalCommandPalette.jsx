@@ -40,10 +40,10 @@ const PALETTE_ITEMS = [
         keywords: ['room code', 'quiz'],
     },
     {
-        id: 'studio',
-        label: 'Open Studio',
+        id: 'Workspace',
+        label: 'Open Workspace',
         description: 'Manage templates and sessions',
-        to: '/studio',
+        to: '/workspace',
         roles: ['host', 'admin'],
         keywords: ['dashboard', 'host'],
     },

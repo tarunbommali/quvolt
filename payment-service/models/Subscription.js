@@ -31,11 +31,6 @@ const subscriptionSchema = new mongoose.Schema(
       default: 10000,
       min: 0
     },
-    commission: {
-      type: Number,
-      default: 0.25,
-      min: 0
-    },
     razorpaySubscriptionId: {
       type: String,
       sparse: true,
@@ -71,10 +66,6 @@ const subscriptionSchema = new mongoose.Schema(
     monthlyAmount: {
       type: Number,
       default: 0
-    },
-    commissionPercent: {
-      type: Number,
-      default: 25
     },
     paidCycles: {
       type: Number,

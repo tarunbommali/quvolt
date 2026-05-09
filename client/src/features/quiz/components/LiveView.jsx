@@ -1,7 +1,7 @@
 import { Zap, Pause, Play, ChevronRight, Timer, Users, Trophy, Activity, AlertCircle } from 'lucide-react';
 import { motion as Motion } from 'framer-motion';
 import AnswerDistributionCard from './AnswerDistributionCard';
-import SubHeader from '../../../components/layout/SubHeader';
+import BreadCrumbs from '../../../components/layout/BreadCrumbs';
 import { LivePulseBadge } from '../../../components/common/ui';
 
 import ErrorState from '../../../components/common/ErrorState';
@@ -20,11 +20,9 @@ const LiveView = ({ activeQuiz, sessionMode, joinCode, currentQuestion, timeLeft
 
     return (
         <div className={cx(layout.page, "relative min-h-screen pb-20 animate-in fade-in duration-500")}>
-            <SubHeader
-                title="Creator Control Center"
-                subtitle={`Real-time session orchestration for ${activeQuiz?.title}`}
+            <BreadCrumbs
                 breadcrumbs={[
-                    { label: 'Studio', href: '/studio' },
+                    { label: 'Workspace', href: '/workspace' },
                     { label: activeQuiz?.title || 'Quiz' },
                     { label: 'Live Console' },
                 ]}
@@ -34,9 +32,9 @@ const LiveView = ({ activeQuiz, sessionMode, joinCode, currentQuestion, timeLeft
                             <button
                                 onClick={onNext}
                                 disabled={isPaused}
-                                className={cx(buttonStyles.base, buttonStyles.primary, buttonStyles.sizeMd, "gap-2")}
+                                className={cx(buttonStyles.base, currentIndex === totalQuestions ? buttonStyles.danger : buttonStyles.primary, buttonStyles.sizeMd, "gap-2")}
                             >
-                                Next Slide <ChevronRight size={14} />
+                                {currentIndex === totalQuestions ? 'Submit & End Session' : 'Next Slide'} <ChevronRight size={14} />
                             </button>
                         )}
 

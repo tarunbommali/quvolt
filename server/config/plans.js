@@ -12,14 +12,12 @@ const PLANS = {
         maxQuestionsPerQuiz: 20,
         maxOptionsPerQuestion: 4,
         maxAIRequestsPerDay: 0,
-        commission: 0.25, 
         price: 0,
         features: [
             '200 Participants / Session',
             '1 Concurrent Session',
             '5 Quiz Templates',
             'Up to 20 Questions / Quiz',
-            '25% Platform Commission',
             'Quvolt Watermark'
         ]
     },
@@ -31,14 +29,12 @@ const PLANS = {
         maxQuestionsPerQuiz: 100,
         maxOptionsPerQuestion: 4,
         maxAIRequestsPerDay: 50,
-        commission: 0.10, 
         price: 499,
         features: [
             '5,000 Participants / Session',
             '3 Concurrent Sessions',
             '30 Quiz Templates',
             'Up to 100 Questions / Quiz',
-            '10% Platform Commission',
             'AI Quiz Generation',
             'Custom Branding',
             'No Watermark'
@@ -52,14 +48,12 @@ const PLANS = {
         maxQuestionsPerQuiz: 300,
         maxOptionsPerQuestion: 4,
         maxAIRequestsPerDay: 500,
-        commission: 0.05, 
         price: 999,
         features: [
             '100,000 Participants / Session',
             '10 Concurrent Sessions',
             'Unlimited Quiz Templates',
             'Up to 300 Questions / Quiz',
-            '5% Platform Commission',
             'White-labeling',
             'Multi-host Shared Libraries',
             'Priority Support'
@@ -77,8 +71,6 @@ const buildPlan = (planId, data) => ({
     maxQuestionsPerQuiz: data.maxQuestionsPerQuiz,
     maxOptionsPerQuestion: data.maxOptionsPerQuestion,
     maxAIRequestsPerDay: data.maxAIRequestsPerDay,
-    commission: data.commission,
-    commissionPercent: Number((data.commission * 100).toFixed(2)),
     price: data.price,
     monthlyAmount: data.price * 100, // in paise
     razorpayPlanId: process.env[`RAZORPAY_PLAN_${planId}_ID`] || `plan_${planId.toLowerCase()}`,
@@ -87,7 +79,6 @@ const buildPlan = (planId, data) => ({
         `${data.maxConcurrentSessions} Concurrent Session${data.maxConcurrentSessions > 1 ? 's' : ''}`,
         `${data.maxQuizzes > 500 ? 'Unlimited' : data.maxQuizzes} Quiz Templates`,
         `Up to ${data.maxQuestionsPerQuiz} Questions / Quiz`,
-        `${Number((data.commission * 100).toFixed(0))}% Platform Commission`,
     ],
 });
 
@@ -125,7 +116,6 @@ const SUBSCRIPTION_PLANS = Object.fromEntries(
 
 const getPlanConfig = (planId) => SUBSCRIPTION_PLANS[planId] || SUBSCRIPTION_PLANS.FREE;
 const getAllPlans = () => Object.values(SUBSCRIPTION_PLANS);
-const getCommissionForPlan = (planId) => getPlanConfig(planId).commissionPercent;
 
 module.exports = {
     PLANS,
@@ -133,5 +123,4 @@ module.exports = {
     getSubscriptionPlans,
     getPlanConfig,
     getAllPlans,
-    getCommissionForPlan,
 };

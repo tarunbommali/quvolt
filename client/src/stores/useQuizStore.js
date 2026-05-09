@@ -61,6 +61,7 @@ export const useQuizStore = create((set, get) => ({
     },
 
     // Cache Actions
+    getQuizById: (id, options) => useQuizCacheStore.getState().getQuizById(id, options),
     getQuizzesForParent: (p, o) => useQuizCacheStore.getState().getQuizzesForParent(p, o),
     setQuizzesForParent: (p, q) => useQuizCacheStore.getState().setQuizzesForParent(p, q),
     prefetchQuizForParent: (p) => useQuizCacheStore.getState().prefetchQuizForParent(p),

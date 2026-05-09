@@ -4,32 +4,21 @@ import { useAuthStore } from '../../../stores/useAuthStore';
 import {
     cancelSubscription,
     createSubscriptionOrder,
-    getHostPayoutSummary,
-    getMyHostAccount,
-    getPaymentHealth,
     getSubscriptionPlans,
     verifySubscriptionPayment,
-    createRazorpaySubAccount,
-    getRazorpayOnboardingLink,
-    checkRazorpayKycStatus,
 } from '../services/billing.service';
-import { getMyQuizzes } from '../../quiz/services/quiz.service';
 import useRazorpay from '../../../hooks/useRazorpay';
 import useToast from '../../../hooks/useToast';
 import Toast from '../../../components/common/Toast';
 import LoadingScreen from '../../../components/common/LoadingScreen';
-import BillingHeader from '../components/BillingHeader';
+import BreadCrumbs from '../../../components/layout/BreadCrumbs';
 import CurrentPlanCard from '../components/CurrentPlanCard';
-import PaymentOverviewCards from '../components/PaymentOverviewCards';
-import BillingSidebar from '../components/BillingSidebar';
 import PlanGrid from '../components/PlanGrid';
-import TransactionLedger from '../components/TransactionLedger';
 import PaymentModal from '../components/PaymentModal';
+import { layout, typography, cx } from '../../../styles/index';
+import { Sparkles } from 'lucide-react';
+import { getMyQuizzes } from '../../quiz/services/quiz.service';
 
-import { Layout, ShieldCheck, CreditCard, Wallet, Activity, ArrowRight, Sparkles, Receipt } from 'lucide-react';
-import { textStyles, components, layout, typography, cx } from '../../../styles/index';
-
-const INR_SYMBOL = '₹';
 const INITIAL_PAYMENT_MODAL = {
     isOpen: false,
     status: 'pending',
@@ -47,15 +36,12 @@ const BillingOverviewPage = () => {
     const [plans, setPlans] = useState([]);
     const [loadingPlans, setLoadingPlans] = useState(true);
     const [actionLoading, setActionLoading] = useState({});
-    const [usage, setUsage] = useState({ freeCreated: 0, paidCreated: 0 });
-    const [payoutSummary, setPayoutSummary] = useState(null);
-    const [hostAccount, setHostAccount] = useState(null);
-    const [paymentHealth, setPaymentHealth] = useState(null);
+    const [usage, setUsage] = useState({ quizCreated: 0 });
     const [paymentModal, setPaymentModal] = useState(INITIAL_PAYMENT_MODAL);
     const [pendingPayment, setPendingPayment] = useState(null);
 
     useEffect(() => {
-        const fetchPlansAndUsage = async () => {
+        const load = async () => {
             try {
                 const [planRes, quizRes] = await Promise.allSettled([
                     getSubscriptionPlans(),
@@ -67,115 +53,26 @@ const BillingOverviewPage = () => {
                 }
 
                 if (quizRes.status === 'fulfilled' && Array.isArray(quizRes.value)) {
-                    let freeCount = 0;
-                    let paidCount = 0;
-                    quizRes.value.forEach((quiz) => {
-                        if (quiz.isPaid) paidCount++;
-                        else freeCount++;
-                    });
-                    setUsage({ freeCreated: freeCount, paidCreated: paidCount });
+                    setUsage({ quizCreated: quizRes.value.length });
                 }
-
-                if (user?.role === 'host') {
-                    const [payoutRes, hostAccountRes, paymentHealthRes] = await Promise.allSettled([
-                        getHostPayoutSummary(),
-                        getMyHostAccount(),
-                        getPaymentHealth(),
-                    ]);
-
-                    setPayoutSummary(
-                        payoutRes.status === 'fulfilled' && payoutRes.value?.success
-                            ? payoutRes.value.data
-                            : { totals: {}, recent: [] },
-                    );
-                    setHostAccount(
-                        hostAccountRes.status === 'fulfilled' && hostAccountRes.value?.success
-                            ? hostAccountRes.value.data
-                            : null,
-                    );
-                    setPaymentHealth(
-                        paymentHealthRes.status === 'fulfilled' && paymentHealthRes.value
-                            ? paymentHealthRes.value
-                            : { status: 'unavailable' },
-                    );
-
-                    if (
-                        payoutRes.status === 'rejected' ||
-                        hostAccountRes.status === 'rejected' ||
-                        paymentHealthRes.status === 'rejected'
-                    ) {
-                        showToast('Some payment tracking data is temporarily unavailable.');
-                    }
-                }
-            } catch (error) {
-                console.error('Failed to fetch billing data', error);
+            } catch {
                 showToast('Failed to load billing details.');
             } finally {
                 setLoadingPlans(false);
             }
         };
-
-        const checkKyc = async () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('kyc')) {
-                try {
-                    const res = await checkRazorpayKycStatus();
-                    if (res.success && res.data) {
-                        setHostAccount((prev) => ({ ...prev, ...res.data }));
-                        if (res.data.accountStatus === 'verified') {
-                            showToast('KYC successfully verified!', 'success');
-                        } else {
-                            showToast('KYC status updated: ' + res.data.accountStatus);
-                        }
-                    }
-                } catch (error) {
-                    console.error('KYC check failed', error);
-                }
-                window.history.replaceState({}, document.title, window.location.pathname);
-            }
-        };
-
-        fetchPlansAndUsage().then(checkKyc);
-    }, [showToast, user?.role]);
+        load();
+    }, [showToast]);
 
     const closePaymentModal = () => {
         setPaymentModal((prev) => ({ ...prev, isOpen: false }));
         setPendingPayment(null);
     };
 
-    const handleActionKyc = async () => {
-        setHostAccount((prev) => ({ ...prev, isLoadingKyc: true }));
-        try {
-            if (!hostAccount || hostAccount.accountStatus === 'not_started' || hostAccount.accountStatus === 'pending_kyc') {
-                const res = await createRazorpaySubAccount({
-                    name: user.name,
-                    email: user.email,
-                    phone: user.participantProfile?.phone || user.hostProfile?.contactPhone || ''
-                });
-                if (res.success) {
-                    setHostAccount((prev) => ({ ...prev, ...res.data, isLoadingKyc: false }));
-                    showToast('Sub-account created. Generating KYC link...', 'success');
-                    const linkRes = await getRazorpayOnboardingLink();
-                    if (linkRes.success && linkRes.data?.url) {
-                        window.location.href = linkRes.data.url;
-                    }
-                }
-            } else if (hostAccount.accountStatus === 'pending') {
-                const res = await getRazorpayOnboardingLink();
-                if (res.success && res.data?.url) {
-                    window.location.href = res.data.url;
-                }
-            }
-        } catch (error) {
-            showToast(error.response?.data?.error?.message || 'Failed to process KYC action');
-            setHostAccount((prev) => ({ ...prev, isLoadingKyc: false }));
-        }
-    };
-
     const handleUpgrade = async (planId) => {
         setActionLoading({ [planId]: true });
         try {
-            const plan = plans.find((entry) => entry.id === planId);
+            const plan = plans.find((p) => p.id === planId);
             if (!plan) throw new Error('Plan not found');
 
             setPaymentModal({
@@ -190,11 +87,7 @@ const BillingOverviewPage = () => {
 
             const isLoaded = await loadRazorpayScript();
             if (!isLoaded) {
-                setPaymentModal((prev) => ({
-                    ...prev,
-                    status: 'error',
-                    error: { message: 'Failed to load Razorpay SDK.' },
-                }));
+                setPaymentModal((prev) => ({ ...prev, status: 'error', error: { message: 'Failed to load payment SDK.' } }));
                 return;
             }
 
@@ -232,7 +125,7 @@ const BillingOverviewPage = () => {
                             await fetchSubscription();
                             window.setTimeout(() => closePaymentModal(), 2000);
                         }
-                    } catch (error) {
+                    } catch {
                         setPaymentModal((prev) => ({ ...prev, status: 'error', error: { message: 'Verification failed' } }));
                     } finally {
                         setActionLoading({});
@@ -240,7 +133,7 @@ const BillingOverviewPage = () => {
                 },
                 prefill: { name: user?.name, email: user?.email },
                 theme: { color: '#4f46e5' },
-                modal: { ondismiss: () => setActionLoading({}) }
+                modal: { ondismiss: () => setActionLoading({}) },
             };
 
             const razorpay = new window.Razorpay(options);
@@ -259,7 +152,7 @@ const BillingOverviewPage = () => {
                 showToast('Subscription cancelled.', 'success');
                 await fetchSubscription();
             }
-        } catch (error) {
+        } catch {
             showToast('Failed to cancel subscription');
         } finally {
             setActionLoading({});
@@ -267,43 +160,13 @@ const BillingOverviewPage = () => {
     };
 
     const currentPlanId = user?.subscription?.plan || 'FREE';
-    const subStatus = user?.subscription?.status || 'active';
+    const subStatus     = user?.subscription?.status || 'active';
 
     if (loadingPlans) return <LoadingScreen />;
 
-    const COMMISSION_MAP = { 'FREE': 25, 'CREATOR': 10, 'TEAMS': 5 };
     const currentPlanDetails = plans.find((p) => p.id === currentPlanId) || plans.find((p) => p.id === 'FREE');
-    const participantLimit = user?.subscription?.participantLimit || currentPlanDetails?.participants || 10000;
-
-    // Dynamic commission calculation
-    const commissionPercent = user?.subscription?.commissionPercent
-        || (user?.subscription?.commission ? user.subscription.commission * 100 : null)
-        || currentPlanDetails?.commissionPercent
-        || (currentPlanDetails?.commission ? currentPlanDetails.commission * 100 : null)
-        || COMMISSION_MAP[currentPlanId]
-        || 25;
-
-    const limitFree = currentPlanId === 'TEAMS' ? 'Unlimited' : (currentPlanId === 'CREATOR' ? 30 : 5);
-    const limitJoin = participantLimit >= 1000 ? `${(participantLimit / 1000).toLocaleString()}k` : participantLimit;
-    const totals = payoutSummary?.totals || { pending: 0, processing: 0, transferred: 0, blocked_kyc: 0 };
-
-    const payoutCards = [
-        { key: 'pending', label: 'Pending Payouts', value: totals.pending, tone: 'theme-text-muted' },
-        { key: 'processing', label: 'In Processing', value: totals.processing, tone: 'text-indigo-500' },
-        { key: 'transferred', label: 'Transferred', value: totals.transferred, tone: 'text-emerald-500' },
-        { key: 'blocked_kyc', label: 'Verification Block', value: totals.blocked_kyc, tone: 'text-red-500' },
-    ];
-
-    const ledgerData = payoutSummary?.recent?.map(tx => ({
-        transactionId: tx.transactionId || tx._id || `TX-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
-        type: tx.type || 'QUIZ_PAYMENT',
-        status: tx.payoutStatus === 'paid' ? 'COMPLETED' : (tx.payoutStatus === 'failed' ? 'FAILED' : (tx.payoutStatus === 'processing' ? 'PROCESSING' : 'PENDING')),
-        amount: tx.amount || 0,
-        commission: tx.platformFeeAmount || 0,
-        hostEarning: tx.hostAmount || 0,
-        quizTitle: tx.quizTitle || tx.quizId || 'Quiz Session',
-        createdAt: tx.createdAt || tx.updatedAt || new Date().toISOString(),
-    })) || [];
+    const participantLimit   = user?.subscription?.participantLimit || currentPlanDetails?.participants || 10000;
+    const limitFree          = currentPlanId === 'TEAMS' ? 'Unlimited' : (currentPlanId === 'CREATOR' ? 30 : 5);
 
     return (
         <Motion.div
@@ -325,62 +188,41 @@ const BillingOverviewPage = () => {
                 onClose={closePaymentModal}
             />
 
-            <BillingHeader />
+            <BreadCrumbs breadcrumbs={[{ label: 'Workspace' }, { label: 'Billing' }]} />
 
-            <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
-                {/* Main Content */}
-                <div className="col-span-1 xl:col-span-12">
-                    <section className={layout.section}>
-                        <div className="space-y-4 ">
-                            <CurrentPlanCard
-                                currentPlanId={currentPlanId}
-                                subStatus={subStatus}
-                                expiryDate={user?.subscription?.expiryDate}
-                                participantLimit={participantLimit}
-                                commissionPercent={commissionPercent}
-                                actionLoading={actionLoading}
-                                onCancel={handleCancel}
-                                usage={usage}
-                                limitFree={limitFree}
-                            />
-                        </div>
-                    </section>
-
-                    {user?.role === 'host' && (
-                        <section className={`${layout.section} mt-10`}>
-                            <div className={layout.rowStart}>
-                                <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-500 flex  items-center justify-center">
-                                    <Wallet size={14} />
-                                </div>
-                                <h2 className={typography.h2}>Finance Pipeline</h2>
-                            </div>
-                            <PaymentOverviewCards
-                                paymentHealth={paymentHealth}
-                                hostAccount={{ ...hostAccount, onActionKyc: handleActionKyc }}
-                                payoutCards={payoutCards}
-                                inrSymbol={INR_SYMBOL}
-                            />
-                        </section>
-                    )}
-
-
-                </div>
-
-
-
-            </div>
-
-            {user?.role === 'host' && (
-                <section className={cx(layout.section, "mt-12")}>
-                    <div className={layout.rowStart}>
-                        <div className="w-7 h-7 rounded-lg bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
-                            <Receipt size={14} />
-                        </div>
-                        <h2 className={typography.h2}>Transaction Ledger</h2>
-                    </div>
-                    <TransactionLedger transactions={ledgerData} inrSymbol={INR_SYMBOL} />
+            <div className="space-y-8">
+                {/* ── Current Plan ──────────────────────────────────────── */}
+                <section className={layout.section}>
+                    <CurrentPlanCard
+                        currentPlanId={currentPlanId}
+                        subStatus={subStatus}
+                        expiryDate={user?.subscription?.expiryDate}
+                        participantLimit={participantLimit}
+                        actionLoading={actionLoading}
+                        onCancel={handleCancel}
+                        usage={usage}
+                        limitFree={limitFree}
+                    />
                 </section>
-            )}
+
+                {/* ── Available Plans ───────────────────────────────────── */}
+                {plans.length > 0 && (
+                    <section className={layout.section}>
+                        <div className="flex items-center gap-2 mb-4">
+                            <div className="w-7 h-7 rounded-lg bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
+                                <Sparkles size={14} />
+                            </div>
+                            <h2 className={typography.h2}>Available Plans</h2>
+                        </div>
+                        <PlanGrid
+                            plans={plans}
+                            currentPlanId={currentPlanId}
+                            actionLoading={actionLoading}
+                            onUpgrade={handleUpgrade}
+                        />
+                    </section>
+                )}
+            </div>
         </Motion.div>
     );
 };

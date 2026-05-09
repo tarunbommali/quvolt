@@ -19,9 +19,9 @@ export const EmptyTemplateList = () => {
                 </div>
             </div>
             
-            <h3 className="mb-2 text-xl font-bold tracking-tight theme-text">Your Library is Empty</h3>
+            <h3 className="mb-2 text-xl font-bold tracking-tight theme-text">Your Content Library is Empty</h3>
             <p className="max-w-xs text-sm leading-relaxed theme-text-muted opacity-80">
-                Kickstart your collection by creating your first interactive quiz template or importing from JSON.
+                Kickstart your workspace by creating your first interactive quiz.
             </p>
         </Motion.div>
     );

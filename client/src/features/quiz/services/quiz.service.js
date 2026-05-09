@@ -12,6 +12,9 @@ const unwrapApiBody = (response) => {
 export const getMyQuizzes = (parentId) =>
     api.get('quiz/templates', { params: { parentId } }).then(r => r.data);
 
+export const getQuizById = (id) =>
+    api.get(`/quiz/${id}`).then(r => r.data);
+
 export const createQuiz = (title, type, parentId, isPaid, price, options = {}) =>
     api.post('/quiz/templates/new', {
         title,

@@ -12,7 +12,7 @@ const AuthRoute = ({ children }) => {
     if (loading) return <LoadingScreen />;
     if (user) {
         if (user.role === 'participant') return <Navigate to="/join" />;
-        if (user.role === 'host') return <Navigate to="/studio" />;
+        if (user.role === 'host') return <Navigate to="/workspace" />;
         if (user.role === 'admin') return <Navigate to="/dashboard" />;
         return <Navigate to="/" />;
     }

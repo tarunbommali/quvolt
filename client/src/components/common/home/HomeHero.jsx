@@ -62,7 +62,7 @@ const HomeHero = ({ user }) => {
                         className="flex flex-col sm:flex-row justify-center items-center gap-5 mt-12"
                     >
                         <Link
-                            to={user ? '/studio' : '/register'}
+                            to={user ? '/workspace' : '/register'}
                             className="btn-premium px-10 py-4.5 h-auto theme-radius-card text-[13px] font-semibold uppercase tracking-[0.2em] shadow-[0_10px_40px_rgba(99,102,241,0.4)]"
                         >
                             Start Free

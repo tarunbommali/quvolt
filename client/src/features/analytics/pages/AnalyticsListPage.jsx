@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion as Motion } from 'framer-motion';
 import useAnalyticsStore from '../../../stores/useAnalyticsStore';
-import SubHeader from '../../../components/layout/SubHeader';
+import BreadCrumbs from '../../../components/layout/BreadCrumbs';
 import AnalyticsSkeleton from '../../analytics/components/AnalyticsSkeleton';
 import EmptyAnalyticsState, { AnalyticsErrorState } from '../../analytics/components/EmptyAnalyticsState';
 import { Users, Clock } from 'lucide-react';
@@ -27,10 +27,8 @@ const AnalyticsListPage = () => {
     if (sessionsLoading) {
         return (
             <div className="app-page">
-                <SubHeader
-                    title="Performance Analytics"
-                    subtitle="Select a session to view real-time insights, question intelligence, and audience engagement."
-                    breadcrumbs={[{ label: 'Studio', href: '/studio' }, { label: 'Analytics' }]}
+                <BreadCrumbs
+                    breadcrumbs={[{ label: 'Workspace', href: '/workspace' }, { label: 'Analytics' }]}
                 />
                 <div className={layout.page}>
                     <AnalyticsSkeleton />
@@ -42,9 +40,8 @@ const AnalyticsListPage = () => {
     if (sessionsError) {
         return (
             <div className="app-page">
-                <SubHeader 
-                    title="Performance Analytics" 
-                    breadcrumbs={[{ label: 'Studio', href: '/studio' }, { label: 'Analytics' }]} 
+                <BreadCrumbs 
+                    breadcrumbs={[{ label: 'Workspace', href: '/workspace' }, { label: 'Analytics' }]} 
                 />
                 <AnalyticsErrorState
                     message={sessionsError}
@@ -57,9 +54,8 @@ const AnalyticsListPage = () => {
     if (!sessionsLoading && recentSessions.length === 0) {
         return (
             <div className="app-page">
-                <SubHeader 
-                    title="Performance Analytics" 
-                    breadcrumbs={[{ label: 'Studio', href: '/studio' }, { label: 'Analytics' }]} 
+                <BreadCrumbs 
+                    breadcrumbs={[{ label: 'Workspace', href: '/workspace' }, { label: 'Analytics' }]} 
                 />
                 <EmptyAnalyticsState />
             </div>
@@ -68,10 +64,8 @@ const AnalyticsListPage = () => {
 
     return (
         <div className="app-page flex flex-col h-screen overflow-y-auto custom-scrollbar">
-            <SubHeader
-                title="Performance Analytics"
-                subtitle="Select a session to view real-time insights, question intelligence, and audience engagement."
-                breadcrumbs={[{ label: 'Studio', href: '/studio' }, { label: 'Analytics' }]}
+            <BreadCrumbs
+                breadcrumbs={[{ label: 'Workspace', href: '/workspace' }, { label: 'Analytics' }]}
             />
 
             <div className={cx(layout.page, "pt-6 pb-24")}>

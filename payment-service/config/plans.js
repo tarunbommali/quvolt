@@ -3,7 +3,6 @@ const {
   SUBSCRIPTION_PLANS,
   getPlanConfig,
   getAllPlans,
-  getCommissionForPlan,
 } = require('../../server/config/plans');
 
 module.exports = {
@@ -11,5 +10,4 @@ module.exports = {
   SUBSCRIPTION_PLANS,
   getPlanConfig,
   getAllPlans,
-  getCommissionForPlan,
 };

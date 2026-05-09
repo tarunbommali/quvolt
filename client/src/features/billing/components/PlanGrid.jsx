@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion as Motion } from 'framer-motion';
-import { CheckCircle2, Loader2, Sparkles, Star, TrendingUp } from 'lucide-react';
+import { CheckCircle2, Loader2, Sparkles, Star } from 'lucide-react';
 import { typography, cards, buttonStyles, layout, cx } from '../../../styles/index';
 
 const BILLING_PLAN_COPY = {
@@ -14,7 +14,6 @@ const BILLING_PLAN_COPY = {
             'Standard Analytics',
             'Community Support',
         ],
-        commission: '25% Platform Commission',
         ctaLabel: 'Active Plan',
         color: 'slate',
     },
@@ -30,7 +29,6 @@ const BILLING_PLAN_COPY = {
             'Advanced Insights Engine',
             'Priority Email Support',
         ],
-        commission: '10% Revenue Commission',
         ctaLabel: 'Upgrade',
         color: 'indigo',
     },
@@ -41,11 +39,10 @@ const BILLING_PLAN_COPY = {
         points: [
             'Up to 25 Active Templates',
             '25,000 Concurrent Users',
-            'Multi-Host Collaborative Studio',
+            'Multi-Host Collaborative Workspace',
             'Cross-Session Intelligence',
             'Dedicated Account Success',
         ],
-        commission: '5% Enterprise Commission',
         ctaLabel: 'Contact Enterprise',
         color: 'purple',
     },
@@ -148,22 +145,6 @@ const PlanGrid = ({ plans, currentPlanId, actionLoading, onUpgrade }) => {
                                     </li>
                                 ))}
                             </ul>
-
-                            {/* Commission row */}
-                            <div className={cx(cards.divider)}>
-                                <div className={cx(cards.flat, layout.rowStart)}>
-                                    <TrendingUp size={13} className={plan.id === 'FREE' ? 'text-amber-500' : 'text-emerald-500'} />
-                                    <div>
-                                        <p className={typography.metaLabel}>Earning Share</p>
-                                        <p className={cx(
-                                            typography.bodyStrong,
-                                            plan.id === 'FREE' ? '!text-amber-600' : '!text-emerald-600',
-                                        )}>
-                                            {copy.commission}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
 
                         {/* ── CTA button ───────────────────────────────── */}

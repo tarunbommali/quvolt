@@ -1,11 +1,15 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Zap, CheckCircle2, XCircle } from 'lucide-react';
-import QuizTimerBar from './QuizTimerBar';
 import OptionButton from '../../../components/common/OptionButton';
 import { cards, typography, layout, cx } from '../../../styles/index';
+import { resolveQuestionForLanguage } from '../../../utils/languageResolver';
+import LanguagePill from '../../../components/i18n/LanguagePill';
+import QuizTimerBar from './QuizTimerBar';
 
-const QuizQuestionCard = ({ currentQuestion, myResult, selectedOption, handleAnswer }) => {
+const QuizQuestionCard = ({ currentQuestion, myResult, selectedOption, handleAnswer, preferredLanguage }) => {
+    const resolved = resolveQuestionForLanguage(currentQuestion, preferredLanguage);
+
     return (
         <div className="space-y-4">
             <motion.div
@@ -24,6 +28,7 @@ const QuizQuestionCard = ({ currentQuestion, myResult, selectedOption, handleAns
                         <div className={cx(layout.rowStart, "text-[var(--qb-primary)] gap-1.5")}>
                             <Zap size={14} fill="currentColor" />
                             <span className={typography.metaLabel}>Question {(currentQuestion?.index ?? 0) + 1}</span>
+                            {preferredLanguage && <LanguagePill languageCode={preferredLanguage} />}
                         </div>
 
                         <AnimatePresence>
@@ -51,30 +56,33 @@ const QuizQuestionCard = ({ currentQuestion, myResult, selectedOption, handleAns
 
                     {/* Question text */}
                     <h2 className={typography.h2}>
-                        {currentQuestion?.text}
+                        {resolved.question}
                     </h2>
                 </div>
             </motion.div>
 
             {/* Options */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
-                {(currentQuestion?.options || []).map((option, idx) => (
-                    <OptionButton
-                        key={idx}
-                        label={option}
-                        index={idx}
-                        isSelected={selectedOption === option}
-                        isCorrect={
-                            myResult && selectedOption === option
-                                ? myResult.isCorrect
-                                : myResult && myResult.correctAnswer === option
-                                    ? true
-                                    : undefined
-                        }
-                        disabled={!!selectedOption}
-                        onClick={() => handleAnswer(option)}
-                    />
-                ))}
+                {(resolved.options || []).map((optionText, idx) => {
+                    const originalOptionText = currentQuestion?.options?.[idx] || optionText;
+                    return (
+                        <OptionButton
+                            key={idx}
+                            label={optionText}
+                            index={idx}
+                            isSelected={selectedOption === originalOptionText}
+                            isCorrect={
+                                myResult && selectedOption === originalOptionText
+                                    ? myResult.isCorrect
+                                    : myResult && myResult.correctAnswer === originalOptionText
+                                        ? true
+                                        : undefined
+                            }
+                            disabled={!!selectedOption}
+                            onClick={() => handleAnswer(originalOptionText)}
+                        />
+                    );
+                })}
             </div>
         </div>
     );
