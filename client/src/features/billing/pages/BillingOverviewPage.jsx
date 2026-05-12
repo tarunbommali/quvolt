@@ -11,7 +11,7 @@ import useRazorpay from '../../../hooks/useRazorpay';
 import useToast from '../../../hooks/useToast';
 import Toast from '../../../components/common/Toast';
 import LoadingScreen from '../../../components/common/LoadingScreen';
-import BreadCrumbs from '../../../components/layout/BreadCrumbs';
+import PageHeader from '../../../components/layout/PageHeader';
 import CurrentPlanCard from '../components/CurrentPlanCard';
 import PlanGrid from '../components/PlanGrid';
 import PaymentModal from '../components/PaymentModal';
@@ -52,8 +52,11 @@ const BillingOverviewPage = () => {
                     setPlans(planRes.value.data);
                 }
 
-                if (quizRes.status === 'fulfilled' && Array.isArray(quizRes.value)) {
-                    setUsage({ quizCreated: quizRes.value.length });
+                if (quizRes.status === 'fulfilled') {
+                    const quizzesData = quizRes.value?.data?.data || quizRes.value?.data || quizRes.value || [];
+                    if (Array.isArray(quizzesData)) {
+                        setUsage({ quizCreated: quizzesData.length });
+                    }
                 }
             } catch {
                 showToast('Failed to load billing details.');
@@ -160,20 +163,17 @@ const BillingOverviewPage = () => {
     };
 
     const currentPlanId = user?.subscription?.plan || 'FREE';
-    const subStatus     = user?.subscription?.status || 'active';
+    const subStatus = user?.subscription?.status || 'active';
 
     if (loadingPlans) return <LoadingScreen />;
 
     const currentPlanDetails = plans.find((p) => p.id === currentPlanId) || plans.find((p) => p.id === 'FREE');
-    const participantLimit   = user?.subscription?.participantLimit || currentPlanDetails?.participants || 10000;
-    const limitFree          = currentPlanId === 'TEAMS' ? 'Unlimited' : (currentPlanId === 'CREATOR' ? 30 : 5);
+    const participantLimit = user?.subscription?.participantLimit || currentPlanDetails?.participants || 10000;
+    const limitFree = currentPlanId === 'TEAMS' ? 'Unlimited' : (currentPlanId === 'CREATOR' ? 30 : 5);
 
     return (
-        <Motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className={cx(layout.page, 'min-h-screen pb-24')}
-        >
+        <div className={cx(layout.page, 'min-h-screen')}>
+
             <AnimatePresence>
                 {toast && <Toast message={toast.message} type={toast.type} onClose={clearToast} />}
             </AnimatePresence>
@@ -188,9 +188,9 @@ const BillingOverviewPage = () => {
                 onClose={closePaymentModal}
             />
 
-            <BreadCrumbs breadcrumbs={[{ label: 'Workspace' }, { label: 'Billing' }]} />
+            <PageHeader breadcrumbs={[{ label: 'Workspace' }, { label: 'Billing' }]} />
 
-            <div className="space-y-8">
+            <div className="">
                 {/* ── Current Plan ──────────────────────────────────────── */}
                 <section className={layout.section}>
                     <CurrentPlanCard
@@ -223,7 +223,7 @@ const BillingOverviewPage = () => {
                     </section>
                 )}
             </div>
-        </Motion.div>
+        </div>
     );
 };
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Lock, Sparkles, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { Lock, Sparkles, ShieldAlert } from 'lucide-react';
 import { motion as Motion } from 'framer-motion';
 import { typography, cards, buttonStyles, layout, cx } from '../../../styles/index'
 
@@ -12,7 +12,7 @@ const AnalyticsSectionWrapper = ({
     children
 }) => {
     const isLocked = accessState === "FREE_LOCKED";
-    const isPaidUnlocked = accessState === "PAID_UNLOCKED";
+
 
     return (
         <section className="space-y-6 relative group">
@@ -21,11 +21,7 @@ const AnalyticsSectionWrapper = ({
                 <div className="space-y-1">
                     <div className={cx(layout.rowStart, "gap-3")}>
                         <h2 className={typography.h2}>{title}</h2>
-                        {isPaidUnlocked && (
-                            <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400 text-[10px] font-bold uppercase tracking-wider border border-emerald-200 dark:border-emerald-800 shadow-sm animate-in fade-in zoom-in duration-500">
-                                <CheckCircle2 size={12} /> Unlocked via Paid Quiz
-                            </span>
-                        )}
+
                     </div>
                     {description && <p className={typography.body}>{description}</p>}
                 </div>
@@ -33,7 +29,7 @@ const AnalyticsSectionWrapper = ({
                 {/* Visual indicator of the user's active tier */}
                 {!isLocked && (
                     <div className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-[var(--qb-primary)]/10 text-[var(--qb-primary)] border border-[var(--qb-primary)]/20 text-[10px] font-bold uppercase tracking-wider h-fit">
-                        {isPaidUnlocked ? 'Free Tier' : `${currentPlan} Tier`} Active
+                        {`${currentPlan} Tier`} Active
                     </div>
                 )}
             </div>

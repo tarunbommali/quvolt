@@ -8,12 +8,10 @@ import { components, cx, layout, typography, buttonStyles } from '../../../style
 
 const UpgradePlansPage = () => {
     return (
-        <div className={components.home.page + " min-h-screen"}>
+        <div className={cx(layout.page, 'min-h-screen')}>
             <div className={components.home.glowWrap}>
                 <div className={cx(components.home.glowOrb)} />
             </div>
-
-            <div className={layout.page}>
 
 
                 <Motion.div
@@ -23,7 +21,6 @@ const UpgradePlansPage = () => {
                 >
                     <Subscription plans={plans} />
                 </Motion.div>
-            </div>
 
             <Footer />
         </div>

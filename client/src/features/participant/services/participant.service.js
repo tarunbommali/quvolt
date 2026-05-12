@@ -1,7 +1,7 @@
 import api from '../../../services/apiClient';
 
 export const getQuizByCode = (code) =>
-    api.get(`/quiz/${code}`).then(r => r.data);
+    api.get(`/quiz/code/${code}`).then(r => r.data);
 
 export const getUserHistory = () =>
     api.get('/quiz/user/history').then(r => r.data);

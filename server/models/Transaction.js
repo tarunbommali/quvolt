@@ -10,7 +10,7 @@ const TransactionSchema = new mongoose.Schema({
 
   type: {
     type: String,
-    enum: ['QUIZ_PAYMENT', 'COMMISSION', 'PAYOUT', 'REFUND', 'ADJUSTMENT'],
+    enum: ['SUBSCRIPTION', 'REFUND', 'ADJUSTMENT'],
     required: true,
     index: true
   },
@@ -26,8 +26,6 @@ const TransactionSchema = new mongoose.Schema({
   currency: { type: String, default: 'INR' },
 
   netAmount: { type: Number }, // After all fees
-  commission: { type: Number }, // Platform cut
-  hostEarning: { type: Number }, // Final host revenue
 
   sessionId: { 
     type: mongoose.Schema.Types.ObjectId, 

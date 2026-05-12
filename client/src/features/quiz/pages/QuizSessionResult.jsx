@@ -6,7 +6,7 @@ import { isTransientApiError } from '../services/quiz.service';
 import Skeleton from '../../../components/common/ui/Skeleton';
 import ViewportPrefetch from '../../../components/common/ViewportPrefetch';
 import { prefetchHistoryDetailRoute } from '../../../utils/routePrefetch';
-import { textStyles } from '../../../styles/index';
+import { textStyles, layout, cx } from '../../../styles/index';
 
 const QuizSessionResult = () => {
     const { templateId, quizId } = useParams();
@@ -59,7 +59,7 @@ const QuizSessionResult = () => {
     const totalAnswers = records.reduce((sum, record) => sum + (record.totalAnswers || 0), 0);
 
     return (
-        <div className="app-page space-y-8 animate-in fade-in duration-500">
+        <div className={cx(layout.page, "space-y-8 animate-in fade-in duration-500")}>
             <div className="flex items-center justify-between gap-4 flex-wrap">
                 <button
                     onClick={() => navigate(`/quiz/templates/${routeTemplateId}`)}

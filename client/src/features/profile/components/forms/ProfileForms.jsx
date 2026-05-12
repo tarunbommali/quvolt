@@ -94,6 +94,7 @@ export const FreeProfileForm = ({ form, handleChange }) => {
                     <TextInput label="Full Name" required value={form.name} onChange={(v) => handleChange('name', v)} />
                     <TextInput label="Display Name" value={form.profile?.displayName} onChange={(v) => handleProfileChange('displayName', v)} />
                     <TextInput label="Role" value={form.profile?.role} onChange={(v) => handleProfileChange('role', v)} />
+                    <TextInput label="Mobile Number" value={form.mobileNumber} onChange={(v) => handleChange('mobileNumber', v)} />
                     <TextInput label="Subjects (comma separated)" value={form.profile?.subjects?.join(', ')} onChange={(v) => handleProfileChange('subjects', v.split(',').map(s => s.trim()))} />
                 </div>
             </div>
@@ -119,6 +120,7 @@ export const CreatorProfileForm = ({ form, handleChange }) => {
                     <TextInput label="Full Name" required value={form.name} onChange={(v) => handleChange('name', v)} />
                     <TextInput label="Display Name" value={form.profile?.displayName} onChange={(v) => handleChange('profile', { ...form.profile, displayName: v })} />
                     <TextInput label="Role" value={form.profile?.role} onChange={(v) => handleChange('profile', { ...form.profile, role: v })} />
+                    <TextInput label="Mobile Number" value={form.mobileNumber} onChange={(v) => handleChange('mobileNumber', v)} />
                     <TextInput label="Subjects (comma separated)" value={form.profile?.subjects?.join(', ')} onChange={(v) => handleChange('profile', { ...form.profile, subjects: v.split(',').map(s => s.trim()) })} />
                 </div>
             </div>
@@ -166,6 +168,7 @@ export const TeamsProfileForm = ({ form, handleChange }) => {
                     <TextInput label="Organization Name" required value={form.organization?.name} onChange={(v) => handleOrgChange('name', v)} highlight />
                     <TextInput label="Type (university, institute, company)" value={form.organization?.type} onChange={(v) => handleOrgChange('type', v)} highlight />
                     <TextInput label="Domain (e.g. harvard.edu)" required value={form.organization?.domain} onChange={(v) => handleOrgChange('domain', v)} highlight />
+                    <TextInput label="Personal Mobile Number" value={form.mobileNumber} onChange={(v) => handleChange('mobileNumber', v)} />
                     <TextInput label="Website" value={form.organization?.website} onChange={(v) => handleOrgChange('website', v)} highlight />
                     <TextInput label="GST / Tax ID" value={form.organization?.taxId} onChange={(v) => handleOrgChange('taxId', v)} highlight />
                 </div>

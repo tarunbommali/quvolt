@@ -113,27 +113,6 @@ const PricingCard = ({ plan }) => {
                         <PricingListItem key={`${plan.name}-${idx}`} point={point} plan={plan} />
                     ))}
                 </ul>
-
-                {/* Commission / Earning Share */}
-                <div className="mt-auto">
-                    <div className={cx(
-                        cards.flat,
-                        layout.rowBetween,
-                        "p-4 !rounded-2xl border-dashed border theme-border",
-                        plan.name === 'Free' ? 'bg-amber-500/5' : (plan.name === 'Creator' ? 'bg-indigo-500/5' : 'bg-emerald-500/5')
-                    )}>
-                        <div className="space-y-0.5">
-                            <p className={typography.micro}>Net Commission</p>
-                            <p className={cx(
-                                typography.h4,
-                                plan.name === 'Free' ? 'text-amber-600' : (plan.name === 'Creator' ? 'text-indigo-600' : 'text-emerald-600')
-                            )}>
-                                {plan.commission}
-                            </p>
-                        </div>
-                        <TrendingUp size={16} className={plan.name === 'Free' ? 'text-amber-500' : (plan.name === 'Creator' ? 'text-indigo-500' : 'text-emerald-500')} />
-                    </div>
-                </div>
             </div>
 
             {/* Action CTA */}

@@ -1,8 +1,8 @@
 import { motion as Motion } from 'framer-motion';
-import BreadCrumbs from '../../../components/layout/BreadCrumbs';
+import PageHeader from '../../../components/layout/PageHeader';
 import { useSubscriptionTheme } from '../../../hooks/useSubscriptionTheme';
 
-import { User, ShieldCheck, Mail, Sparkles, CheckCircle } from 'lucide-react';
+import { User, ShieldCheck, Mail, Sparkles, CheckCircle, Phone } from 'lucide-react';
 import { cx, layout, typography, cards } from '../../../styles/index';
 
 const ProfileTemplate = ({
@@ -13,6 +13,7 @@ const ProfileTemplate = ({
     avatarSrc,
     name,
     email,
+    mobileNumber,
     plan,
     role,
     verified,
@@ -23,9 +24,9 @@ const ProfileTemplate = ({
     const isEdit = title?.toLowerCase().includes('edit');
 
     return (
-        <div className={cx(layout.page, 'min-h-screen pb-16')}>
+        <div className={cx(layout.page, 'min-h-screen')}>
             {/* ── BreadCrumbs ────────────────────────────────────────────── */}
-            <BreadCrumbs
+            <PageHeader
                 breadcrumbs={breadcrumbs ?? [
                     { label: 'Dashboard', href: '/' },
                     ...(isEdit
@@ -90,6 +91,12 @@ const ProfileTemplate = ({
                             </div>
                             <div className="flex items-center gap-3">
                                 <span className={cx(typography.small, 'flex items-center gap-1')}><Mail size={11} />{email}</span>
+                                {mobileNumber && (
+                                    <>
+                                        <span className="w-px h-3 bg-white/30" />
+                                        <span className={cx(typography.small, 'flex items-center gap-1')}><Phone size={11} />{mobileNumber}</span>
+                                    </>
+                                )}
                                 <span className="w-px h-3 bg-white/30" />
                                 <span className={cx(typography.small, 'flex items-center gap-1 capitalize')}><ShieldCheck size={11} />{role}</span>
                             </div>
@@ -113,8 +120,11 @@ const ProfileTemplate = ({
                                 </span>
                             )}
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-3">
                             <span className={cx(typography.small, 'flex items-center gap-1')}><Mail size={11} />{email}</span>
+                            {mobileNumber && (
+                                <span className={cx(typography.small, 'flex items-center gap-1')}><Phone size={11} />{mobileNumber}</span>
+                            )}
                         </div>
                     </div>
 

@@ -66,6 +66,7 @@ const UserProfilePage = () => {
 
     const buildPayload = () => ({
         name: form.name,
+        mobileNumber: form.mobileNumber,
         profilePhoto: form.profilePhoto,
         profile: form.profile,
         ...(type === 'CREATOR' ? { creator: form.creator } : {}),
@@ -111,6 +112,7 @@ const UserProfilePage = () => {
             title="Profile"
             name={form.name}
             email={user?.email}
+            mobileNumber={form.mobileNumber}
             role={user?.role}
             plan={user?.subscription?.plan || user?.plan}
             avatarSrc={avatar}

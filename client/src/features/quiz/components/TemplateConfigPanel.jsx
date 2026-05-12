@@ -82,9 +82,9 @@ const Row = ({ label, hint, children }) => (
 
 const PlanBadge = ({ plan }) => {
     const colors = {
-        FREE:    'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400',
+        FREE: 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400',
         CREATOR: 'bg-amber-50 text-amber-600 border border-amber-200',
-        TEAMS:   'bg-indigo-50 text-indigo-600 border border-indigo-200',
+        TEAMS: 'bg-indigo-50 text-indigo-600 border border-indigo-200',
     };
     return (
         <span className={`px-2 py-0.5 text-[9px] font-black uppercase tracking-widest rounded-full ${colors[plan] || colors.FREE}`}>
@@ -96,10 +96,10 @@ const PlanBadge = ({ plan }) => {
 // ── Main Component ────────────────────────────────────────────────────────────
 
 const TemplateConfigPanel = ({ onClose, onStart, quizTitle, globalDefaultsMode }) => {
-    const user         = useAuthStore(s => s.user);
-    const plan         = userPlan(user);
-    const creator      = isCreatorOrAbove(plan);
-    const teams        = isTeams(plan);
+    const user = useAuthStore(s => s.user);
+    const plan = userPlan(user);
+    const creator = isCreatorOrAbove(plan);
+    const teams = isTeams(plan);
 
     const {
         templates, activeTemplate, loading, saving, error,
@@ -108,9 +108,9 @@ const TemplateConfigPanel = ({ onClose, onStart, quizTitle, globalDefaultsMode }
 
     // Local draft — edit without touching the store until Save
     const [draft, setDraft] = useState(null);
-    const [open, setOpen]   = useState({ timer: true, scoring: true, leaderboard: false, flow: false, access: false, advanced: false });
+    const [open, setOpen] = useState({ timer: true, scoring: true, leaderboard: false, flow: false, access: false, advanced: false });
     const [saved, setSaved] = useState(false);
-    const [tab, setTab]     = useState('configure'); // 'configure' | 'templates'
+    const [tab, setTab] = useState('configure'); // 'configure' | 'templates'
 
     useEffect(() => { fetchTemplates(); }, [fetchTemplates]);
 
@@ -176,7 +176,7 @@ const TemplateConfigPanel = ({ onClose, onStart, quizTitle, globalDefaultsMode }
                 <div className="flex items-center justify-between px-5 py-4 border-b theme-border shrink-0">
                     <div>
                         <h2 className="text-base font-black theme-text-primary">
-                            {globalDefaultsMode ? 'Global Session Defaults' : 'Session Configuration'}
+                            {globalDefaultsMode ? 'Defaults Settings' : 'Session Configuration'}
                         </h2>
                         <p className="text-xs theme-text-muted mt-0.5">
                             {globalDefaultsMode

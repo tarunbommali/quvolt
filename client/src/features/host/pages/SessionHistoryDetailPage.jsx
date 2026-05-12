@@ -5,7 +5,7 @@ import { Download, CheckCircle2, XCircle, Users, Activity, Clock, Trophy, BarCha
 import { getQuizAnalytics, getSessionParticipants } from '../services/host.service';
 import { useAuthStore } from '../../../stores/useAuthStore';
 import { useQuizStore } from '../../../stores/useQuizStore';
-import BreadCrumbs from '../../../components/layout/BreadCrumbs';
+import PageHeader from '../../../components/layout/PageHeader';
 import HistoryLeaderboardModal from '../components/HistoryLeaderboardModal';
 import LoadingScreen from '../../../components/common/LoadingScreen';
 import { textStyles, components, typography, buttonStyles, cards, layout, cx } from '../../../styles/index';
@@ -98,12 +98,8 @@ const SessionHistoryDetailPage = () => {
     };
 
     return (
-        <Motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="min-h-screen pb-20 px-4 md:px-8 max-w-[1400px] mx-auto space-y-12"
-        >
-            <BreadCrumbs
+        <div className={cx(layout.page, 'min-h-screen')}>
+            <PageHeader
                 breadcrumbs={[{ label: 'History', href: '/history' }, { label: 'Analytics' }]}
                 actions={(
                     <div className="flex items-center gap-4">
@@ -292,7 +288,7 @@ const SessionHistoryDetailPage = () => {
                     </section>
                 </div>
             </div>
-        </Motion.div>
+        </div>
     );
 };
 

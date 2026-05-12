@@ -7,7 +7,7 @@ import axios from 'axios';
 import ScoreTable from '../components/ScoreTable';
 import { buildScoreMatrix } from '../utils/buildScoreMatrix';
 import LoadingScreen from '../../../components/common/LoadingScreen';
-import BreadCrumbs from '../../../components/layout/BreadCrumbs';
+import PageHeader from '../../../components/layout/PageHeader';
 import { cx, layout, buttonStyles, typography } from '../../../styles/index';
 import useToast from '../../../hooks/useToast';
 
@@ -92,7 +92,7 @@ const FolderLeaderboardPage = () => {
         );
     }
 
-    // Breadcrumbs
+    // breadcrumbs
     const breadcrumbs = [
         { label: 'Workspace', href: '/workspace' },
         { label: folderTitle, href: data?.session?.type === 'folder' ? `/workspace/collection/${folderId}` : `/studio` },
@@ -130,7 +130,7 @@ const FolderLeaderboardPage = () => {
 
     return (
         <div className={cx(layout.page, "animate-in fade-in duration-500")}>
-            <BreadCrumbs
+            <PageHeader
                 breadcrumbs={breadcrumbs}
                 actions={actions}
             />

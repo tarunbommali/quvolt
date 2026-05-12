@@ -1,12 +1,14 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Trophy } from 'lucide-react';
+import { Trophy, BarChart3 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Shell, CenterCard, Stat } from './QuizLayouts';
+import { useQuizRealtimeStore } from '../../../stores/quiz/useQuizRealtimeStore';
 import { cards, typography, buttonStyles, layout, cx } from '../../../styles/index';
 
 const QuizLeaderboard = ({ leaderboard = [], user }) => {
     const navigate = useNavigate();
+    const sessionId = useQuizRealtimeStore(s => s.sessionId);
     const myEntry = leaderboard.find(l => l.userId === user?._id || l.name === user?.name);
     const totalScore = myEntry?.score || 0;
     const myRank = leaderboard.findIndex(l => l.userId === user?._id || l.name === user?.name) + 1;
@@ -36,12 +38,22 @@ const QuizLeaderboard = ({ leaderboard = [], user }) => {
                             <Stat label="Final Score" value={totalScore} accent="text-[var(--qb-primary)]" />
                         </div>
 
-                        <button
-                            onClick={() => navigate('/p/dashboard')}
-                            className={cx(buttonStyles.base, buttonStyles.secondary, buttonStyles.sizeLg, "w-full justify-center")}
-                        >
-                            Back to Dashboard
-                        </button>
+                        <div className="flex gap-3">
+                            {sessionId && (
+                                <button
+                                    onClick={() => navigate(`/p/analysis/${sessionId}`)}
+                                    className={cx(buttonStyles.base, buttonStyles.primary, buttonStyles.sizeLg, "flex-1 justify-center")}
+                                >
+                                    <BarChart3 size={16} /> View Analysis
+                                </button>
+                            )}
+                            <button
+                                onClick={() => navigate('/p/history')}
+                                className={cx(buttonStyles.base, buttonStyles.secondary, buttonStyles.sizeLg, "flex-1 justify-center")}
+                            >
+                                Quiz History
+                            </button>
+                        </div>
                     </div>
 
                     {leaderboard.length > 0 && (

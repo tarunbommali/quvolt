@@ -60,7 +60,7 @@ const QuizResultsPage = () => {
     const totalAnswers = records.reduce((sum, record) => sum + (record.totalAnswers || 0), 0);
 
     return (
-        <div className={cx(layout.page, "app-page animate-in fade-in duration-500 pb-20")}>
+        <div className={cx(layout.page, "animate-in fade-in duration-500 pb-20")}>
             {/* Nav & Search Header */}
             <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-6">
                 <button

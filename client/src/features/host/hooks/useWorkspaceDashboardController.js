@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuthStore } from '../../../stores/useAuthStore';
 import { useQuizStore } from '../../../stores/useQuizStore';
@@ -28,14 +28,14 @@ const useWorkspaceDashboardController = () => {
     const user = useAuthStore((state) => state.user);
     const authLoading = useAuthStore((state) => state.loading);
 
+    // 3. UI State Layer
+    const ui = useWorkspaceUI();
+
     // 1. Data Layer
-    const list = useTemplateList(folderId);
+    const list = useTemplateList(folderId, ui.dateRange);
 
     // 2. Folder / Navigation Layer
     const folder = useFolderSync(folderId, showToast);
-
-    // 3. UI State Layer
-    const ui = useWorkspaceUI();
 
     // 4. Form State Layer
     const form = useCreateTemplateForm();
@@ -61,6 +61,16 @@ const useWorkspaceDashboardController = () => {
         editingTitle: ui.editingTitle,
         setTemplates: list.setData // Pass the list's setter to the actions
     });
+
+    // Sync sortMode with paginated fetch
+    React.useEffect(() => {
+        if (ui.sortMode) {
+            const [sortBy, order] = ui.sortMode.split('_');
+            if (sortBy && order) {
+                list.setSort(sortBy, order);
+            }
+        }
+    }, [ui.sortMode, list.setSort]);
 
     // ── Navigation Logic (Specific to Dashboard) ──────────────────────────────────
 

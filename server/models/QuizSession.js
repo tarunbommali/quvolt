@@ -43,7 +43,7 @@ const QuizSessionSchema = new mongoose.Schema({
     endedAt: { type: Date, default: null },
     participantCount: { type: Number, default: 0 },
     participantLimit: { type: Number, default: 200 },
-    commissionPercent: { type: Number, default: 25 },
+
     disableDetailedAnalytics: { type: Boolean, default: false },
     peakParticipants: { type: Number, default: 0 }, // For SaaS billing
     totalSubmissions: { type: Number, default: 0 }, // For usage quotas

@@ -1,5 +1,5 @@
 import { useLocation } from 'react-router-dom';
-import BreadCrumbs from '../../../components/layout/BreadCrumbs';
+import PageHeader from '../../../components/layout/PageHeader';
 import Footer from '../../../components/common/Footer';
 import { layout, typography, cx } from '../../../styles/index';
 
@@ -34,7 +34,7 @@ export default function LegalLayout({ title, lastUpdated, children }) {
         <div className="app-shell flex flex-col min-h-screen w-full">
             <main className={layout.page + " flex-1 z-10 !py-8 md:!py-12"}>
                 <div className="space-y-8">
-                    <BreadCrumbs
+                    <PageHeader
                         breadcrumbs={[
                             { label: 'Legal' },
                             { label: currentLabel }

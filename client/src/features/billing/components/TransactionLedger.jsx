@@ -48,9 +48,7 @@ const STATUS_CONFIG = {
 };
 
 const TYPE_CONFIG = {
-    QUIZ_PAYMENT: { label: 'Revenue', icon: TrendingUp, tone: 'text-emerald-500' },
-    COMMISSION: { label: 'Platform Fee', icon: Zap, tone: 'text-indigo-500' },
-    PAYOUT: { label: 'Withdrawal', icon: ArrowDownLeft, tone: 'text-amber-500' },
+    SUBSCRIPTION: { label: 'Subscription', icon: TrendingUp, tone: 'text-emerald-500' },
     REFUND: { label: 'Refund', icon: RotateCcw, tone: 'text-red-500' },
     ADJUSTMENT: { label: 'Manual', icon: Settings2, tone: 'text-slate-500' }
 };
@@ -123,8 +121,6 @@ const TransactionLedger = ({ transactions = [], inrSymbol = '₹' }) => {
                             <th className={cx(typography.tableHeader, "px-6 py-5 border-b theme-border min-w-[140px]")}>Type</th>
                             <th className={cx(typography.tableHeader, "px-6 py-5 border-b theme-border min-w-[200px]")}>Quiz / Session</th>
                             <th className={cx(typography.tableHeader, "px-6 py-5 border-b theme-border text-right min-w-[120px]")}>Amount</th>
-                            <th className={cx(typography.tableHeader, "px-6 py-5 border-b theme-border text-right min-w-[120px]")}>Commission</th>
-                            <th className={cx(typography.tableHeader, "px-6 py-5 border-b theme-border text-right min-w-[120px]")}>Net</th>
                             <th className={cx(typography.tableHeader, "px-6 py-5 border-b theme-border min-w-[160px]")}>Date</th>
                             <th className={cx(typography.tableHeader, "px-8 py-5 border-b theme-border text-center")}></th>
                         </tr>
@@ -133,7 +129,7 @@ const TransactionLedger = ({ transactions = [], inrSymbol = '₹' }) => {
                         {filteredTransactions.length > 0 ? (
                             filteredTransactions.map((tx, i) => {
                                 const status = STATUS_CONFIG[tx.status] || STATUS_CONFIG.PENDING;
-                                const type = TYPE_CONFIG[tx.type] || TYPE_CONFIG.QUIZ_PAYMENT;
+                                const type = TYPE_CONFIG[tx.type] || TYPE_CONFIG.SUBSCRIPTION;
 
                                 return (
                                     <Motion.tr
@@ -162,18 +158,12 @@ const TransactionLedger = ({ transactions = [], inrSymbol = '₹' }) => {
                                         </td>
                                         <td className="px-6 py-5">
                                             <div className="space-y-0.5">
-                                                <p className={cx(typography.tableCellMd, "truncate max-w-[180px]")}>{tx.quizTitle || 'Session ' + tx.sessionId}</p>
+                                                <p className={cx(typography.tableCellMd, "truncate max-w-[180px]")}>{tx.quizTitle || 'Plan ' + tx.type}</p>
                                                 <p className={typography.micro + " lowercase"}>#{tx.transactionId?.slice(-8) || 'tx-id'}</p>
                                             </div>
                                         </td>
                                         <td className="px-6 py-5 text-right whitespace-nowrap">
                                             <span className={typography.tableCellMd}>{inrSymbol}{Number(tx.amount || 0).toLocaleString()}</span>
-                                        </td>
-                                        <td className="px-6 py-5 text-right whitespace-nowrap">
-                                            <span className={cx(typography.tableCell, "text-red-500")}>-{inrSymbol}{Number(tx.commission || 0).toLocaleString()}</span>
-                                        </td>
-                                        <td className="px-6 py-5 text-right whitespace-nowrap">
-                                            <span className={cx(typography.tableCellMd, "text-emerald-500")}>{inrSymbol}{Number(tx.hostEarning || 0).toLocaleString()}</span>
                                         </td>
                                         <td className="px-6 py-5 whitespace-nowrap">
                                             <div className="space-y-0.5">
@@ -191,7 +181,7 @@ const TransactionLedger = ({ transactions = [], inrSymbol = '₹' }) => {
                             })
                         ) : (
                             <tr>
-                                <td colSpan="8" className="px-8 py-32 text-center">
+                                <td colSpan="6" className="px-8 py-32 text-center">
                                     <div className="flex flex-col items-center gap-4 opacity-40">
                                         <Receipt size={48} className="text-slate-300" />
                                         <p className={typography.body}>No transactions found in your ledger</p>

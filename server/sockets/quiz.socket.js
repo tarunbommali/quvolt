@@ -23,7 +23,7 @@ const {
     computeAndPersistQuestionInsights,
     computeAndPersistAudienceInsights,
 } = require('../services/analytics/analytics.service');
-const { enqueueAnswerEvent, getDistributedSequence } = require('../services/analytics/realtime.analytics.service');
+// legacy unused imports removed
 const QuizSession = require('../models/QuizSession');
 
 const registerQuizSocket = (io, socket) => {
@@ -147,7 +147,7 @@ const registerQuizSocket = (io, socket) => {
                             io.to(resolvedCode).emit('analytics:update', {
                                 sessionId: sid,
                                 event: 'SESSION_ENDED',
-                                sequenceNumber: await getDistributedSequence(sid),
+                                sequenceNumber: Date.now(),
                                 serverTime: Date.now()
                             });
                         }
@@ -164,51 +164,7 @@ const registerQuizSocket = (io, socket) => {
         }
     });
 
-    socket.on('submit_answer', async ({ roomCode, sessionId, questionId, selectedOption }) => {
-        try {
-            const result = await quizService.submitAnswer({ io, socket, roomCode, sessionId, questionId, selectedOption });
-            if (result.error) return socket.emit('error', result.error);
-            if (result.ignored) {
-                publishAnswerResult(socket, { ignored: true, message: 'Already submitted.' });
-                return;
-            }
-
-            publishAnswerResult(socket, {
-                isCorrect: result.isCorrect,
-                correctAnswer: result.correctAnswer,
-                score: result.score,
-                totalScore: result.totalScore,
-                streak: result.streak,
-                bestStreak: result.bestStreak,
-                timeTaken: result.timeTaken ?? 0,
-            });
-
-            publishLeaderboardUpdate(result.room, result.leaderboard);
-
-            // Trigger durable queue storage for background aggregation
-            let sequenceNumber = Date.now();
-            if (sessionId) {
-                sequenceNumber = await getDistributedSequence(sessionId);
-                if (questionId) {
-                    enqueueAnswerEvent(sessionId, questionId, result.isCorrect, result.timeTaken ?? 0, sequenceNumber);
-                }
-            }
-
-            // Emit live analytics:update after each answer for real-time dashboard refresh
-            if (roomCode) {
-                io.to(roomCode).emit('analytics:update', {
-                    sessionId: sessionId || null,
-                    event: 'ANSWER_SUBMITTED',
-                    liveCount: result.leaderboard?.length ?? 0,
-                    sequenceNumber,
-                    serverTime: Date.now()
-                });
-            }
-        } catch (error) {
-            logger.error('Socket submit_answer error', { roomCode, error: error.message });
-            socket.emit('error', 'Failed to submit answer');
-        }
-    });
+    // NOTE: submit_answer is handled in question.handler.js exclusively now to avoid race conditions.
 };
 
 module.exports = registerQuizSocket;

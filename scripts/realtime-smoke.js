@@ -108,8 +108,6 @@ async function waitFor(predicate, label, timeout = 25000) {
             title: `Realtime Smoke ${Date.now()}`,
             type: 'quiz',
             quizCategory: 'regular',
-            isPaid: false,
-            price: 0,
         },
     });
 

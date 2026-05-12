@@ -53,7 +53,7 @@ module.exports = {
     buildhostScopeQuery: utils.buildhostScopeQuery,
     findQuizAndActiveSession: utils.findQuizAndActiveSession,
     resolveQuizActionContext: utils.resolveQuizActionContext,
-    ensureParticipantHasPaidAccess: utils.ensureParticipantHasPaidAccess,
+
 
     // Lifecycle (Delegated)
     startQuizSession: lifecycle.startQuizSession,

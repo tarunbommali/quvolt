@@ -131,73 +131,7 @@ router.post('/status/batch', paymentReadLimiter, requireRole(['host', 'admin', '
     });
 });
 
-// @route   POST /api/payment/host/account
-// @desc    Upsert host Razorpay linked account profile
-
-router.post('/host/account', requireRole(['host', 'admin']), (req, res) => {
-    proxy(req, res, 'post', '/payment/host/account', req.body);
-});
-
-// @route   GET /api/payment/host/account
-// @desc    Get current host linked account profile
-
-router.get('/host/account', requireRole(['host', 'admin']), (req, res) => {
-    proxy(req, res, 'get', '/payment/host/account');
-});
-
-// @route   POST /api/payment/host/onboarding
-// @desc    Create Razorpay sub-merchant account
-router.post('/host/onboarding', requireRole(['host', 'admin']), (req, res) => {
-    proxy(req, res, 'post', '/payment/host/onboarding', req.body);
-});
-
-// @route   POST /api/payment/host/onboarding/link
-// @desc    Generate Razorpay KYC onboarding link
-router.post('/host/onboarding/link', requireRole(['host', 'admin']), (req, res) => {
-    proxy(req, res, 'post', '/payment/host/onboarding/link', req.body);
-});
-
-// @route   GET /api/payment/host/onboarding/status
-// @desc    Check Razorpay KYC status
-router.get('/host/onboarding/status', requireRole(['host', 'admin']), (req, res) => {
-    proxy(req, res, 'get', '/payment/host/onboarding/status');
-});
-
-// @route   GET /api/payment/host/payout-summary
-// @desc    Get host payout summary
-
-router.get('/host/payout-summary', requireRole(['host', 'admin']), (req, res) => {
-    proxy(req, res, 'get', '/payment/host/payout-summary');
-});
-
-// @route   POST /api/payment/revenue/total
-// @desc    Get total host revenue
-
-router.post('/revenue/total', requireRole(['host', 'admin']), (req, res) => {
-    proxy(req, res, 'post', '/payment/revenue/total', req.body);
-});
-
-// @route   POST /api/payment/revenue/by-quiz
-// @desc    Get revenue breakdown per quiz
-
-router.post('/revenue/by-quiz', requireRole(['host', 'admin']), (req, res) => {
-    proxy(req, res, 'post', '/payment/revenue/by-quiz', req.body);
-});
-
-// @route   POST /api/payment/revenue/by-period
-// @desc    Get revenue trend by period (daily/weekly/monthly)
-router.post('/revenue/by-period', protect, authorize('host', 'admin'), (req, res) => {
-    proxy(req, res, 'post', '/payment/revenue/by-period', req.body);
-});
-
-// Admin-only aggregate analytics shortcuts
-router.post('/admin/revenue/total', protect, authorize('admin'), (req, res) => {
-    proxy(req, res, 'post', '/payment/revenue/total', req.body || {});
-});
-
-router.post('/admin/revenue/by-period', protect, authorize('admin'), (req, res) => {
-    proxy(req, res, 'post', '/payment/revenue/by-period', req.body || {});
-});
+// ========== SUBSCRIPTION ROUTES ==========
 
 // @route   GET /api/payment/health
 // @desc    Check payment service health

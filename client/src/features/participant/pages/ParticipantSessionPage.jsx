@@ -307,6 +307,7 @@ const ParticipantSessionPage = () => {
 						selectedOption={selectedOption}
 						handleAnswer={handleAnswer}
 						preferredLanguage={preferredLanguage}
+						defaultLang={activeQuiz?.defaultLanguage || 'en'}
 					/>
 				</div>
 

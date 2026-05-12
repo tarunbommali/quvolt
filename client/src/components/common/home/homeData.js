@@ -8,7 +8,7 @@ export const features = [
     },
     {
         title: 'Monetization Engine',
-        description: 'Built-in ticketing system with Razorpay integration. Track revenue and automate host payouts.',
+        description: 'Built-in platform with native Razorpay integration for seamless subscription billing and team access.',
         icon: Coins,
     },
     {
@@ -44,7 +44,7 @@ export const steps = [
     { title: 'Create & AI Suggest', description: 'Design engaging assessments or use AI to generate balanced questions.' },
     { title: 'Secure Launch', description: 'Go live instantly or schedule sessions with invite-only access codes.' },
     { title: 'Orchestrate Live', description: 'Manage the lifecycle from waiting rooms to real-time sync leaderboards.' },
-    { title: 'Monetize & Analyze', description: 'Sell tickets, track payouts, and download question-level analytics.' },
+    { title: 'Create & Analyze', description: 'Host engaging sessions and download question-level analytics.' },
 ];
 
 export const plans = [
@@ -62,7 +62,7 @@ export const plans = [
             'Limited Session Insights',
             'Quvolt Watermark (Mandatory)',
         ],
-        commission: '25% Platform Commission',
+
         ctaLabel: 'Start for Free',
         badge: 'Trial',
     },
@@ -86,7 +86,7 @@ export const plans = [
             'Custom Branding (Logo + Colors)',
             'No Quvolt Watermark',
         ],
-        commission: 'Reduced 10% Commission',
+
         ctaLabel: 'Get Creator Access',
         badge: 'Most Popular',
     },
@@ -108,7 +108,7 @@ export const plans = [
             'Advanced RBAC & Roles',
             'White-Label (Custom Domain)',
         ],
-        commission: 'Lowest 5% Commission',
+
         ctaLabel: 'Coming Soon',
         badge: 'Enterprise',
         isComingSoon: true,

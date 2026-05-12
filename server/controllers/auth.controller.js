@@ -14,6 +14,7 @@ const mapUserPayload = (user) => ({
     _id: user._id,
     name: user.name,
     email: user.email,
+    mobileNumber: user.mobileNumber || '',
     profilePhoto: user.profilePhoto || '',
     role: user.role,
     createdAt: user.createdAt || null,
@@ -181,7 +182,7 @@ const getMyProfile = async (req, res) => {
 
 const updateMyProfile = async (req, res) => {
     try {
-        const { name, profilePhoto, participantProfile, hostProfile } = req.body;
+        const { name, mobileNumber, profilePhoto, participantProfile, hostProfile } = req.body;
         const user = await User.findById(req.user._id);
 
         if (!user) {
@@ -194,6 +195,10 @@ const updateMyProfile = async (req, res) => {
 
         if (typeof profilePhoto === 'string') {
             user.profilePhoto = profilePhoto.trim();
+        }
+
+        if (typeof mobileNumber === 'string') {
+            user.mobileNumber = mobileNumber.trim();
         }
 
         if (user.role === 'participant' && participantProfile && typeof participantProfile === 'object') {
@@ -227,14 +232,6 @@ const updateMyProfile = async (req, res) => {
                 user.creator = {
                     ...currentCreator,
                     ...creator,
-                    pricing: {
-                        ...(currentCreator.pricing || {}),
-                        ...(creator.pricing || {})
-                    },
-                    payout: {
-                        ...(currentCreator.payout || {}),
-                        ...(creator.payout || {})
-                    },
                     branding: {
                         ...(currentCreator.branding || {}),
                         ...(creator.branding || {})

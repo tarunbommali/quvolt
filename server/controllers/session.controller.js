@@ -35,7 +35,7 @@ const startQuizSession = async (req, res) => {
             return sendError(res, `Invalid quiz state transition: ${currentStatus} -> ${SESSION_STATUS.WAITING}`, 409);
         }
 
-        let entitlements = { plan: 'FREE', maxConcurrentSessions: 1, maxParticipantsPerSession: 200, commissionPercent: 25 };
+        let entitlements = { plan: 'FREE', maxConcurrentSessions: 1, maxParticipantsPerSession: 200 };
         try {
             entitlements = await resolveHostSubscriptionEntitlements(req.user?._id);
             const activeSessionCount = await QuizSession.countDocuments({
@@ -86,7 +86,7 @@ const startQuizSession = async (req, res) => {
                     mode: normalizeSessionMode(quiz.mode),
                     startedAt: new Date(),
                     participantLimit: entitlements?.maxParticipantsPerSession || 200,
-                    commissionPercent: entitlements?.commissionPercent || 25,
+
                     disableDetailedAnalytics: Array.isArray(snapshot) && snapshot.length > 100,
                 };
 

@@ -7,14 +7,18 @@ import TemplateList from '../components/TemplateList';
 import CreateQuizModal from '../components/CreateQuizModal';
 import WorkspaceDashboardToolbar from '../components/WorkspaceDashboardToolbar';
 import LoadingScreen from '../../../components/common/LoadingScreen';
-import BreadCrumbs from '../../../components/layout/BreadCrumbs';
 import Pagination from '../../../components/common/ui/Pagination';
+import WorkspaceFilterModal from '../components/WorkspaceFilterModal';
 
 import { useAuthStore } from '../../../stores/useAuthStore';
 import UpgradeBanner from '../../../components/common/ui/UpgradeBanner';
 import useWorkspaceDashboardController from '../hooks/useWorkspaceDashboardController';
 import { Plus } from 'lucide-react';
 import { layout, buttonStyles, cx } from '../../../styles/index';
+import { Filter } from 'lucide-react';
+import { textStyles } from '../../../styles';
+import PageHeader from '../../../components/layout/PageHeader';
+import { LayersPlus } from 'lucide-react';
 
 const Workspace = () => {
     const user = useAuthStore((s) => s.user);
@@ -70,12 +74,15 @@ const Workspace = () => {
         setQuizMode,
         newQuizTitle,
         setNewQuizTitle,
-        isPaid,
-        quizPrice,
-        setQuizPrice,
-        handlePaidToggle,
         breadcrumbs,
+        isFilterModalOpen,
+        setIsFilterModalOpen,
+        activeFilterCount,
+        dateRange,
+        setDateRange,
     } = dashboard;
+
+    const handleFilterClick = () => setIsFilterModalOpen(true);
 
     React.useEffect(() => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -84,7 +91,10 @@ const Workspace = () => {
     if (dashboard.isLoading && !templates.length) return <LoadingScreen />;
 
     return (
-        <div className="animate-in fade-in duration-300">
+
+
+        <div
+            className={cx(layout.page, 'min-h-screen')}            >
             <AnimatePresence>
                 {toast && <Toast message={toast.message} type={toast.type} onClose={clearToast} />}
                 {confirmDialog && (
@@ -98,115 +108,133 @@ const Workspace = () => {
                 )}
             </AnimatePresence>
 
-            <div className={cx(layout.page, 'min-h-[100vh] flex flex-col')}>
-
-                {/* ── Page Header ─────────────────────────────────────────── */}
-                <BreadCrumbs
-                    breadcrumbs={breadcrumbs.length > 0 ? [
-                        { label: 'Workspace', href: '/workspace' },
-                        ...breadcrumbs.slice(0, -1).map((crumb, idx) => ({
-                            label: crumb.label,
-                            href: `/workspace/collection/${crumb.id}`,
-                            state: {
-                                subject: { _id: crumb.id, title: crumb.label },
-                                breadcrumbs: breadcrumbs.slice(0, idx + 1)
-                            }
-                        })),
-                        { label: breadcrumbs[breadcrumbs.length - 1].label }
-                    ] : [{ label: 'Workspace' }]}
-                    actions={(
-                        <Motion.button
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={handleToggleCreate}
-                            className={cx(buttonStyles.base, buttonStyles.primary, buttonStyles.sizeMd)}
+            {/* ── Page Header ─────────────────────────────────────────── */}
+            <PageHeader
+                breadcrumbs={breadcrumbs.length > 0 ? [
+                    { label: 'Workspace', href: '/workspace' },
+                    ...breadcrumbs.slice(0, -1).map((crumb, idx) => ({
+                        label: crumb.label,
+                        href: `/workspace/collection/${crumb.id}`,
+                        state: {
+                            subject: { _id: crumb.id, title: crumb.label },
+                            breadcrumbs: breadcrumbs.slice(0, idx + 1)
+                        }
+                    })),
+                    { label: breadcrumbs[breadcrumbs.length - 1].label }
+                ] : [{ label: 'Workspace' }]}
+                actions={(
+                    <div className="flex items-center ">
+                        <button
+                            onClick={handleFilterClick}
+                            className={cx(buttonStyles.base, "ml-8 hover:transition-all hover:scale-110 ")}
                         >
-                            <Plus size={16} />
-                            New {currentSubject ? 'Item' : 'Quiz'}
-                        </Motion.button>
-                    )}
-                />
-
-                {/* ── Upgrade Banner ───────────────────────────────────────── */}
-                {user?.subscription?.plan === 'FREE' && (
-                    <UpgradeBanner />
-                )}
-
-                {/* ── Control / Toolbar Bar ────────────────────────────────── */}
-                <WorkspaceDashboardToolbar
-                    showCreate={showCreate}
-                    onToggleCreate={handleToggleCreate}
-                    viewMode={effectiveViewMode}
-                    onViewModeChange={handleViewModeChange}
-                    isMobileView={dashboard.isMobileView}
-                    sortMode={sortMode}
-                    onSortModeChange={setSortMode}
-                    filterMode={filterMode}
-                    onFilterModeChange={setFilterMode}
-                    searchQuery={searchQuery}
-                    onSearchQueryChange={setSearchQuery}
-                    folderId={dashboard.folderId}
-                    onOpenAnalytics={() => navigate(`/workspace/collection/${dashboard.folderId}/analytics`, { state: { folderTitle: currentSubject?.title } })}
-                    isMasteryMode={currentSubject?.leaderboard?.groupBy === 'unit'}
-                    onToggleMastery={handleToggleMasteryMode}
-                />
-
-                {/* ── Create Quiz Modal ────────────────────────────────────── */}
-                <CreateQuizModal
-                    open={showCreate}
-                    onClose={handleToggleCreate}
-                    quizType={quizType}
-                    onQuizTypeChange={setQuizType}
-                    accessType={accessType}
-                    onAccessTypeChange={setAccessType}
-                    quizMode={quizMode}
-                    onQuizModeChange={setQuizMode}
-                    newQuizTitle={newQuizTitle}
-                    onTitleChange={setNewQuizTitle}
-                    onCreate={createTemplate}
-                    subscriptionEntitlements={subscriptionEntitlements}
-                />
-
-                {/* ── Template Grid ─────────────────────────────────────────── */}
-                <section className={cx(layout.section, 'flex-grow flex flex-col')}>
-                    <TemplateList
-                        templates={templates}
-                        isLoading={isLoading}
-                        cloning={cloning}
-                        editingQuizId={editingQuizId}
-                        editingTitle={editingTitle}
-                        onStartEdit={(t) => {
-                            setEditingQuizId(t._id);
-                            setEditingTitle(t.title);
-                        }}
-                        onEditingTitleChange={setEditingTitle}
-                        onRename={handleRenameTemplate}
-                        onCancelEdit={() => setEditingQuizId(null)}
-                        onDelete={handleDeleteTemplate}
-                        onClone={cloneTemplate}
-                        onOpenSubject={onOpenSubject}
-                        onEditQuiz={onEditTemplate}
-                        onGoLive={onGoLive}
-                        onPrefetch={prefetchTemplateNavigation}
-                        onSessionSettings={(t) => navigate(`/quiz/templates/${t._id}/settings`)}
-                        onViewHistory={(t) => navigate(`/quiz/templates/${t._id}/sessions`)}
-                        onViewAnalytics={(t) => navigate(`/workspace/collection/${t._id}/analytics`, { state: { folderTitle: t.title } })}
-                        viewMode={effectiveViewMode}
-                        parentGroupBy={currentSubject?.leaderboard?.groupBy || 'default'}
-                    />
-
-                    {pagination && pagination.total > (limit || 10) && (
-                        <div className="mt-auto pt-8">
-                            <Pagination 
-                                pagination={pagination}
-                                onPageChange={setPage}
-                                onLimitChange={setLimit}
+                            <Filter
+                                size={16}
+                                className={cx(
+                                    activeFilterCount > 0
+                                        ? "text-[var(--qb-primary)] opacity-100"
+                                        : "opacity-60"
+                                )}
                             />
-                        </div>
-                    )}
-                </section>
-            </div>
+                        </button>
+
+                    </div>
+                )}
+            />
+
+
+            {/* ── Upgrade Banner ───────────────────────────────────────── */}
+            {user?.subscription?.plan === 'FREE' && (
+                <UpgradeBanner />
+            )}
+
+            {/* ── Control / Toolbar Bar ────────────────────────────────── */}
+            <WorkspaceDashboardToolbar
+                showCreate={showCreate}
+                onToggleCreate={handleToggleCreate}
+                viewMode={effectiveViewMode}
+                onViewModeChange={handleViewModeChange}
+                isMobileView={dashboard.isMobileView}
+                sortMode={sortMode}
+                onSortModeChange={setSortMode}
+                filterMode={filterMode}
+                onFilterModeChange={setFilterMode}
+                searchQuery={searchQuery}
+                onSearchQueryChange={setSearchQuery}
+                folderId={dashboard.folderId}
+                onOpenAnalytics={() => navigate(`/workspace/collection/${dashboard.folderId}/analytics`, { state: { folderTitle: currentSubject?.title } })}
+                isMasteryMode={currentSubject?.leaderboard?.groupBy === 'unit'}
+                onToggleMastery={handleToggleMasteryMode}
+            />
+
+            <WorkspaceFilterModal
+                isOpen={isFilterModalOpen}
+                onClose={() => setIsFilterModalOpen(false)}
+                viewMode={effectiveViewMode}
+                onViewModeChange={handleViewModeChange}
+                sortMode={sortMode}
+                onSortModeChange={setSortMode}
+                dateRange={dateRange}
+                onDateRangeChange={setDateRange}
+                activeFilterCount={activeFilterCount}
+            />
+
+            {/* ── Create Quiz Modal ────────────────────────────────────── */}
+            <CreateQuizModal
+                open={showCreate}
+                onClose={handleToggleCreate}
+                quizType={quizType}
+                onQuizTypeChange={setQuizType}
+                accessType={accessType}
+                onAccessTypeChange={setAccessType}
+                quizMode={quizMode}
+                onQuizModeChange={setQuizMode}
+                newQuizTitle={newQuizTitle}
+                onTitleChange={setNewQuizTitle}
+                onCreate={createTemplate}
+                subscriptionEntitlements={subscriptionEntitlements}
+            />
+
+            {/* ── Template Grid ─────────────────────────────────────────── */}
+            <section className={cx(layout.section, 'flex-grow flex flex-col')}>
+                <TemplateList
+                    templates={templates}
+                    isLoading={isLoading}
+                    cloning={cloning}
+                    editingQuizId={editingQuizId}
+                    editingTitle={editingTitle}
+                    onStartEdit={(t) => {
+                        setEditingQuizId(t._id);
+                        setEditingTitle(t.title);
+                    }}
+                    onEditingTitleChange={setEditingTitle}
+                    onRename={handleRenameTemplate}
+                    onCancelEdit={() => setEditingQuizId(null)}
+                    onDelete={handleDeleteTemplate}
+                    onClone={cloneTemplate}
+                    onOpenSubject={onOpenSubject}
+                    onEditQuiz={onEditTemplate}
+                    onGoLive={onGoLive}
+                    onPrefetch={prefetchTemplateNavigation}
+                    onSessionSettings={(t) => navigate(`/quiz/templates/${t._id}/settings`)}
+                    onViewHistory={(t) => navigate(`/quiz/templates/${t._id}/sessions`)}
+                    onViewAnalytics={(t) => navigate(`/workspace/collection/${t._id}/analytics`, { state: { folderTitle: t.title } })}
+                    viewMode={effectiveViewMode}
+                    parentGroupBy={currentSubject?.leaderboard?.groupBy || 'default'}
+                />
+
+                {pagination && pagination.total > (limit || 10) && (
+                    <div className="mt-auto pt-8">
+                        <Pagination
+                            pagination={pagination}
+                            onPageChange={setPage}
+                            onLimitChange={setLimit}
+                        />
+                    </div>
+                )}
+            </section>
         </div>
+
     );
 };
 

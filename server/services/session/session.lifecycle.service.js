@@ -61,6 +61,7 @@ const startQuizSession = async ({ io, quizId, roomCode, sessionId, user }) => {
         lastActivity: Date.now(),
         participantLimit: existingState?.participantLimit || 50,
         interQuestionDelay: (quiz.interQuestionDelay ?? 1.5) * 1000,
+        defaultLanguage: quiz.defaultLanguage || 'en', // [I18N] Fallback language for translation resolution
         sequenceNumber: 0,
     };
 
@@ -180,11 +181,15 @@ const endQuizSession = async ({ io, quizId, sessionCode, user }) => {
     const startedAt = session?.startedAt ? new Date(session.startedAt) : quiz.updatedAt;
     const sessionDuration = Math.floor((endedAt - startedAt) / 1000);
 
+    const totalJoined = session?.joinedParticipants 
+        ? Object.keys(session.joinedParticipants).length 
+        : (session?.peakParticipants || 0);
+
     const metrics = {
         peakParticipants: session?.peakParticipants || 0,
         totalSubmissions: session?.totalSubmissions || 0,
         sessionDuration: Math.max(0, sessionDuration),
-        participantCount: Object.keys(session?.participants || {}).length
+        participantCount: totalJoined
     };
 
     const statePersistence = require('./statePersistence');

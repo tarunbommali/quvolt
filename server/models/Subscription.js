@@ -11,7 +11,7 @@ const subscriptionSchema = new mongoose.Schema({
     startDate: { type: Date, default: null },
     endDate: { type: Date, default: null },
     participantLimit: { type: Number, default: 10000, min: 0 },
-    commission: { type: Number, default: 0.25, min: 0 },
+
     razorpaySubscriptionId: { type: String, sparse: true, unique: true, default: null },
     razorpayPlanId: { type: String, sparse: true, default: null },
     currentCycleStart: { type: Date, default: null },

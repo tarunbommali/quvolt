@@ -7,9 +7,7 @@ const connectDB = require('./config/db');
 const logger = require('./utils/logger');
 const config = require('./config/env');
 const { initSubscriptionJobs } = require('./jobs/subscriptionExpiryJob');
-const { initFailedJobWorker } = require('./jobs/failedJobWorker');
-const { initPayoutJob } = require('./jobs/payout.job');
-const FailedJob = require('./models/FailedJob');
+
 const { loadGatewayConfigs } = require('./config/gateways');
 const paymentRouter = require('./services/router/PaymentRouter');
 
@@ -128,15 +126,6 @@ app.get('/payment/health', async (req, res) => {
   const statusCode = dbState === 1 ? 200 : 503;
 
   let failedJobs = { pending: null, deadLetter: null };
-  try {
-    const [pending, deadLetter] = await Promise.all([
-      FailedJob.countDocuments({ status: { $in: ['pending', 'retrying'] } }),
-      FailedJob.countDocuments({ status: 'dead_letter' }),
-    ]);
-    failedJobs = { pending, deadLetter };
-  } catch (error) {
-    logger.warn('Unable to collect failed job counts for health check', { error: error.message });
-  }
 
   res.status(statusCode).json({
     status: statusCode === 200 ? 'healthy' : 'unhealthy',
@@ -191,17 +180,6 @@ const bootWorkers = () => {
     logger.info('Subscription jobs disabled');
   }
 
-  if (String(process.env.FAILED_JOB_WORKER_ENABLED || 'true').toLowerCase() === 'true') {
-    initFailedJobWorker();
-    logger.info('Failed job retry worker enabled');
-  } else {
-    logger.info('Failed job retry worker disabled');
-  }
-
-  if (String(process.env.PAYOUT_JOBS_ENABLED || 'true').toLowerCase() === 'true') {
-    initPayoutJob();
-    logger.info('Payout jobs enabled');
-  }
 };
 
 /**

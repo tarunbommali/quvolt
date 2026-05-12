@@ -44,42 +44,6 @@ const BillingSidebar = ({ limitJoin, hostAccount, ishost }) => (
             </div>
         </Motion.div>
 
-        {ishost && (
-            <Motion.div 
-                initial={{ opacity: 0, x: 30 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.1 }}
-                className={`${components.analytics.card} !rounded-[3rem] !p-10 space-y-8 border theme-border shadow-2xl shadow-emerald-500/5`}
-            >
-                <div className="flex items-center gap-5">
-                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-all ${
-                        hostAccount?.accountStatus === 'active' 
-                            ? 'bg-emerald-500 text-white shadow-emerald-500/20' 
-                            : 'bg-amber-500 text-white shadow-amber-500/20'
-                    }`}>
-                        {hostAccount?.accountStatus === 'active' ? (
-                            <ShieldCheck size={28} />
-                        ) : (
-                            <CircleAlert size={28} />
-                        )}
-                    </div>
-                    <div>
-                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] theme-text-muted opacity-60">Payout Integrity</h3>
-                        <p className="text-lg font-black theme-text-primary mt-0.5 tracking-tight">
-                            {hostAccount?.accountStatus === 'active' ? 'Account Verified' : 'Action Required'}
-                        </p>
-                    </div>
-                </div>
-                
-                <div className="p-6 rounded-2xl bg-gray-50 dark:bg-white/5 border theme-border">
-                    <p className="text-[10px] font-bold theme-text-muted leading-relaxed uppercase tracking-widest italic opacity-80">
-                        {hostAccount?.linkedAccountId
-                            ? `Destination: ${hostAccount.linkedAccountId.slice(0, 16)}...`
-                            : 'Identity verification pending. Earnings held in secure escrow.'}
-                    </p>
-                </div>
-            </Motion.div>
-        )}
     </div>
 );
 

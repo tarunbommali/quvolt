@@ -17,7 +17,7 @@ const {
 
 const createQuiz = async (req, res) => {
     try {
-        const { title, type, quizCategory, parentId, isPaid, price, mode, accessType, allowedEmails } = req.body;
+        const { title, type, quizCategory, parentId, mode, accessType, allowedEmails } = req.body;
         const normalizedType = type || 'quiz';
         const normalizedAccessType = accessType || 'public';
 
@@ -43,9 +43,7 @@ const createQuiz = async (req, res) => {
                 return sendError(res, 'Private session hosting is available on Creator and Teams plans. Upgrade your subscription to continue.', 403);
             }
 
-            if (normalizedType === 'quiz' && Boolean(isPaid) && !entitlements.canCreatePaidQuiz) {
-                return sendError(res, 'Paid quiz creation is available on Creator and Teams plans. Upgrade your subscription to continue.', 403);
-            }
+
         }
 
         let quiz;
@@ -83,8 +81,7 @@ const createQuiz = async (req, res) => {
                     allowedEmails: Array.isArray(allowedEmails)
                         ? allowedEmails.map((email) => String(email || '').trim().toLowerCase()).filter(Boolean)
                         : [],
-                    isPaid: isPaid || false,
-                    price: isPaid ? (price || 0) : 0,
+
                     shuffleQuestions: false,
                     questions: [],
                 };
@@ -121,6 +118,12 @@ const getMyQuizzes = async (req, res) => {
             query.parentId = null;
         } else if (parentId) {
             query.parentId = parentId;
+        }
+
+        if (req.query.startDate || req.query.endDate) {
+            query.createdAt = {};
+            if (req.query.startDate) query.createdAt.$gte = new Date(req.query.startDate);
+            if (req.query.endDate) query.createdAt.$lte = new Date(req.query.endDate);
         }
 
         const { data: quizzes, pagination } = await applyPagination(Quiz, query, {

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, Wand2, Check } from 'lucide-react';
+import React, { useState, useCallback } from 'react';
+import { X, Wand2, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { typography, cx } from '../../styles/index';
 import { SUPPORTED_LANGUAGES } from '../../utils/supportedLanguages';
 
@@ -10,8 +10,14 @@ const TranslationDrawer = ({ quiz, updateQuiz, onClose }) => {
     
     const [activeTab, setActiveTab] = useState(targetLangs[0] || null);
     const [activeSlideIndex, setActiveSlideIndex] = useState(0);
+    const [isSaving, setIsSaving] = useState(false);
 
-    const slide = quiz.questions?.[activeSlideIndex];
+    // Deep-clone questions into local editing state
+    const [editedQuestions, setEditedQuestions] = useState(() =>
+        JSON.parse(JSON.stringify(quiz.questions || []))
+    );
+
+    const slide = editedQuestions[activeSlideIndex];
     if (!slide) return null;
 
     const sourceData = {
@@ -19,16 +25,56 @@ const TranslationDrawer = ({ quiz, updateQuiz, onClose }) => {
         options: slide.options || []
     };
 
-    const targetData = (slide.translations && slide.translations[activeTab]) || {
+    // Read current translation for active tab (mutable local copy)
+    const translationsMap = slide.translations || {};
+    const targetData = translationsMap[activeTab] || {
         text: '',
-        options: slide.options.map(() => '')
+        options: (slide.options || []).map(() => '')
     };
 
-    const handleSave = () => {
-        // [I18N] Commits the manual translation changes
-        // Since we don't have deep partial update easy, we'll just alert for now or update full quiz
-        alert('Translation saved locally (simulate updateQuiz)');
-        // In reality, we'd clone quiz.questions, update the slide's translations, and call updateQuiz
+    // ── Handlers ────────────────────────────────────────────────────────────
+
+    const updateTranslationField = useCallback((field, value) => {
+        setEditedQuestions(prev => {
+            const updated = [...prev];
+            const q = { ...updated[activeSlideIndex] };
+            const trans = { ...(q.translations || {}) };
+            const langEntry = { ...(trans[activeTab] || { text: '', options: [] }) };
+
+            if (field === 'text') {
+                langEntry.text = value;
+            } else if (field.startsWith('option_')) {
+                const idx = parseInt(field.split('_')[1], 10);
+                const opts = [...(langEntry.options || [])];
+                opts[idx] = value;
+                langEntry.options = opts;
+            }
+
+            trans[activeTab] = langEntry;
+            q.translations = trans;
+            updated[activeSlideIndex] = q;
+            return updated;
+        });
+    }, [activeSlideIndex, activeTab]);
+
+    const handleSave = async () => {
+        setIsSaving(true);
+        try {
+            // Build a questions payload with only the translations updated
+            const questionsPayload = editedQuestions.map((q, i) => {
+                const original = quiz.questions[i] || {};
+                return {
+                    ...original,
+                    translations: q.translations || original.translations || {},
+                };
+            });
+            await updateQuiz({ questions: questionsPayload });
+            onClose();
+        } catch {
+            // Keep drawer open on error so user doesn't lose work
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return (
@@ -66,21 +112,21 @@ const TranslationDrawer = ({ quiz, updateQuiz, onClose }) => {
                 ) : (
                     <>
                         <div className="flex justify-between items-center">
-                            <h3 className={typography.h4}>Slide {activeSlideIndex + 1} of {quiz.questions.length}</h3>
+                            <h3 className={typography.h4}>Slide {activeSlideIndex + 1} of {editedQuestions.length}</h3>
                             <div className="flex gap-2">
                                 <button 
                                     disabled={activeSlideIndex === 0}
                                     onClick={() => setActiveSlideIndex(i => i - 1)}
-                                    className="px-3 py-1 text-sm border theme-border rounded hover:theme-surface disabled:opacity-50"
+                                    className="px-3 py-1 text-sm border theme-border rounded hover:theme-surface disabled:opacity-50 flex items-center gap-1"
                                 >
-                                    Prev
+                                    <ChevronLeft size={14} /> Prev
                                 </button>
                                 <button 
-                                    disabled={activeSlideIndex === quiz.questions.length - 1}
+                                    disabled={activeSlideIndex === editedQuestions.length - 1}
                                     onClick={() => setActiveSlideIndex(i => i + 1)}
-                                    className="px-3 py-1 text-sm border theme-border rounded hover:theme-surface disabled:opacity-50"
+                                    className="px-3 py-1 text-sm border theme-border rounded hover:theme-surface disabled:opacity-50 flex items-center gap-1"
                                 >
-                                    Next
+                                    Next <ChevronRight size={14} />
                                 </button>
                             </div>
                         </div>
@@ -99,23 +145,23 @@ const TranslationDrawer = ({ quiz, updateQuiz, onClose }) => {
                                 ))}
                             </div>
 
-                            {/* TARGET COLUMN */}
+                            {/* TARGET COLUMN — Editable */}
                             <div className="space-y-4">
                                 <h4 className="text-sm font-semibold text-[var(--qb-primary)] uppercase tracking-wider">Target ({activeTab})</h4>
                                 <textarea 
                                     className="w-full p-4 theme-surface border theme-border rounded-xl text-sm outline-none focus:border-[var(--qb-primary)] resize-none"
                                     rows={3}
                                     placeholder="Translate question..."
-                                    value={targetData.text || targetData.question || ''}
-                                    readOnly
+                                    value={targetData.text || ''}
+                                    onChange={(e) => updateTranslationField('text', e.target.value)}
                                 />
-                                {targetData.options.map((opt, i) => (
+                                {sourceData.options.map((_, i) => (
                                     <input 
                                         key={i}
                                         className="w-full p-3 theme-surface border theme-border rounded-xl text-sm outline-none focus:border-[var(--qb-primary)]"
                                         placeholder={`Option ${i + 1}`}
-                                        value={opt}
-                                        readOnly
+                                        value={targetData.options?.[i] || ''}
+                                        onChange={(e) => updateTranslationField(`option_${i}`, e.target.value)}
                                     />
                                 ))}
                             </div>
@@ -125,11 +171,18 @@ const TranslationDrawer = ({ quiz, updateQuiz, onClose }) => {
             </div>
 
             <div className="p-6 border-t theme-border flex justify-end gap-3 shrink-0">
-                <button className="h-10 px-4 rounded-xl text-sm font-medium border theme-border hover:theme-surface flex items-center gap-2">
-                    <Wand2 size={16} /> Apply AI Translation
+                <button 
+                    onClick={onClose}
+                    className="h-10 px-4 rounded-xl text-sm font-medium border theme-border hover:theme-surface flex items-center gap-2"
+                >
+                    Cancel
                 </button>
-                <button onClick={handleSave} className="h-10 px-6 rounded-xl text-sm font-medium bg-[var(--qb-primary)] text-white hover:opacity-90 flex items-center gap-2">
-                    <Check size={16} /> Save Changes
+                <button 
+                    onClick={handleSave} 
+                    disabled={isSaving}
+                    className="h-10 px-6 rounded-xl text-sm font-medium bg-[var(--qb-primary)] text-white hover:opacity-90 disabled:opacity-50 flex items-center gap-2"
+                >
+                    <Check size={16} /> {isSaving ? 'Saving...' : 'Save Changes'}
                 </button>
             </div>
         </div>

@@ -50,7 +50,7 @@ const PALETTE_ITEMS = [
     {
         id: 'billing',
         label: 'Open Billing',
-        description: 'Manage subscription and payouts',
+        description: 'Manage subscription',
         to: '/billing',
         roles: ['host', 'admin'],
         keywords: ['plan', 'subscription', 'payments'],

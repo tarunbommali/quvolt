@@ -230,6 +230,7 @@ const bootstrap = async () => {
     app.use('/api/templates', apiLimiter, templateRoutes);
     app.use('/api/admin', apiLimiter, adminRoutes);
     app.use('/api/blitz', apiLimiter, blitzRoutes);
+    app.use('/api/submissions', apiLimiter, require('./routes/submissionRoutes'));
 
     // Health check
     app.get('/api/health', (req, res) => {

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../../stores/useAuthStore';
 import LoadingScreen from '../../../components/common/LoadingScreen';
-import BreadCrumbs from '../../../components/layout/BreadCrumbs';
+import PageHeader from '../../../components/layout/PageHeader';
 import HistoryGrid from '../components/HistoryGrid';
 import HistoryEmptyState from '../components/HistoryEmptyState';
 import { panelStyles, typography, layout, buttonStyles, cards, cx } from '../../../styles/index';
@@ -43,7 +43,7 @@ const DetailedQuizAnalytics = () => {
     if (error) {
         return (
             <div className={cx(layout.page, "space-y-8")}>
-                <BreadCrumbs
+                <PageHeader
                     breadcrumbs={[
                         { label: 'Editor', href: `/quiz/templates/${id}` },
                         { label: 'History' }
@@ -64,7 +64,7 @@ const DetailedQuizAnalytics = () => {
 
     return (
         <div className={cx(layout.page, "space-y-8 animate-in fade-in duration-500")}>
-            <BreadCrumbs
+            <PageHeader
                 breadcrumbs={[
                     { label: 'Workspace', href: '/workspace' },
                     { label: 'Editor', href: `/quiz/templates/${id}` },

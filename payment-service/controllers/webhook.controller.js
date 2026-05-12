@@ -60,7 +60,6 @@ const handleWebhook = async (req, res) => {
       else if (event === 'subscription.completed') await webhookService.handleSubscriptionCompleted(payload?.subscription?.entity);
       else if (event === 'invoice.paid') await webhookService.handleInvoicePaid(payload?.invoice?.entity);
       else if (event === 'order.paid') await webhookService.handleOrderPaid(payload?.order?.entity);
-      else if (event.startsWith('transfer.')) await webhookService.handleTransferUpdate(payload?.transfer?.entity, event);
 
       log.status = 'processed';
       log.processedAt = new Date();
@@ -70,8 +69,6 @@ const handleWebhook = async (req, res) => {
       log.status = 'failed';
       log.error = err.message;
       await log.save();
-      
-      await webhookService.logFailedWebhookJob(eventId, req.body, err);
     }
   } catch (error) {
     logger.error('Webhook controller error', { error: error.message });

@@ -2,7 +2,7 @@ const logger = require('../../utils/logger');
 const sessionStore = require('../session/session.service');
 const { SESSION_STATUS } = require('../../utils/sessionStateMachine');
 const { compareAnswers } = require('../../utils/crypto');
-const { calculateScore, buildAnswerResult } = require('./scoring.engine');
+const { calculateScore } = require('./scoring.engine');
 const { scheduleNextAction } = require('../session/session.timer.service');
 const { createQuestionStats, serializeQuestionStats } = require('./question.service');
 const { 
@@ -10,7 +10,6 @@ const {
     publishFastestUser, 
     publishStreakUpdate, 
     publishLeaderboardUpdate, 
-    publishAnswerResult 
 } = require('./gameplay.publisher');
 
 const calculateAnswerStats = async (roomCode, questionIndex) => {
@@ -166,13 +165,9 @@ const submitAnswer = async ({ io, socket, roomCode, sessionId, questionId, selec
     
     publishLeaderboardUpdate(socketRoom, leaderboard);
 
-    publishAnswerResult(socket, buildAnswerResult({
-        isCorrect,
-        timeTaken,
-        maxTime: question.timeLimit,
-        config: session.templateConfig?.scoring || null,
-        currentTotal: userStats.score - score, // total BEFORE this answer
-    }));
+    // NOTE: answer:result is emitted by the calling socket handler (question.handler.js
+    // or quiz.socket.js), NOT here. Emitting here too caused a double-emit race condition
+    // where the client saw two answer:result events with different field shapes.
 
     const participantsCount = Object.keys(session.participants || {}).length;
     if (currentStats.totalAnswers >= participantsCount && session.mode === 'auto') {
@@ -183,9 +178,12 @@ const submitAnswer = async ({ io, socket, roomCode, sessionId, questionId, selec
     return {
         room: socketRoom,
         isCorrect,
+        correctAnswer: question.options?.[question.correctOption] ?? null,
         timeTaken,
         score,
         totalScore: userStats.score,
+        streak: userStats.streak,
+        bestStreak: userStats.bestStreak,
         leaderboard,
     };
 };

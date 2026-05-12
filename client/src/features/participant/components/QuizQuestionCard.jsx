@@ -7,8 +7,19 @@ import { resolveQuestionForLanguage } from '../../../utils/languageResolver';
 import LanguagePill from '../../../components/i18n/LanguagePill';
 import QuizTimerBar from './QuizTimerBar';
 
-const QuizQuestionCard = ({ currentQuestion, myResult, selectedOption, handleAnswer, preferredLanguage }) => {
-    const resolved = resolveQuestionForLanguage(currentQuestion, preferredLanguage);
+const QuizQuestionCard = ({ currentQuestion, myResult, selectedOption, handleAnswer, preferredLanguage, defaultLang }) => {
+    if (!currentQuestion) {
+        return (
+            <div className="space-y-4 animate-pulse">
+                <div className={cx(cards.elevated, "!p-6")}>
+                    <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded mb-4" />
+                    <div className="h-6 w-3/4 bg-gray-200 dark:bg-gray-700 rounded" />
+                </div>
+            </div>
+        );
+    }
+
+    const resolved = resolveQuestionForLanguage(currentQuestion, preferredLanguage, defaultLang);
 
     return (
         <div className="space-y-4">

@@ -24,7 +24,7 @@ const SessionAnalyticsView = () => {
         sessionAnalytics,
         questionInsights,
         audienceInsights,
-        isPaidSession,
+
         fetchFullAnalytics,
     } = useAnalyticsStore();
 
@@ -33,7 +33,7 @@ const SessionAnalyticsView = () => {
     const getAccessState = (feature) => {
         if (userTier === 'TEAMS') return "SUBSCRIBED";
         if (userTier === 'CREATOR' && feature !== 'ORG') return "SUBSCRIBED";
-        if (isPaidSession && feature !== 'ORG') return "PAID_UNLOCKED";
+
         return "FREE_LOCKED";
     };
 

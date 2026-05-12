@@ -10,7 +10,7 @@ import HistoryNoResultsState from '../components/HistoryNoResultsState';
 import HistoryLeaderboardModal from '../components/HistoryLeaderboardModal';
 import HistoryGrid from '../components/HistoryGrid';
 import ScheduledSessionsSection from '../components/ScheduledSessionsSection';
-import BreadCrumbs from '../../../components/layout/BreadCrumbs';
+import PageHeader from '../../../components/layout/PageHeader';
 import LoadingScreen from '../../../components/common/LoadingScreen';
 import { prefetchHistoryDetailRoute } from '../../../utils/routePrefetch';
 import { useAuthStore } from '../../../stores/useAuthStore';
@@ -108,27 +108,10 @@ const SessionHistoryPage = () => {
     if (authLoading || (loading && history.length === 0)) return <LoadingScreen />;
 
     return (
-        <Motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className={cx(layout.page, "min-h-screen pb-24")}
-        >
-            <BreadCrumbs
+        <div className={cx(layout.page, 'min-h-screen')}>
+            <PageHeader
                 breadcrumbs={[{ label: 'Workspace', href: user.role === 'host' ? '/workspace' : '/join' }, { label: 'Activity' }]}
-                actions={(
-                    <div className={cx(forms.searchWrap, 'w-full md:w-80')}>
-                        <div className={cx(forms.searchIcon)}>
-                            <Search size={15} />
-                        </div>
-                        <input
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search sessions…"
-                            className={cx(forms.inputField, 'pl-9')}
-                        />
-                    </div>
-                )}
+
             />
 
             {error && (
@@ -199,7 +182,7 @@ const SessionHistoryPage = () => {
                 meta={leaderboardMeta}
                 onClose={() => setIsLeaderboardOpen(false)}
             />
-        </Motion.div>
+        </div>
     );
 };
 

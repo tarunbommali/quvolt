@@ -13,12 +13,12 @@ const marketingFeatures = [
     },
     {
         title: 'Hybrid Monetization',
-        description: 'Combine paid quizzes with subscription plans and dynamic commission rates built for creator-first earnings.',
+        description: 'Create engaging quizzes and scale up with our robust premium features built for professional creators.',
         icon: Coins,
     },
     {
         title: 'Analytics Dashboard',
-        description: 'Track participant behavior, quiz performance, revenue, and payouts through role-based dashboards.',
+        description: 'Track participant behavior, quiz performance, and user engagement through role-based dashboards.',
         icon: BarChart3,
     },
     {
@@ -42,7 +42,7 @@ const pricingPlans = [
         href: '/register',
         featured: false,
         points: [
-            '25% Platform Commission',
+
             'Up to 5 Free Quizzes',
             'Unlimited Paid Quizzes',
             'Up to 10k Participants (Join Room)'
@@ -56,7 +56,7 @@ const pricingPlans = [
         href: '/register',
         featured: true,
         points: [
-            '10% Platform Commission',
+
             'Up to 15 Free Quizzes',
             'Unlimited Paid Quizzes',
             'Up to 15K Participants (Join Room)'
@@ -70,7 +70,7 @@ const pricingPlans = [
         href: '/register',
         featured: false,
         points: [
-            '5% Platform Commission',
+
             'Up to 25 Free Quizzes',
             'Unlimited Paid Quizzes',
             'Up to 25k Participants (Join Room)'

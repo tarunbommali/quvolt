@@ -10,10 +10,11 @@ import HistoryNoResultsState from '../../host/components/HistoryNoResultsState';
 import HistoryLeaderboardModal from '../../host/components/HistoryLeaderboardModal';
 import HistoryGrid from '../../host/components/HistoryGrid';
 import ScheduledSessionsSection from '../../host/components/ScheduledSessionsSection';
-import BreadCrumbs from '../../../components/layout/BreadCrumbs';
+import PageHeader from '../../../components/layout/PageHeader';
 import { prefetchHistoryDetailRoute } from '../../../utils/routePrefetch';
 import { useAuthStore } from '../../../stores/useAuthStore';
 import { useQuizStore } from '../../../stores/useQuizStore';
+import { layout, cx } from '../../../styles/index';
 
 const REQUEST_TIMEOUT_MS = 12000;
 
@@ -102,8 +103,8 @@ const QuizSessionHistory = () => {
     }
 
     return (
-        <div className="app-page space-y-8 animate-in fade-in duration-500">
-            <BreadCrumbs
+        <div className={cx(layout.page, "space-y-8 animate-in fade-in duration-500")}>
+            <PageHeader
                 breadcrumbs={[{ label: user.role === 'host' ? 'Workspace' : 'Join', href: user.role === 'host' ? '/workspace' : '/join' }, { label: 'History' }]}
                 actions={(
                     <SearchBar

@@ -8,7 +8,7 @@ const PlanConfigSchema = new mongoose.Schema({
   maxParticipantsPerSession: { type: Number, required: true },
   maxConcurrentSessions: { type: Number, required: true },
   maxQuizzes: { type: Number, required: true },
-  commission: { type: Number, required: true }, // e.g., 0.10 for 10%
+
   features: [{ type: String }],
   isActive: { type: Boolean, default: true }
 }, { timestamps: true });

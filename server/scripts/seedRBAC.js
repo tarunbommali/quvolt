@@ -115,12 +115,7 @@ const PERMISSIONS = [
     resource: 'revenue',
     action: 'view',
   },
-  {
-    name: 'manage_payouts',
-    description: 'Manage payout operations',
-    resource: 'payout',
-    action: 'manage',
-  },
+
   {
     name: 'configure_gateways',
     description: 'Configure payment gateway settings',
@@ -159,8 +154,6 @@ const ROLES = [
       'join_quiz',
       'manage_session',
       'process_payment',
-      'view_revenue',
-      'manage_payouts',
     ],
   },
   {
@@ -365,7 +358,6 @@ async function seedSubscriptions(users) {
           endDate: lifetimeDate,
           expiryDate: lifetimeDate,
           participantLimit: config.participants,
-          commission: config.commission,
           monthlyAmount: config.monthlyAmount,
           autoRenew: true
         },

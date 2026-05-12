@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Zap, Clock, Copy, Check, Play, Share2, Users, AlertCircle } from 'lucide-react';
 import { motion as Motion } from 'framer-motion';
-import BreadCrumbs from '../../layout/BreadCrumbs';
+import PageHeader from '../../layout/PageHeader';
 import { LivePulseBadge } from '../ui';
 import { cards, typography, buttonStyles, layout, cx } from '../../../styles/index'
 
@@ -55,8 +55,8 @@ const LiveLobby = ({ activeQuiz, joinCode, participants, startQuizBroadcast, sho
     };
 
     return (
-        <div className="app-page mx-auto max-w-5xl space-y-8 animate-in fade-in duration-500">
-            <BreadCrumbs
+        <div className={cx(layout.page, "mx-auto max-w-5xl space-y-8 animate-in fade-in duration-500")}>
+            <PageHeader
                 breadcrumbs={[
                     { label: 'Workspace', href: '/workspace' },
                     { label: activeQuiz.title },

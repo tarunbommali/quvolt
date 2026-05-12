@@ -6,17 +6,6 @@
 const PaymentRouter = require('../services/router/PaymentRouter');
 const GatewayInterface = require('../services/gateways/GatewayInterface');
 
-// Mock FailedJob model to prevent database operations in tests
-jest.mock('../models/FailedJob', () => {
-  return jest.fn().mockImplementation((data) => {
-    return {
-      ...data,
-      _id: 'mock_failed_job_id',
-      save: jest.fn().mockResolvedValue({ _id: 'mock_failed_job_id' }),
-    };
-  });
-});
-
 // Mock gateway class for testing
 class MockGateway extends GatewayInterface {
   constructor(config) {

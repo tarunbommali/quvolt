@@ -18,7 +18,7 @@ const getAdminPlans = async () => {
       maxParticipantsPerSession: plan.maxParticipantsPerSession,
       maxConcurrentSessions: plan.maxConcurrentSessions,
       maxQuizzes: plan.maxQuizzes,
-      commission: plan.commission,
+
       price: plan.price,
       features: plan.features
     };

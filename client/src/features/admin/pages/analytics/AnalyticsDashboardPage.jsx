@@ -6,9 +6,9 @@ import MetricsCards from '../../../host/components/MetricsCards';
 import ChartsSection from '../../../host/components/ChartsSection';
 import MetricsSection from '../../../host/components/MetricsSection';
 import TableSection from '../../../host/components/TableSection';
-import BreadCrumbs from '../../../components/layout/BreadCrumbs';
+import PageHeader from '../../../components/layout/PageHeader';
 import ErrorState from '../../../components/common/ErrorState';
-import { components } from '../../../styles/index';
+import { components, layout, cx } from '../../../styles/index';
 
 const AnalyticsDashboardPage = () => {
     const user = useAuthStore((state) => state.user);
@@ -63,8 +63,8 @@ const AnalyticsDashboardPage = () => {
     ), [userData]);
 
     return (
-        <div className="app-page space-y-6">
-            <BreadCrumbs
+        <div className={cx(layout.page, "space-y-6")}>
+            <PageHeader
                 breadcrumbs={[{ label: ishost ? 'Workspace' : 'Join', href: dashboardHref }, { label: 'Analytics' }]}
             />
 

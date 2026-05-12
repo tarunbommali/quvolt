@@ -34,13 +34,10 @@ const validateHostPayload = (payload) => {
         return 'Invalid quiz type';
     }
 
-    if (payload.priceRange && !PRICE_RANGES.includes(payload.priceRange)) {
-        return 'Invalid price range';
-    }
 
     const agreements = payload.agreements || {};
-    if (!agreements.termsAccepted || !agreements.commissionAccepted || !agreements.payoutPolicyAccepted) {
-        return 'All required agreements must be accepted';
+    if (!agreements.termsAccepted) {
+        return 'Terms must be accepted';
     }
 
     return null;
@@ -85,15 +82,8 @@ const registerHost = async (payload) => {
             hostRole: payload.hostRole,
             audienceSize: payload.audienceSize,
             quizType: payload.quizType,
-            priceRange: payload.priceRange || '10_50',
-            panCard: String(payload.panCard || '').trim().toUpperCase(),
-            bankAccountNumber: String(payload.bankAccountNumber || '').trim(), // Note: Should be encrypted in prod
-            ifscCode: String(payload.ifscCode || '').trim().toUpperCase(),
-            accountHolderName: String(payload.accountHolderName || '').trim(),
             agreements: {
                 termsAccepted: !!payload.agreements?.termsAccepted,
-                commissionAccepted: !!payload.agreements?.commissionAccepted,
-                payoutPolicyAccepted: !!payload.agreements?.payoutPolicyAccepted,
             },
         }], { session });
 
@@ -129,15 +119,8 @@ const updateHostProfile = async (userId, payload) => {
         hostRole: payload.hostRole,
         audienceSize: payload.audienceSize,
         quizType: payload.quizType,
-        priceRange: payload.priceRange,
-        panCard: payload.panCard ? String(payload.panCard).trim().toUpperCase() : undefined,
-        bankAccountNumber: payload.bankAccountNumber ? String(payload.bankAccountNumber).trim() : undefined,
-        ifscCode: payload.ifscCode ? String(payload.ifscCode).trim().toUpperCase() : undefined,
-        accountHolderName: payload.accountHolderName,
         agreements: payload.agreements ? {
             termsAccepted: !!payload.agreements.termsAccepted,
-            commissionAccepted: !!payload.agreements.commissionAccepted,
-            payoutPolicyAccepted: !!payload.agreements.payoutPolicyAccepted,
         } : undefined,
     };
 

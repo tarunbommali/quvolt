@@ -6,10 +6,10 @@ import { scheduleQuiz, startQuizSession as apiStartQuizSession } from '../servic
 import Toast from '../../../components/common/Toast';
 import useToast from '../../../hooks/useToast';
 import LoadingScreen from '../../../components/common/LoadingScreen';
-import BreadCrumbs from '../../../components/layout/BreadCrumbs';
+import PageHeader from '../../../components/layout/PageHeader';
 import { useQuizStore } from '../../../stores/useQuizStore';
 import { resolveSessionRoute } from '../../../utils/sessionRouteResolver';
-import { buttonStyles } from '../../../styles/index';
+import { buttonStyles, layout, cx } from '../../../styles/index';
 
 const getQuizStatus = (quiz) => String(quiz?.status || '').toLowerCase();
 
@@ -173,12 +173,12 @@ const LaunchQuiz = () => {
     const selectedRow = 'border-[color-mix(in_srgb,var(--qb-primary)_45%,var(--qb-border))] bg-[color-mix(in_srgb,var(--qb-primary)_14%,var(--qb-surface-1))]';
 
     return (
-        <div className="app-page mx-auto space-y-6 animate-in fade-in duration-300">
+        <div className={cx(layout.page, "mx-auto space-y-6 animate-in fade-in duration-300")}>
             <AnimatePresence>
                 {toast && <Toast message={toast.message} type={toast.type} onClose={clearToast} />}
             </AnimatePresence>
 
-            <BreadCrumbs
+            <PageHeader
                 breadcrumbs={[
                     { label: 'Workspace', href: '/workspace' },
                     { label: activeQuiz.title },

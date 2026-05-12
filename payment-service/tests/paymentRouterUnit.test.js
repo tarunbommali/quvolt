@@ -16,15 +16,6 @@ jest.mock('../utils/logger', () => ({
   debug: jest.fn(),
 }));
 
-// Mock FailedJob to prevent DB operations
-jest.mock('../models/FailedJob', () =>
-  jest.fn().mockImplementation((data) => ({
-    ...data,
-    _id: 'mock_failed_job_id',
-    save: jest.fn().mockResolvedValue({ _id: 'mock_failed_job_id' }),
-  }))
-);
-
 // ── Minimal mock gateway ──────────────────────────────────────────────────────
 
 class MockGateway extends GatewayInterface {

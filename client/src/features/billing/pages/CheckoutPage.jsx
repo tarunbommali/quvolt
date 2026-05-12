@@ -52,7 +52,7 @@ const CheckoutPage = () => {
     };
 
     return (
-        <div className={components.home.page + " min-h-screen"}>
+        <div className={cx(layout.page, 'min-h-screen')}>
             <div className={components.home.glowWrap}>
                 <div className={cx(components.home.glowOrb)} />
             </div>

@@ -37,6 +37,7 @@ const LegalDynamicPage = lazy(() => import('../pages/public/legal/LegalDynamicPa
 const ParticipantLayout = lazy(() => import('../layouts/ParticipantLayout'));
 const ParticipantSessionPage = lazy(() => import('../features/participant/pages/ParticipantSessionPage'));
 const ParticipantHistoryPage = lazy(() => import('../features/quiz/pages/QuizSessionHistory'));
+const QuizAnalysisPage = lazy(() => import('../features/participant/pages/QuizAnalysisPage'));
 
 // Host
 const HostLayout = lazy(() => import('../layouts/HostLayout'));
@@ -103,6 +104,7 @@ export default function AppRoutes() {
         </RoleGuard>
       }>
         <Route path="/p/history" element={<ParticipantHistoryPage />} />
+        <Route path="/p/analysis/:sessionId" element={<QuizAnalysisPage />} />
         <Route path="/quiz/:code" element={<ParticipantSessionPage />} />
       </Route>
 

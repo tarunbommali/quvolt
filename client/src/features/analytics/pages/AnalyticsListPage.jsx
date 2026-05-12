@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion as Motion } from 'framer-motion';
 import useAnalyticsStore from '../../../stores/useAnalyticsStore';
-import BreadCrumbs from '../../../components/layout/BreadCrumbs';
+import PageHeader from '../../../components/layout/PageHeader';
 import AnalyticsSkeleton from '../../analytics/components/AnalyticsSkeleton';
 import EmptyAnalyticsState, { AnalyticsErrorState } from '../../analytics/components/EmptyAnalyticsState';
 import { Users, Clock } from 'lucide-react';
@@ -26,8 +26,8 @@ const AnalyticsListPage = () => {
 
     if (sessionsLoading) {
         return (
-            <div className="app-page">
-                <BreadCrumbs
+            <div className={cx(layout.page)}>
+                <PageHeader
                     breadcrumbs={[{ label: 'Workspace', href: '/workspace' }, { label: 'Analytics' }]}
                 />
                 <div className={layout.page}>
@@ -39,8 +39,8 @@ const AnalyticsListPage = () => {
 
     if (sessionsError) {
         return (
-            <div className="app-page">
-                <BreadCrumbs 
+            <div className={cx(layout.page)}>
+                <PageHeader 
                     breadcrumbs={[{ label: 'Workspace', href: '/workspace' }, { label: 'Analytics' }]} 
                 />
                 <AnalyticsErrorState
@@ -53,8 +53,8 @@ const AnalyticsListPage = () => {
 
     if (!sessionsLoading && recentSessions.length === 0) {
         return (
-            <div className="app-page">
-                <BreadCrumbs 
+            <div className={cx(layout.page)}>
+                <PageHeader 
                     breadcrumbs={[{ label: 'Workspace', href: '/workspace' }, { label: 'Analytics' }]} 
                 />
                 <EmptyAnalyticsState />
@@ -63,8 +63,8 @@ const AnalyticsListPage = () => {
     }
 
     return (
-        <div className="app-page flex flex-col h-screen overflow-y-auto custom-scrollbar">
-            <BreadCrumbs
+        <div className={cx(layout.page, "flex flex-col h-screen overflow-y-auto custom-scrollbar")}>
+            <PageHeader
                 breadcrumbs={[{ label: 'Workspace', href: '/workspace' }, { label: 'Analytics' }]}
             />
 

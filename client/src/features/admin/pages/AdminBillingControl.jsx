@@ -66,7 +66,7 @@ const AdminBillingControl = () => {
             <div className="flex items-center justify-between mb-8">
                 <div>
                     <h1 className="text-2xl font-bold theme-text-primary">Billing & Monetization</h1>
-                    <p className="theme-text-muted text-sm mt-1">Manage subscription plans, commissions, and promo codes</p>
+                    <p className="theme-text-muted text-sm mt-1">Manage subscription plans and promo codes</p>
                 </div>
                 <button onClick={fetchData} className="p-2 theme-surface-soft rounded-lg theme-text-secondary hover:theme-text-primary transition-colors">
                     <RefreshCcw size={18} />
@@ -79,7 +79,7 @@ const AdminBillingControl = () => {
                     onClick={() => setActiveTab('plans')}
                     className={`px-6 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'plans' ? 'bg-white dark:bg-gray-800 theme-text-primary shadow-sm' : 'theme-text-muted hover:theme-text-secondary'}`}
                 >
-                    Plans & Commissions
+                    Plans
                 </button>
                 <button 
                     onClick={() => setActiveTab('offers')}
@@ -107,15 +107,6 @@ const AdminBillingControl = () => {
                                         type="number" 
                                         defaultValue={plan.price}
                                         onBlur={(e) => handleUpdatePlan(id, { price: Number(e.target.value) })}
-                                        className="w-full theme-surface-soft border theme-border rounded-xl px-4 py-2 theme-text-primary text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="text-xs font-bold theme-text-muted uppercase tracking-wider block mb-1.5">Commission (%)</label>
-                                    <input 
-                                        type="number" 
-                                        defaultValue={plan.commission * 100}
-                                        onBlur={(e) => handleUpdatePlan(id, { commission: Number(e.target.value) / 100 })}
                                         className="w-full theme-surface-soft border theme-border rounded-xl px-4 py-2 theme-text-primary text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none"
                                     />
                                 </div>

@@ -1,5 +1,4 @@
 const logger = require('../../utils/logger');
-const FailedJob = require('../../models/FailedJob');
 
 /**
  * Payment Router Service
@@ -367,40 +366,7 @@ class PaymentRouter {
     }
 
     try {
-      // Create a failed job record for analysis
-      const failedJob = new FailedJob({
-        type: 'other', // Using 'other' as payment gateway failure is not in the enum
-        payload: {
-          operation: 'payment_gateway_routing',
-          orderData: {
-            amount: orderData.amount,
-            currency: orderData.currency,
-            receipt: orderData.receipt,
-            // Don't store sensitive data
-          },
-          failedAttempts: failedAttempts.map(attempt => ({
-            gateway: attempt.gateway,
-            priority: attempt.priority,
-            error: attempt.error,
-            errorCode: attempt.errorCode,
-            latency: attempt.latency,
-            timestamp: attempt.timestamp,
-          })),
-          totalAttempts: failedAttempts.length,
-        },
-        error: {
-          message: `All ${failedAttempts.length} gateway attempt(s) failed`,
-          code: 'ALL_GATEWAYS_FAILED',
-        },
-        attempts: 1,
-        maxAttempts: 3, // Allow retry of the entire payment flow
-        status: 'pending',
-      });
-
-      await failedJob.save();
-
-      logger.info('Failed gateway attempts recorded in failed jobs queue', {
-        failedJobId: failedJob._id,
+      logger.info('Failed gateway attempts recorded (DB log disabled)', {
         totalAttempts: failedAttempts.length,
         gateways: failedAttempts.map(a => a.gateway),
       });

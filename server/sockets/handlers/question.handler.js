@@ -116,16 +116,31 @@ const registerQuestionHandler = (io, socket) => {
             }
 
             socket.emit('answer:result', {
-                correct: result.isCorrect,
-                correctOption: result.correctAnswer,
+                isCorrect: result.isCorrect,
+                correct: result.isCorrect,           // legacy compat
+                correctAnswer: result.correctAnswer || null,
+                correctOption: result.correctAnswer || null, // legacy compat
                 timeTaken: result.timeTaken ?? _hint ?? 0,
                 score: result.score,
+                scoreChange: result.score,
                 totalScore: result.totalScore,
                 streak: result.streak,
                 bestStreak: result.bestStreak,
             });
 
             // NOTE: leaderboard broadcast is handled (and batched) inside answer.service.js
+
+            let sequenceNumber = Date.now();
+
+            if (room) {
+                io.to(room).emit('analytics:update', {
+                    sessionId: sessionId || null,
+                    event: 'ANSWER_SUBMITTED',
+                    liveCount: result.leaderboard?.length ?? 0,
+                    sequenceNumber,
+                    serverTime: Date.now()
+                });
+            }
 
             logger.debug('answer:submit processed', {
                 userId: user?._id,

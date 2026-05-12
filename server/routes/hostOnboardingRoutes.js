@@ -17,8 +17,6 @@ router.post('/register', [
     body('audienceSize').notEmpty().withMessage('Audience size is required'),
     body('quizType').notEmpty().withMessage('Quiz type is required'),
     body('agreements.termsAccepted').custom((value) => value === true).withMessage('Terms must be accepted'),
-    body('agreements.commissionAccepted').custom((value) => value === true).withMessage('Commission agreement must be accepted'),
-    body('agreements.payoutPolicyAccepted').custom((value) => value === true).withMessage('Payout policy must be accepted'),
     validate,
 ], hostController.registerHost);
 

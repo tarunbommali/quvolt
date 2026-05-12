@@ -4,7 +4,7 @@ import { motion as Motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Target, Clock, Zap, AlertTriangle, CheckCircle2, TrendingUp, XCircle, BrainCircuit } from 'lucide-react';
 import { useAuthStore } from '../../../stores/useAuthStore';
 import apiClient from '../../../services/apiClient';
-import BreadCrumbs from '../../../components/layout/BreadCrumbs';
+import PageHeader from '../../../components/layout/PageHeader';
 
 import { layoutStyles } from '../../../styles/layoutStyles';
 import { textStyles, panelStyles, dividerStyles, components, layout, cx } from '../../../styles/index';
@@ -83,7 +83,7 @@ const ParticipantAnalyticsPage = () => {
 
     return (
         <div className={cx(layout.page, "pb-24")}>
-            <BreadCrumbs
+            <PageHeader
                 breadcrumbs={[
                     { label: 'HISTORY', href: '/history' },
                     { label: 'Session Details', href: `/analytics/${sessionId}` },

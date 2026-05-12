@@ -15,13 +15,11 @@ export const getMyQuizzes = (parentId) =>
 export const getQuizById = (id) =>
     api.get(`/quiz/${id}`).then(r => r.data);
 
-export const createQuiz = (title, type, parentId, isPaid, price, options = {}) =>
+export const createQuiz = (title, type, parentId, options = {}) =>
     api.post('/quiz/templates/new', {
         title,
         type,
         parentId,
-        isPaid,
-        price,
         mode: options.mode,
         accessType: options.accessType,
         allowedEmails: options.allowedEmails,

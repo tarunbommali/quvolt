@@ -18,8 +18,7 @@ describe('Subscription Service Unit Tests', () => {
     jest.clearAllMocks();
     getPlanConfig.mockImplementation((plan) => ({
       participants: plan === 'FREE' ? 10000 : 50000,
-      commission: plan === 'FREE' ? 0.25 : 0.10,
-      commissionPercent: plan === 'FREE' ? 25 : 10,
+
       monthlyAmount: plan === 'FREE' ? 0 : 49900,
       name: plan,
       razorpayPlanId: `plan_${plan.toLowerCase()}`

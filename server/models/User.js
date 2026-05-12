@@ -14,6 +14,7 @@ const UserSchema = new mongoose.Schema({
     match: EMAIL_REGEX,
   },
   password: { type: String, required: true },
+  mobileNumber: { type: String, default: '', trim: true, maxlength: 20 },
   profilePhoto: { type: String, default: '' },
   role: { type: String, enum: ['admin', 'host', 'participant'], default: 'participant' },
   // RBAC: Support multiple roles per user (Requirement 7.5)
@@ -48,14 +49,7 @@ const UserSchema = new mongoose.Schema({
     brandName: { type: String, trim: true },
     tagline: { type: String, trim: true },
     website: { type: String, trim: true },
-    pricing: {
-      defaultQuizPrice: { type: Number, default: 0 },
-      currency: { type: String, default: 'INR' }
-    },
-    payout: {
-      upiId: { type: String, trim: true },
-      bankAccount: { type: String, trim: true }
-    },
+
     branding: {
       logoUrl: { type: String, trim: true },
       description: { type: String, trim: true }
@@ -108,14 +102,6 @@ const UserSchema = new mongoose.Schema({
     activeSessions: { type: Number, default: 0 },
     quizzesCreated: { type: Number, default: 0 },
   },
-  // Razorpay Sub-Merchant / Marketplace Routing
-  razorpayAccountId: { type: String, default: null },
-  kycStatus: { 
-    type: String, 
-    enum: ['not_started', 'pending', 'verified', 'rejected'], 
-    default: 'not_started' 
-  },
-  payoutEnabled: { type: Boolean, default: false },
 }, { timestamps: true });
 
 UserSchema.index({ role: 1 });

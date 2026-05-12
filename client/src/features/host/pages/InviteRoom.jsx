@@ -6,7 +6,7 @@ import { startLiveSession, abortSession, getSessionState } from '../services/hos
 import Toast from '../../../components/common/Toast';
 import useToast from '../../../hooks/useToast';
 import LoadingScreen from '../../../components/common/LoadingScreen';
-import BreadCrumbs from '../../../components/layout/BreadCrumbs';
+import PageHeader from '../../../components/layout/PageHeader';
 import { LivePulseBadge } from '../../../components/common/ui';
 import { useQuizStore } from '../../../stores/useQuizStore';
 import { useSocketStore } from '../../../stores/useSocketStore';
@@ -199,16 +199,12 @@ const InviteRoom = () => {
     if (loading || !activeQuiz) return <LoadingScreen />;
 
     return (
-        <Motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className={cx(layout.page, "min-h-screen pb-20 space-y-10")}
-        >
+        <div className={cx(layout.page, 'min-h-screen')}>
             <AnimatePresence>
                 {toast && <Toast message={toast.message} type={toast.type} onClose={clearToast} />}
             </AnimatePresence>
 
-            <BreadCrumbs
+            <PageHeader
                 breadcrumbs={[{ label: 'Workspace', href: '/workspace' }, { label: 'Invite' }]}
                 actions={(
                     <button 
@@ -364,7 +360,7 @@ const InviteRoom = () => {
                     </div>
                 </div>
             </div>
-        </Motion.div>
+        </div>
     );
 };
 

@@ -35,12 +35,7 @@ const createQuizValidators = [
     body('allowedEmails').optional().isArray().withMessage('allowedEmails must be an array'),
     body('allowedEmails.*').optional().isEmail().withMessage('Each allowed email must be valid'),
     body('quizCategory').optional({ nullable: true }).isIn(['regular', 'internal', 'external', 'subject-syllabus', 'hackathon', 'interview']).withMessage('Invalid quiz category'),
-    body('price').custom((value, { req }) => {
-        if (req.body.isPaid && (value === undefined || value < 0)) {
-            throw new Error('Valid price is required for paid quizzes');
-        }
-        return true;
-    }),
+
     validate
 ];
 
@@ -86,6 +81,10 @@ router.post('/templates/:templateId/session', [
     validate
 ], sessionController.startQuizSession);
 
+// Room code lookup — MUST be registered before the generic /:id catch-all
+// so that 6-char room/session codes don't get misrouted to getQuizById.
+router.get('/code/:roomCode', requireRole(['host', 'admin', 'participant']), checkQuizAccess, quizController.getQuizByCode);
+
 // Quiz CRUD
 router.get('/:id', requireRole(['host', 'admin', 'participant']), checkQuizAccess, quizController.getQuizById);
 router.put('/:id', requireRole(['host', 'admin']), quizController.updateQuiz);
@@ -106,6 +105,7 @@ const bulkUpdateGuard = (req, res, next) => {
 
 router.put('/:id/full-state', quizModifyLimiter, bulkUpdateGuard, requireRole(['host', 'admin']), requireQuizOwnership, questionController.updateQuizFullState);
 router.post('/:quizId/translate', requireRole(['host', 'admin']), requireQuizOwnership, translateController.translateSlides);
+router.post('/:quizId/translations/import', requireRole(['host', 'admin']), requireQuizOwnership, translateController.importTranslations);
 router.post('/:id/start', [
     requireRole(['host', 'admin']),
     requireQuizOwnership,
@@ -161,8 +161,5 @@ router.put('/:quizId/questions/:questionId', quizModifyLimiter, requireRole(['ho
 router.delete('/:quizId/questions/:questionId', requireRole(['host', 'admin']), questionController.deleteQuestion);
 
 router.get('/:id/leaderboard', requireRole(['host', 'admin', 'participant']), checkQuizAccess, analyticsController.getQuizLeaderboard);
-
-// Room code lookup - Requirements 8.3, 8.4, 8.5: Check access policy
-router.get('/:roomCode', requireRole(['host', 'admin', 'participant']), checkQuizAccess, quizController.getQuizByCode);
 
 module.exports = router;

@@ -17,8 +17,6 @@
 const { getBasicSessionAnalytics } = require('./session.analytics.service');
 const { getQuestionInsights }       = require('./question.analytics.service');
 const { getAudienceInsights }       = require('./audience.analytics.service');
-const Quiz = require('../../models/Quiz');
-const QuizSession = require('../../models/QuizSession');
 const logger = require('../../utils/logger');
 
 const TIER_RANKS = { FREE: 0, CREATOR: 1, TEAMS: 2 };
@@ -32,27 +30,19 @@ const getFullSessionAnalytics = async (sessionId, plan = 'FREE') => {
     const rank = TIER_RANKS[(plan || 'FREE').toUpperCase()] ?? 0;
 
     try {
-        // Fetch session and quiz to check for paid status
-        const sessionDoc = await QuizSession.findById(sessionId).select('quizId').lean();
-        if (!sessionDoc) throw new Error('Session not found');
-
-        const quiz = await Quiz.findById(sessionDoc.quizId).select('isPaid').lean();
-        const isPaidSession = quiz?.isPaid || false;
-
-        // Entitlement check: CREATOR+ OR if it's a Paid Quiz
-        const hasAdvancedAccess = rank >= 1 || isPaidSession;
+        // Entitlement check: CREATOR+ gets advanced analytics
+        const hasAdvancedAccess = rank >= 1;
 
         // Always fetch basic session data (all plans)
         const session = await getBasicSessionAnalytics(sessionId);
 
         // If no advanced access, return only basic data
         if (!hasAdvancedAccess) {
-            logger.info("ANALYTICS_FETCH", { sessionId, plan, rank, isPaidSession, duration: Date.now() - start });
+            logger.info("ANALYTICS_FETCH", { sessionId, plan, rank, duration: Date.now() - start });
             return {
                 session,
                 questions: null,
                 audience: null,
-                isPaidSession,
                 plan: 'FREE',
             };
         }
@@ -63,13 +53,12 @@ const getFullSessionAnalytics = async (sessionId, plan = 'FREE') => {
             getAudienceInsights(sessionId),
         ]);
 
-        logger.info("ANALYTICS_FETCH", { sessionId, plan, rank, isPaidSession, duration: Date.now() - start });
+        logger.info("ANALYTICS_FETCH", { sessionId, plan, rank, duration: Date.now() - start });
 
         return {
             session,
             questions: questionsResult.status === 'fulfilled' ? questionsResult.value : null,
             audience:  audienceResult.status  === 'fulfilled' ? audienceResult.value  : null,
-            isPaidSession,
             plan,
         };
     } catch (error) {

@@ -30,8 +30,8 @@ const resolveHostSubscriptionEntitlements = async (hostId) => {
         maxConcurrentSessions: planConfig.maxConcurrentSessions,
         maxParticipantsPerSession: planConfig.maxParticipantsPerSession,
         participantLimitMonthly: subscription?.participantLimit || planConfig.participants,
-        commissionPercent: subscription?.commissionPercent ?? planConfig.commissionPercent,
-        canCreatePaidQuiz: plan !== 'FREE',
+
+
         canUsePrivateHosting: plan !== 'FREE',
         canUseAiGeneration: plan !== 'FREE',
         level: plan === 'TEAMS' ? 3 : (plan === 'CREATOR' ? 2 : 1),

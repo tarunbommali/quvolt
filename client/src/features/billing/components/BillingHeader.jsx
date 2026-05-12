@@ -1,7 +1,7 @@
 import React from 'react';
-import BreadCrumbs from '../../../components/layout/BreadCrumbs';
+import PageHeader from '../../../components/layout/PageHeader';
 const BillingHeader = () => (
-    <BreadCrumbs
+    <PageHeader
         breadcrumbs={[
             { label: 'Workspace', },
             { label: 'Billing' },

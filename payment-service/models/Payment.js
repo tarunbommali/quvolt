@@ -8,13 +8,8 @@ const paymentSchema = new mongoose.Schema({
   },
   paymentType: {
     type: String,
-    enum: ['quiz', 'subscription'],
-    default: 'quiz'
-  },
-  quizId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Quiz',
-    required: false // Optional for subscription payments
+    enum: ['subscription'],
+    default: 'subscription'
   },
   subscriptionId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -30,41 +25,6 @@ const paymentSchema = new mongoose.Schema({
     type: Number,
     default: 0,
     min: [0, 'Gross amount cannot be negative']
-  },
-  platformFeeAmount: {
-    type: Number,
-    default: 0,
-    min: [0, 'Platform fee cannot be negative']
-  },
-  hostAmount: {
-    type: Number,
-    default: 0,
-    min: [0, 'Host amount cannot be negative']
-  },
-  hostUserId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    default: null
-  },
-  hostLinkedAccountId: {
-    type: String,
-    trim: true,
-    default: null
-  },
-  payoutMode: {
-    type: String,
-    enum: ['route', 'manual', 'none'],
-    default: 'none'
-  },
-  payoutStatus: {
-    type: String,
-    enum: ['not_applicable', 'pending', 'processing', 'transferred', 'blocked_kyc', 'reversed', 'failed'],
-    default: 'not_applicable'
-  },
-  razorpayTransferId: {
-    type: String,
-    trim: true,
-    default: null
   },
   gatewayFeeAmount: {
     type: Number,
@@ -140,7 +100,6 @@ const paymentSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-paymentSchema.path('quizId').index(true);
 paymentSchema.path('userId').index(true);
 
 paymentSchema.pre('validate', function normalizeAmount(next) {
@@ -151,12 +110,9 @@ paymentSchema.pre('validate', function normalizeAmount(next) {
 });
 
 // Indexes
-paymentSchema.index({ userId: 1, quizId: 1 });
 // Sparse unique ensures no two completed payment records share the same Razorpay payment ID
 paymentSchema.index({ razorpayPaymentId: 1 }, { unique: true, sparse: true });
-paymentSchema.index({ hostUserId: 1, status: 1, payoutStatus: 1 });
 paymentSchema.index({ status: 1 });
 paymentSchema.index({ userId: 1, status: 1 });
-paymentSchema.index({ hostUserId: 1, createdAt: -1 }); // Revenue queries
 
 module.exports = mongoose.model('Payment', paymentSchema);

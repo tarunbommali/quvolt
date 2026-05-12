@@ -1,7 +1,5 @@
 const Payment = require('../../models/Payment');
-const FailedJob = require('../../models/FailedJob');
 const logger = require('../../utils/logger');
-const { toRupees } = require('../payment/split.service');
 
 const reconcileCapturedPayment = async (paymentEntity) => {
   const orderId = paymentEntity.order_id;
@@ -13,8 +11,8 @@ const reconcileCapturedPayment = async (paymentEntity) => {
       $set: {
         razorpayPaymentId: paymentId,
         status: 'completed',
-        gatewayFeeAmount: toRupees(paymentEntity.fee || 0),
-        taxAmount: toRupees(paymentEntity.tax || 0),
+        gatewayFeeAmount: (paymentEntity.fee || 0) / 100,
+        taxAmount: (paymentEntity.tax || 0) / 100,
       },
     },
     { new: true }
@@ -25,10 +23,7 @@ const reconcileCapturedPayment = async (paymentEntity) => {
     return;
   }
 
-  if (updated.payoutMode === 'route' && updated.hostAmount > 0) {
-    updated.payoutStatus = updated.razorpayTransferId ? 'transferred' : 'processing';
-    await updated.save();
-  }
+
 
   logger.info('reconcileCapturedPayment: completed', { orderId, paymentId });
 };
@@ -40,7 +35,7 @@ const handlePaymentFailed = async (paymentEntity) => {
       $set: {
         razorpayPaymentId: paymentEntity.id,
         status: 'failed',
-        payoutStatus: 'failed',
+        status: 'failed',
       },
     }
   );
@@ -55,32 +50,15 @@ const handlePaymentRefunded = async (paymentEntity) => {
     {
       $set: {
         status: 'refunded',
-        payoutStatus: 'reversed',
-        refundAmount: toRupees(paymentEntity.amount_refunded || paymentEntity.amount || 0),
+        status: 'refunded',
+        refundAmount: (paymentEntity.amount_refunded || paymentEntity.amount || 0) / 100,
         refundedAt: new Date(),
       },
     }
   );
 };
 
-const handleTransferUpdate = async (transferEntity, event) => {
-  if (transferEntity?.id) {
-    await Payment.findOneAndUpdate(
-      {
-        $or: [
-          { razorpayOrderId: transferEntity.notes?.orderId },
-          { razorpayTransferId: transferEntity.id },
-        ],
-      },
-      {
-        $set: {
-          razorpayTransferId: transferEntity.id,
-          payoutStatus: event === 'transfer.processed' ? 'transferred' : 'failed',
-        },
-      }
-    );
-  }
-};
+
 
 const handleSubscriptionCharged = async (subscriptionEntity, paymentId) => {
   const Subscription = require('../../models/Subscription');
@@ -89,7 +67,7 @@ const handleSubscriptionCharged = async (subscriptionEntity, paymentId) => {
   const razorpaySubId = subscriptionEntity.id;
   const hostId = subscriptionEntity.notes?.hostId;
   const planId = subscriptionEntity.notes?.planId;
-  const amount = toRupees(subscriptionEntity.paid_amount || 0);
+  const amount = (subscriptionEntity.paid_amount || 0) / 100;
 
   // Find existing subscription by Razorpay ID
   const subscription = await Subscription.findOne({ razorpaySubscriptionId: razorpaySubId });
@@ -152,7 +130,7 @@ const handleInvoicePaid = async (invoiceEntity) => {
   
   const razorpayInvoiceId = invoiceEntity.id;
   const razorpaySubId = invoiceEntity.subscription_id;
-  const amount = toRupees(invoiceEntity.amount_paid || 0);
+  const amount = (invoiceEntity.amount_paid || 0) / 100;
   const paymentId = invoiceEntity.payment_id;
 
   if (razorpaySubId) {
@@ -175,24 +153,7 @@ const handleInvoicePaid = async (invoiceEntity) => {
   }
 };
 
-const logFailedWebhookJob = async (idempotencyKey, payload, error) => {
-  await FailedJob.findOneAndUpdate(
-    { idempotencyKey },
-    {
-      $setOnInsert: {
-        type: 'webhook',
-        payload,
-        idempotencyKey,
-      },
-      $set: {
-        error: { message: error.message, stack: error.stack },
-        status: 'pending',
-      },
-      $inc: { attempts: 1 },
-    },
-    { upsert: true }
-  ).catch(err => logger.error('Failed to log FailedJob', { error: err.message }));
-};
+
 
 const handleOrderPaid = async (orderEntity) => {
   const Payment = require('../../models/Payment');
@@ -209,11 +170,9 @@ module.exports = {
   reconcileCapturedPayment,
   handlePaymentFailed,
   handlePaymentRefunded,
-  handleTransferUpdate,
   handleSubscriptionCharged,
   handleSubscriptionCancelled,
   handleSubscriptionCompleted,
   handleInvoicePaid,
-  handleOrderPaid,
-  logFailedWebhookJob
+  handleOrderPaid
 };

@@ -1,7 +1,7 @@
 import { Zap, Pause, Play, ChevronRight, Timer, Users, Trophy, Activity, AlertCircle } from 'lucide-react';
 import { motion as Motion } from 'framer-motion';
 import AnswerDistributionCard from './AnswerDistributionCard';
-import BreadCrumbs from '../../../components/layout/BreadCrumbs';
+import PageHeader from '../../../components/layout/PageHeader';
 import { LivePulseBadge } from '../../../components/common/ui';
 
 import ErrorState from '../../../components/common/ErrorState';
@@ -20,7 +20,7 @@ const LiveView = ({ activeQuiz, sessionMode, joinCode, currentQuestion, timeLeft
 
     return (
         <div className={cx(layout.page, "relative min-h-screen pb-20 animate-in fade-in duration-500")}>
-            <BreadCrumbs
+            <PageHeader
                 breadcrumbs={[
                     { label: 'Workspace', href: '/workspace' },
                     { label: activeQuiz?.title || 'Quiz' },

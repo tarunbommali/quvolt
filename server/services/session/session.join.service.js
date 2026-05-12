@@ -159,15 +159,23 @@ const joinRoom = async ({ io, socket, roomCode, sessionId, preferredLanguage }) 
         if (freshSession) session = freshSession;
     }
 
+    if (!session.joinedParticipants) {
+        session.joinedParticipants = {};
+    }
+
     // 6. Final write
-    session.participants[userId] = {
-        _id: user._id,
-        name: user.name,
-        role: user.role,
-        avatar: user.avatar || null,
-        joinedAt: new Date().toISOString(),
-        preferredLanguage: preferredLanguage || null, // [I18N]
-    };
+    if (!isHost) {
+        const participantObj = {
+            _id: user._id,
+            name: user.name,
+            role: user.role,
+            avatar: user.avatar || null,
+            joinedAt: new Date().toISOString(),
+            preferredLanguage: preferredLanguage || null,
+        };
+        session.participants[userId] = participantObj;
+        session.joinedParticipants[userId] = participantObj;
+    }
 
     session.lastActivity = Date.now();
     session.quizId = session.quizId || quiz._id?.toString?.() || quiz._id;

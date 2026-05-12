@@ -4,9 +4,7 @@ import { Link } from 'react-router-dom';
 import { motion as Motion } from 'framer-motion';
 import { typography } from '../../styles/index';
 
-const BreadCrumbs = ({
-    actions,
-    breadcrumbs = [],
+const BreadCrumbs = ({ breadcrumbs = [],
 }) => {
     return (
         <Motion.div
@@ -40,12 +38,6 @@ const BreadCrumbs = ({
                 </nav>
             )}
 
-            {/* ── Actions slot ──────────────────────────────────────────────── */}
-            {actions && (
-                <div className="flex w-full md:w-auto flex-wrap items-center gap-3 shrink-0">
-                    {actions}
-                </div>
-            )}
         </Motion.div>
     );
 };

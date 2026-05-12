@@ -4,7 +4,7 @@ import usePaginatedFetch from '../../../hooks/usePaginatedFetch';
 /**
  * Domain hook for managing the paginated template list, searching, and sorting.
  */
-export const useTemplateList = (folderId) => {
+export const useTemplateList = (folderId, dateRange) => {
     const [searchQuery, setSearchQuery] = useState('');
 
     const {
@@ -26,7 +26,11 @@ export const useTemplateList = (folderId) => {
         limit: 10,
         sortBy: 'createdAt',
         order: 'desc',
-        extraParams: useMemo(() => ({ parentId: folderId || 'none' }), [folderId])
+        extraParams: useMemo(() => ({ 
+            parentId: folderId || 'none',
+            startDate: dateRange?.startDate || undefined,
+            endDate: dateRange?.endDate || undefined
+        }), [folderId, dateRange])
     });
 
     // Debounced search effect

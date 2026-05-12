@@ -46,7 +46,7 @@ const useAnalyticsStore = create()(
             questionInsights: null,   // { questions[], summary }
             audienceInsights: null,   // { deviceBreakdown, participationTimeline, … }
             activePlan:       'FREE', // plan returned from backend for this session
-            isPaidSession:    false,  // whether the quiz was a paid one
+
 
             // ── Live updates ───────────────────────────────────────────────────
             liveParticipantCount: 0,
@@ -104,7 +104,7 @@ const useAnalyticsStore = create()(
                     questionInsights: null,
                     audienceInsights: null,
                     activePlan:       'FREE',
-                    isPaidSession:    false,
+
                     liveParticipantCount: 0,
                 });
             },
@@ -129,7 +129,7 @@ const useAnalyticsStore = create()(
                         questionInsights: data.questions     || null,
                         audienceInsights: data.audience      || null,
                         activePlan:       data.plan          || 'FREE',
-                        isPaidSession:    data.isPaidSession || false,
+
                         analyticsLoading: false,
                         analyticsError:   null,
                     });
@@ -268,7 +268,7 @@ const useAnalyticsStore = create()(
                     questionInsights:    null,
                     audienceInsights:    null,
                     activePlan:          'FREE',
-                    isPaidSession:       false,
+
                     liveParticipantCount: 0,
                 });
             },

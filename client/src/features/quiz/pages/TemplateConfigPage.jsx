@@ -19,14 +19,14 @@ import {
     RotateCcw, AlertCircle,
 } from 'lucide-react';
 
-import BreadCrumbs from '../../../components/layout/BreadCrumbs';
+import PageHeader from '../../../components/layout/PageHeader';
 import LoadingScreen from '../../../components/common/LoadingScreen';
 
 import { useAuthStore } from '../../../stores/useAuthStore';
 import { useQuizStore } from '../../../stores/useQuizStore';
 import * as templateApi from '../../../services/template.api';
 import { updateQuiz } from '../../host/services/host.service';
-import { buttonStyles } from '../../../styles/index';
+import { buttonStyles, layout, cx } from '../../../styles/index';
 
 // ── Plan helpers ───────────────────────────────────────────────────────────────
 const getPlan = (user) => (user?.subscription?.plan || 'FREE').toUpperCase();
@@ -471,7 +471,7 @@ const TemplateConfigPage = () => {
         }
     };
 
-    // Breadcrumbs
+    // breadcrumbs
     const breadcrumbs = globalDefaultsMode
         ? [{ label: 'Workspace', href: '/workspace' }, { label: 'Settings Configuration' }]
         : [
@@ -488,8 +488,8 @@ const TemplateConfigPage = () => {
     if (loading) return <LoadingScreen />;
 
     return (
-        <div className="app-page space-y-6 animate-in fade-in duration-300">
-            <BreadCrumbs
+        <div className={cx(layout.page, "space-y-6 animate-in fade-in duration-300")}>
+            <PageHeader
                 breadcrumbs={breadcrumbs}
             />
 
